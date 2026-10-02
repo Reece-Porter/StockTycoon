@@ -1,0 +1,18 @@
+# Wally packages (restored with `wally install`)
+/Packages/
+/ServerPackages/
+/DevPackages/
+
+# Rojo / luau-lsp generated files
+sourcemap.json
+/build/
+
+# Place files and Studio lock files
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
