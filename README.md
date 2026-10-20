@@ -25,11 +25,13 @@ rojo build -o build/StockTycoon.rbxl   # project file builds
 
 Type these in chat. They only work for user IDs in `src/shared/Config/Admins.luau` (and, inside Studio, for Player1 in a local server test).
 
-| Command              | What it does                           |
-| -------------------- | -------------------------------------- |
-| `/givecash <amount>` | Adds Cash                              |
-| `/setcash <amount>`  | Sets Cash to an exact amount           |
-| `/resetdata`         | Wipes your save back to a new player's |
+| Command              | What it does                                                              |
+| -------------------- | ------------------------------------------------------------------------- |
+| `/givecash <amount>` | Adds Cash                                                                 |
+| `/setcash <amount>`  | Sets Cash to an exact amount                                              |
+| `/spawn <tier>`      | Puts a company of that tier on your conveyor now (e.g. `/spawn bluechip`) |
+| `/testodds [rolls]`  | Simulates conveyor spawns and compares the odds with Config               |
+| `/resetdata`         | Wipes your save back to a new player's                                    |
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on.
 

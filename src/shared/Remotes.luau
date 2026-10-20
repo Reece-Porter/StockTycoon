@@ -33,4 +33,7 @@ end
 return {
 	-- Server to client: a short message shown to that player on screen.
 	Notify = event("Notify"),
+
+	-- Client to server: (itemId: string) buy a company off a conveyor.
+	BuyConveyorItem = event("BuyConveyorItem"),
 }
