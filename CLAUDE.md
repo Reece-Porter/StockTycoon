@@ -91,7 +91,7 @@ docs/
 
 ## Working rules
 - Read the existing code before changing anything.
-- Check in with me before any structural decision (new services, data schema changes, new packages).
+- Make structural decisions (new services, data schema changes, new packages) yourself without asking, and explain them in the summary afterwards.
 - Never change the saved data schema without a migration.
 - Work one build slice at a time from design.md. Do not start the next slice until I confirm the current one passes its checks.
 - After each feature, tell me how to test it in Studio.
