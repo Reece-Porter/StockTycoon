@@ -1,7 +1,8 @@
 --!strict
 -- Placing companies on plots and picking them up again. Shows each placed
--- company standing on its plot and greys out plots the owner hasn't unlocked
--- (Data.UnlockedPlots, raised by UpgradeService).
+-- company standing on its plot, greys out plots (and their cash pads) the
+-- owner hasn't unlocked (Data.UnlockedPlots, raised by UpgradeService), and
+-- shows only the floors the owner has opened (BaseService:ShowFloors).
 --
 -- Plot state reaches clients through attributes on the plot parts: PlotKey,
 -- Unlocked and HoldSeconds (how long a thief must hold to steal from it, with
@@ -100,10 +101,14 @@ local function sync(player: Player)
 	if base == nil or data == nil then
 		return
 	end
+	BaseService:ShowFloors(base, #data.UnlockedPlots)
 	local multipliers = IncomeService:GetMultipliers(player)
 	for _, plot in base.plots do
 		local unlocked = isUnlocked(plot, data)
 		LockedLook.set(plot.part, not unlocked)
+		if plot.pad then
+			LockedLook.set(plot.pad, not unlocked)
+		end
 		plot.part:SetAttribute("PlotKey", plot.key)
 		plot.part:SetAttribute("Unlocked", unlocked)
 		plot.part:SetAttribute("HoldSeconds", StealConfig.HoldSeconds + PetMath.guardSeconds(data.Pets, plot.floor))
@@ -119,9 +124,13 @@ local function sync(player: Player)
 end
 
 local function resetBase(base: BaseService.Base)
+	BaseService:ShowFloors(base, 1)
 	for _, plot in base.plots do
 		clearPlot(plot)
 		LockedLook.set(plot.part, false)
+		if plot.pad then
+			LockedLook.set(plot.pad, false)
+		end
 		plot.part:SetAttribute("Unlocked", nil)
 		plot.part:SetAttribute("HoldSeconds", nil)
 	end

@@ -1,9 +1,10 @@
 --!strict
--- Pays every player the income of their placed companies, worked out with
--- IncomeMath. Each payout covers the exact time since the last one, so the rate
--- matches Config whatever the payout interval. Players earn only while in the
--- game (OfflineService pays for time away). The 2x Income game pass doubles
--- it (Lib/Passes).
+-- Pays every placed company's income, worked out with IncomeMath, onto the
+-- cash pad in front of its plot; the owner collects it by stepping on the pad
+-- (CollectService). Each payout covers the exact time since the last one, so
+-- the rate matches Config whatever the payout interval. Companies earn only
+-- while their owner is in the game (OfflineService pays for time away). The
+-- 2x Income game pass doubles it (Lib/Passes).
 --
 -- Publishes the player's income per second in their IncomePerSecond attribute.
 
@@ -17,7 +18,6 @@ local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
-local AnalyticsService = require(script.Parent.AnalyticsService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local Passes = require(script.Parent.Parent.Lib.Passes)
@@ -27,6 +27,8 @@ local Passes = require(script.Parent.Parent.Lib.Passes)
 local MAX_PAYOUT_SECONDS = 10
 
 local rates: { [Player]: number } = {}
+-- Each player's income per second from each plot, by plot key.
+local plotRates: { [Player]: { [string]: number } } = {}
 
 local IncomeService = {}
 
@@ -42,20 +44,23 @@ local function multipliersFor(player: Player, data: DataService.Data): IncomeMat
 	return multipliers
 end
 
--- Income per second from the companies on their plots. A company being
--- carried off by a thief isn't on its plot, so it doesn't earn.
-local function rateOf(player: Player, data: DataService.Data, withoutBoost: boolean?): number
-	local placed = {}
-	for plotKey, company in data.Placed do
-		if not CarryService:IsPlotBeingStolen(player, plotKey) then
-			placed[plotKey] = company
-		end
-	end
+-- Income per second from the companies on their plots, in all and by plot
+-- key. A company being carried off by a thief isn't on its plot, so it
+-- doesn't earn.
+local function rateOf(player: Player, data: DataService.Data, withoutBoost: boolean?): (number, { [string]: number })
 	local multipliers = multipliersFor(player, data)
 	if withoutBoost then
 		multipliers.boost = 1
 	end
-	return IncomeMath.total(placed, multipliers)
+	local total, byPlot = 0, {}
+	for plotKey, company in data.Placed do
+		if not CarryService:IsPlotBeingStolen(player, plotKey) then
+			local rate = IncomeMath.company(company, IncomeMath.floorOf(plotKey) or 1, multipliers)
+			byPlot[plotKey] = rate
+			total += rate
+		end
+	end
+	return total, byPlot
 end
 
 local function updateRate(player: Player)
@@ -63,8 +68,9 @@ local function updateRate(player: Player)
 	if data == nil or player.Parent ~= Players then
 		return
 	end
-	local rate = rateOf(player, data)
+	local rate, byPlot = rateOf(player, data)
 	rates[player] = rate
+	plotRates[player] = byPlot
 	player:SetAttribute("IncomePerSecond", rate)
 end
 
@@ -85,7 +91,7 @@ end
 function IncomeService:GetIncomePerSecond(player: Player, withoutBoost: boolean?): number
 	if withoutBoost then
 		local data = DataService:GetData(player)
-		return if data then rateOf(player, data, true) else 0
+		return if data then (rateOf(player, data, true)) else 0
 	end
 	return rates[player] or 0
 end
@@ -95,6 +101,7 @@ function IncomeService:Start()
 	DataService:OnDataChanged(updateRate)
 	Players.PlayerRemoving:Connect(function(player)
 		rates[player] = nil
+		plotRates[player] = nil
 	end)
 
 	task.spawn(function()
@@ -104,9 +111,15 @@ function IncomeService:Start()
 			local now = os.clock()
 			local elapsed = math.min(now - last, MAX_PAYOUT_SECONDS)
 			last = now
-			for player, rate in rates do
-				if rate > 0 and DataService:AddCash(player, rate * elapsed) then
-					AnalyticsService:Earned(player, "Income", rate * elapsed)
+			for player, byPlot in plotRates do
+				local amounts = {}
+				for plotKey, rate in byPlot do
+					if rate > 0 then
+						amounts[plotKey] = rate * elapsed
+					end
+				end
+				if next(amounts) ~= nil then
+					DataService:AddUncollected(player, amounts)
 				end
 			end
 		end

@@ -6,10 +6,11 @@
 local Steps = {
 	Buy = 1,
 	Place = 2,
-	Machine = 3,
-	Lock = 4,
-	Middle = 5,
-	Done = 6,
+	Collect = 3,
+	Machine = 4,
+	Lock = 5,
+	Middle = 6,
+	Done = 7,
 }
 
 return {
@@ -19,6 +20,7 @@ return {
 	Hints = {
 		[Steps.Buy] = "Buy a company from your conveyor",
 		[Steps.Place] = "Carry it to a free plot on your base and place it",
+		[Steps.Collect] = "Your company makes Cash on the green pad in front of it. Walk over the pad to collect it",
 		[Steps.Machine] = "Put your next company in the Valuation Machine before you place it",
 		[Steps.Lock] = "Press the red lock button on your base. While it's locked, nobody can steal from you",
 		[Steps.Middle] = "Rarer companies come down the middle conveyor. Anyone can buy them!",

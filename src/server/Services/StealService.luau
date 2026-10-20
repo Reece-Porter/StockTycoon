@@ -91,17 +91,28 @@ local function isWithin(player: Player, part: BasePart, reach: number): boolean
 	return root ~= nil and (root.Position - part.Position).Magnitude <= reach
 end
 
--- Whether a base's glass walls (Glass, from studio/BuildMap.luau) are between
--- the player and the part, so nobody steals through them.
+-- Whether a base's glass walls (from studio/BuildMap.luau: Glass for the
+-- ground floor, Floors.Floor<n>.Glass for each floor shown) are between the
+-- player and the part, so nobody steals through them.
 local function throughGlass(player: Player, base: BaseService.Base, part: BasePart): boolean
 	local root = rootOf(player)
-	local glass = base.model:FindFirstChild("Glass")
-	if root == nil or glass == nil then
+	local glass: { Instance } = {}
+	local function add(parent: Instance)
+		local walls = parent:FindFirstChild("Glass")
+		if walls and walls:IsDescendantOf(workspace) then
+			table.insert(glass, walls)
+		end
+	end
+	add(base.model)
+	for _, floor in base.floors do
+		add(floor)
+	end
+	if root == nil or #glass == 0 then
 		return false
 	end
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { glass }
+	params.FilterDescendantsInstances = glass
 	local target = part.Position + Vector3.new(0, part.Size.Y / 2 + 1, 0)
 	return workspace:Raycast(root.Position, target - root.Position, params) ~= nil
 end

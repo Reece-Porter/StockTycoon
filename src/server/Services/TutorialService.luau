@@ -4,6 +4,7 @@
 -- it, however they did it:
 --   Buy: they own a company.
 --   Place: a company is on one of their plots.
+--   Collect: they've collected Cash from one of their cash pads this session.
 --   Machine: a company has been through (or is in) the Valuation Machine, or
 --     they've placed Config/Onboarding.MachineSkipAfterPlaced without trying.
 --   Lock: their base is locked.
@@ -19,6 +20,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Onboarding = require(ReplicatedStorage.Shared.Config.Onboarding)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local BaseService = require(script.Parent.BaseService)
+local CollectService = require(script.Parent.CollectService)
 local DataService = require(script.Parent.DataService)
 local StealService = require(script.Parent.StealService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
@@ -31,6 +33,8 @@ local joinedAt: { [Player]: number } = {}
 local stepStartedAt: { [Player]: number } = {}
 -- The step each player was last shown.
 local publishedStep: { [Player]: number } = {}
+-- Players who have collected from a cash pad this session.
+local collected: { [Player]: true } = {}
 local skipLimiter = RateLimiter.new(1, 2)
 
 local TutorialService = {}
@@ -146,7 +150,11 @@ local function check(player: Player)
 	if step == Steps.Buy and ownsAny(data) then
 		setStep(player, Steps.Place)
 	elseif step == Steps.Place and placedCount(data) > 0 then
-		setStep(player, Steps.Machine)
+		setStep(player, Steps.Collect)
+	elseif step == Steps.Collect then
+		if collected[player] then
+			setStep(player, Steps.Machine)
+		end
 	elseif step == Steps.Machine then
 		if triedMachine(data) or placedCount(data) >= Onboarding.MachineSkipAfterPlaced then
 			setStep(player, Steps.Lock)
@@ -172,10 +180,15 @@ function TutorialService:Start()
 		check(player)
 	end)
 	DataService:OnDataChanged(check)
+	CollectService:OnCollected(function(player)
+		collected[player] = true
+		check(player)
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		joinedAt[player] = nil
 		stepStartedAt[player] = nil
 		publishedStep[player] = nil
+		collected[player] = nil
 	end)
 
 	Remotes.SkipTutorial.OnServerEvent:Connect(function(player: Player)

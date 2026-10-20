@@ -34,6 +34,10 @@ return {
 	-- Server to client: a short message shown to that player on screen.
 	Notify = event("Notify"),
 
+	-- Server to client: (pad: BasePart, amount: number) the player collected
+	-- Cash from one of their cash pads.
+	Collected = event("Collected"),
+
 	-- Client to server: (itemId: string) buy a company off a conveyor.
 	BuyConveyorItem = event("BuyConveyorItem"),
 

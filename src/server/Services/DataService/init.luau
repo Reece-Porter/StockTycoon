@@ -374,6 +374,35 @@ function DataService:TakeFromPlot(player: Player, plotKey: string): Types.Compan
 	return company
 end
 
+-- Adds the Cash each plot's company has made (amounts, by plot key) to the
+-- plot's cash pad. Income adds to the pads every second, so this fires no
+-- change signal: CollectService shows the pads itself.
+function DataService:AddUncollected(player: Player, amounts: { [string]: number }): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	local uncollected = profile.Data.Uncollected
+	for plotKey, amount in amounts do
+		local total = (uncollected[plotKey] or 0) + amount
+		if isValidCash(amount) and isValidCash(total) then
+			uncollected[plotKey] = total
+		end
+	end
+	return true
+end
+
+-- Empties a plot's cash pad and returns what was on it (0 if nothing).
+function DataService:TakeUncollected(player: Player, plotKey: string): number
+	local profile = profiles[player]
+	local amount = profile and profile.Data.Uncollected[plotKey]
+	if profile == nil or amount == nil then
+		return 0
+	end
+	profile.Data.Uncollected[plotKey] = nil
+	return amount
+end
+
 -- Puts a company into the Valuation Machine. Fails if a run is already going.
 function DataService:StartMachineRun(player: Player, run: Types.MachineRun): boolean
 	local profile = profiles[player]
@@ -646,7 +675,8 @@ function DataService:RedeemCode(player: Player, code: string): boolean
 	return true
 end
 
--- Rebirth: Cash back to a new player's, every company and base upgrade gone,
+-- Rebirth: Cash back to a new player's (cash pads emptied too), every company
+-- and base upgrade gone,
 -- upgrade station levels too (Config/Perks.ResetOnRebirth), pets back in the
 -- inventory, and one more rebirth. Weapons, pets and the rebirth count are
 -- kept. RebirthService checks the requirements first.
@@ -657,6 +687,7 @@ function DataService:Rebirth(player: Player): boolean
 	end
 	local data = profile.Data
 	data.Cash = Template.Cash
+	data.Uncollected = {}
 	data.Storage = {}
 	data.Placed = {}
 	data.Carrying = nil

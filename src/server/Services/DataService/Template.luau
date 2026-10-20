@@ -63,10 +63,13 @@ export type Data = {
 	Receipts: { string },
 	-- Upgrade station levels by Config/Perks id (0 if never bought).
 	Perks: { [string]: number },
+	-- Cash each plot's companies have made, by plot key, waiting on the
+	-- plot's cash pad until the owner steps on it (CollectService).
+	Uncollected: { [string]: number },
 }
 
 local Template: Data = {
-	DataVersion = 13,
+	DataVersion = 14,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -96,6 +99,7 @@ local Template: Data = {
 	Analytics = { Funnel = {}, PlaySeconds = 0, RebirthPlaySeconds = 0 },
 	Receipts = {},
 	Perks = {},
+	Uncollected = {},
 }
 
 return Template

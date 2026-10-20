@@ -74,7 +74,8 @@ return {
 
 	-- Version 10 adds LastSeen (offline earnings start from the next visit),
 	-- TutorialStep, Stats and RedeemedCodes. Players from before the guide
-	-- already know the game, so it starts finished (Config/Onboarding.Steps.Done).
+	-- already know the game, so it starts finished (step 6, Done at the time;
+	-- version 14 moves it to 7).
 	[9] = function(data)
 		data.LastSeen = 0
 		data.TutorialStep = 6
@@ -100,5 +101,15 @@ return {
 	[12] = function(data)
 		data.Perks = {}
 		data.Index.Variants = {}
+	end,
+
+	-- Version 14 adds Uncollected: Cash waiting on each plot's cash pad. The
+	-- guide gains a Collect step after Place, as step 3, so the steps from 3
+	-- on (Done included) move up one.
+	[13] = function(data)
+		data.Uncollected = {}
+		if type(data.TutorialStep) == "number" and data.TutorialStep >= 3 then
+			data.TutorialStep += 1
+		end
 	end,
 } :: { [number]: (data: { [string]: any }) -> () }
