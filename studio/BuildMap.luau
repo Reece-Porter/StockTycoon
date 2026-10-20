@@ -132,9 +132,35 @@ local groundY = if baseplate and baseplate:IsA("BasePart")
 	else 0
 
 local map = folder(Workspace, "Map")
+
+-- 1. The ground: grass instead of the default grey grid, with a paved plaza
+-- down the middle between the bases, under the middle conveyor, the shops and
+-- the leaderboards. The plaza sits a tenth of a stud above the grass so the
+-- two never flicker.
+if baseplate and baseplate:IsA("BasePart") then
+	baseplate.Material = Enum.Material.Grass
+	baseplate.Color = Color3.fromRGB(96, 156, 74)
+	baseplate.TopSurface = Enum.SurfaceType.Smooth
+	for _, child in baseplate:GetChildren() do
+		if child:IsA("Texture") then
+			child:Destroy()
+		end
+	end
+end
+local plaza = place(
+	map,
+	"Plaza",
+	Vector3.new(60, 1, BELT_LENGTH + 8),
+	CFrame.new(0, groundY - 0.4, 0),
+	Color3.fromRGB(196, 190, 178),
+	Enum.Material.Pavement
+)
+plaza.Color = Color3.fromRGB(196, 190, 178)
+plaza.Material = Enum.Material.Pavement
+
 local bases = folder(map, "Bases")
 
--- 1. The bases. Each is laid out the same way in its own frame, where x
+-- 2. The bases. Each is laid out the same way in its own frame, where x
 -- points towards the middle of the map: the conveyor on the near side, the
 -- floors of plots on the far side, stairs in between.
 for index, x in BASE_POSITIONS do
@@ -309,7 +335,7 @@ for index, x in BASE_POSITIONS do
 	end
 end
 
--- 2. The middle conveyor between the bases, resting on the ground.
+-- 3. The middle conveyor between the bases, resting on the ground.
 local shared = model(map, "SharedConveyor")
 local beltColour = Color3.fromRGB(200, 160, 40)
 place(shared, "Belt", Vector3.new(8, 2, BELT_LENGTH), CFrame.new(0, groundY + 1, 0), beltColour)
@@ -320,7 +346,7 @@ local edge = Color3.fromRGB(90, 70, 30)
 place(shared, "TrimLeft", Vector3.new(0.6, 2.2, BELT_LENGTH), CFrame.new(-4.3, groundY + 1.1, 0), edge)
 place(shared, "TrimRight", Vector3.new(0.6, 2.2, BELT_LENGTH), CFrame.new(4.3, groundY + 1.1, 0), edge)
 
--- 3. Keep any spawn pad off the middle conveyor.
+-- 4. Keep any spawn pad off the middle conveyor.
 for _, item in Workspace:GetDescendants() do
 	if item:IsA("SpawnLocation") then
 		local position = item.CFrame.Position
@@ -330,7 +356,7 @@ for _, item in Workspace:GetDescendants() do
 	end
 end
 
--- 4. The shops, either side of the middle conveyor. An existing shop is moved
+-- 5. The shops, either side of the middle conveyor. An existing shop is moved
 -- into place; a missing one is built there.
 type ShopStyle = {
 	x: number,
@@ -410,7 +436,7 @@ for name, style in shopStyles do
 	end
 end
 
--- 5. The leaderboards, in a row at the opposite end from the shops, facing the
+-- 6. The leaderboards, in a row at the opposite end from the shops, facing the
 -- middle of the map. The game writes the lists on each board's front face.
 local leaderboards = folder(map, "Leaderboards")
 local stands = freshModel(leaderboards, "Stands")
@@ -428,7 +454,7 @@ for _, spot in boardSpots do
 	newPart(stands, spot.name .. "Plinth", Vector3.new(11, 2, 2.2), CFrame.new(spot.x, groundY + 1, -50.3), DARK)
 end
 
--- 6. Models the game copies: the Default company, the weapon Tools and the
+-- 7. Models the game copies: the Default company, the weapon Tools and the
 -- Default pet. Any that already exist (including ones built by hand) are
 -- left alone.
 local assets = folder(ReplicatedStorage, "Assets")

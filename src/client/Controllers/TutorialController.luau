@@ -19,6 +19,8 @@ local LINE_COLOUR = Color3.fromRGB(255, 210, 70)
 local BANNER_MAX_WIDTH = 440
 -- Clear of the tool bar along the bottom of the screen.
 local BANNER_BOTTOM_GAP = 96
+-- Room for the sign over the lock button (LockController).
+local LOCK_SIGN_HEIGHT = 3
 
 local player = Players.LocalPlayer
 
@@ -107,17 +109,10 @@ local function machineTarget(): BasePart?
 	return if pad and pad:IsA("BasePart") then pad else nil
 end
 
-local function shopTarget(from: Vector3): BasePart?
-	local map = workspace:FindFirstChild("Map")
-	local shops = map and map:FindFirstChild("Shops")
-	local parts = {}
-	for _, shop in childrenOf(shops) do
-		local prompt = shop:FindFirstChild("ShopPrompt")
-		if prompt and prompt:IsA("BasePart") then
-			table.insert(parts, prompt)
-		end
-	end
-	return nearest(parts, from)
+local function lockTarget(): BasePart?
+	local base = myBase()
+	local button = base and base:FindFirstChild("LockButton")
+	return if button and button:IsA("BasePart") then button else nil
 end
 
 -- Where to point and what to say for the step, given what the player is
@@ -140,6 +135,8 @@ local function guide(step: number, from: Vector3): (string, BasePart?, Vector3?)
 			return "Now place it on a free plot", plotTarget(from), nil
 		end
 		return "Buy another company and take it to the Valuation Machine", conveyorTarget(from), nil
+	elseif step == Steps.Lock then
+		return hint, lockTarget(), nil
 	elseif step == Steps.Middle then
 		-- The nearest point along the middle conveyor.
 		local map = workspace:FindFirstChild("Map")
@@ -153,8 +150,6 @@ local function guide(step: number, from: Vector3): (string, BasePart?, Vector3?)
 			return hint, startPart, a + along * t
 		end
 		return hint, nil, nil
-	elseif step == Steps.Shops then
-		return hint, shopTarget(from), nil
 	end
 	return "", nil, nil
 end
@@ -288,6 +283,10 @@ function TutorialController:Start()
 		fromAttachment.WorldPosition = root.Position
 		toAttachment.WorldPosition = spot
 		local height = if point then 3 else current.Size.Y / 2 + 3
+		if current.Name == "LockButton" then
+			-- Above the lock button's own sign.
+			height += LOCK_SIGN_HEIGHT
+		end
 		marker.StudsOffsetWorldSpace = Vector3.new(0, height + math.sin(os.clock() * 4) * 0.6, 0)
 	end)
 
