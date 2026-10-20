@@ -245,6 +245,12 @@ local function onDataChanged(player: Player)
 	local carrying = data.Carrying
 	local carryingName = if carrying then Companies.byId[carrying.companyId].name else "nothing"
 
+	local floors = {}
+	for floor, open in data.UnlockedPlots do
+		table.insert(floors, `Floor {floor}: {open}/{BaseConfig.PlotsPerFloor}`)
+	end
+
+	AdminService:SetDebugValue(player, "Floors", table.concat(floors, ", "))
 	AdminService:SetDebugValue(player, "Storage", `{#data.Storage}/{BaseConfig.StorageCapacity}`)
 	AdminService:SetDebugValue(player, "Placed", placed)
 	AdminService:SetDebugValue(player, "Carrying", carryingName)

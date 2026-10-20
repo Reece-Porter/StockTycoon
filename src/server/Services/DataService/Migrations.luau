@@ -15,4 +15,10 @@ return {
 	[2] = function(data)
 		data.Placed = {}
 	end,
+
+	-- Version 4 adds UnlockedPlots: plots open on each floor. Before upgrades
+	-- existed every base had 6 plots open on Floor 1.
+	[3] = function(data)
+		data.UnlockedPlots = { 6 }
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

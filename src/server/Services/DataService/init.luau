@@ -340,6 +340,17 @@ function DataService:TakeFromPlot(player: Player, plotKey: string): Types.Compan
 	return company
 end
 
+-- Sets the plots open on each floor. UpgradeService decides what is allowed.
+function DataService:SetUnlockedPlots(player: Player, unlockedPlots: { number }): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	profile.Data.UnlockedPlots = unlockedPlots
+	dataChanged(player)
+	return true
+end
+
 -- Wipes the player's save back to a brand new player's.
 function DataService:ResetData(player: Player): boolean
 	local profile = profiles[player]

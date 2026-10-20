@@ -5,9 +5,18 @@ return {
 	-- Unplaced companies a player can keep.
 	StorageCapacity = 5,
 
-	-- Plots a new player can use on Floor 1. Upgrades unlock the rest
-	-- (base upgrades slice).
+	-- Plots open on a floor when it is first opened (Floor 1 for a new player).
 	StartingPlots = 6,
+	PlotsPerFloor = 10,
+	MaxFloors = 4,
+
+	-- Upgrade costs. Extra plots unlock one at a time: the first extra plot
+	-- (Plot7) on each floor costs FirstExtraPlotCost[floor], and each one after
+	-- costs PlotCostGrowth times the one before. A full floor lets the player
+	-- open the next floor for FloorCost[floor]; Floor 1 is open from the start.
+	FirstExtraPlotCost = { 250, 12_000, 250_000, 4_000_000 },
+	PlotCostGrowth = 2,
+	FloorCost = { 0, 8_000, 150_000, 3_000_000 },
 
 	-- How close (in studs) a player must be to use a plot, and how much extra
 	-- the server allows for network lag.
