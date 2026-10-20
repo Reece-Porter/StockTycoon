@@ -3,9 +3,12 @@
 -- shared conveyor in the middle of the map (Workspace.Map.SharedConveyor,
 -- built by hand with Start and End parts like a base's Conveyor). Each lane
 -- spawns companies with its own odds and timing from Config/Conveyor (personal
--- odds improve with the owner's rebirths, RebirthMath) and
--- removes any nobody bought once they reach the End. Conglomerate and Monopoly
--- spawns on the shared conveyor are announced to the whole server.
+-- odds improve with the owner's rebirths, RebirthMath, and Conveyor Luck
+-- upgrade, PerkMath) and removes any nobody bought once they reach the End.
+-- Each company may be a variant (VariantMath), more likely on a personal
+-- conveyor with its owner's Variant Chance upgrade. Conglomerate and Monopoly
+-- spawns, and the rarest variants, on the shared conveyor are announced to the
+-- whole server.
 --
 -- The server never moves the models. Each one is placed at its Start with its
 -- path and spawn time stored as attributes, and clients draw the movement with
@@ -19,12 +22,15 @@ local RunService = game:GetService("RunService")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local CompanyStats = require(ReplicatedStorage.Shared.CompanyStats)
+local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local ConveyorPath = require(ReplicatedStorage.Shared.ConveyorPath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local VariantMath = require(ReplicatedStorage.Shared.VariantMath)
+local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
@@ -46,7 +52,10 @@ export type Item = {
 	id: string,
 	companyId: string,
 	tier: string,
+	-- Config/Variants id, or nil for a regular company.
+	variant: string?,
 	price: number,
+	-- The company's own income, before its variant.
 	income: number,
 	-- Only this player may buy it. 0 means anyone (the shared conveyor).
 	ownerUserId: number,
@@ -97,18 +106,44 @@ end
 
 local function announce(item: Item)
 	local tier = Tiers.byId[item.tier]
-	local company = Companies.byId[item.companyId]
-	Remotes.Notify:FireAllClients(`A {tier.name} just hit the shared conveyor: {company.name}!`)
+	local name = VariantMath.name(item.variant, Companies.byId[item.companyId].name)
+	Remotes.Notify:FireAllClients(`A {tier.name} just hit the shared conveyor: {name}!`)
 end
 
--- A personal lane's odds after its owner's rebirths; the shared lane's as set.
-local function weightsFor(lane: Lane): { ConveyorConfig.WeightEntry }
+local function isAnnounced(item: Item): boolean
+	local variant = if item.variant then Variants.byId[item.variant] else nil
+	return ConveyorConfig.Shared.AnnounceTiers[item.tier] == true
+		or (variant ~= nil and variant.oneIn >= Variants.AnnounceOneIn)
+end
+
+-- Personal conveyor odds after the player's rebirths and Conveyor Luck.
+local function personalWeights(data: DataService.Data): { ConveyorConfig.WeightEntry }
+	local weights = RebirthMath.personalWeights(ConveyorConfig.Personal.Weights, data.Rebirths)
+	local luck = PerkMath.multiplier("ConveyorLuck", PerkMath.level(data.Perks, "ConveyorLuck"))
+	return PerkMath.luckyWeights(weights, luck)
+end
+
+local function laneOwnerData(lane: Lane): DataService.Data?
 	local owner = lane.base and lane.base.owner
-	local data = if owner then DataService:GetData(owner) else nil
-	return if data then RebirthMath.personalWeights(lane.weights, data.Rebirths) else lane.weights
+	return if owner then DataService:GetData(owner) else nil
 end
 
-local function spawnItem(lane: Lane, tierId: string?): Item?
+-- A personal lane's odds for its owner; the shared lane's as set.
+local function weightsFor(lane: Lane): { ConveyorConfig.WeightEntry }
+	local data = laneOwnerData(lane)
+	return if data then personalWeights(data) else lane.weights
+end
+
+-- How much more likely variants are: the owner's Variant Chance upgrade on a
+-- personal lane, none on the shared lane.
+local function variantChanceFor(lane: Lane): number
+	local data = laneOwnerData(lane)
+	return if data then PerkMath.multiplier("VariantChance", PerkMath.level(data.Perks, "VariantChance")) else 1
+end
+
+-- With variantId "regular" the company is never a variant; with nil it's
+-- rolled as usual.
+local function spawnItem(lane: Lane, tierId: string?, variantId: string?): Item?
 	local ownerUserId = laneOwnerId(lane)
 	if ownerUserId == nil then
 		return nil
@@ -120,8 +155,12 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 		return nil
 	end
 	local company = choices[SpawnRoll.pickIndex(#choices, random:NextNumber())]
+	local variant = if variantId == "regular"
+		then nil
+		elseif variantId then variantId
+		else VariantMath.roll(random:NextNumber(), variantChanceFor(lane))
 
-	local model = CompanyModels.clone(company.id, true)
+	local model = CompanyModels.clone(company.id, true, variant)
 	if model == nil then
 		return nil
 	end
@@ -131,6 +170,7 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 		id = HttpService:GenerateGUID(false),
 		companyId = company.id,
 		tier = tier,
+		variant = variant,
 		price = CompanyStats.price(company.id),
 		income = CompanyStats.income(company.id),
 		ownerUserId = ownerUserId,
@@ -146,8 +186,9 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 	model:SetAttribute("ItemId", item.id)
 	model:SetAttribute("CompanyId", item.companyId)
 	model:SetAttribute("Tier", item.tier)
+	model:SetAttribute("Variant", item.variant)
 	model:SetAttribute("Price", item.price)
-	model:SetAttribute("Income", item.income)
+	model:SetAttribute("Income", item.income * VariantMath.multiplier(item.variant))
 	model:SetAttribute("OwnerUserId", item.ownerUserId)
 	model:SetAttribute("SpawnedAt", item.spawnedAt)
 	model:SetAttribute("TravelSeconds", item.travelSeconds)
@@ -157,7 +198,7 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 	model.Parent = itemsFolder
 
 	items[item.id] = item
-	if lane == sharedLane and ConveyorConfig.Shared.AnnounceTiers[tier] then
+	if lane == sharedLane and isAnnounced(item) then
 		announce(item)
 	end
 	return item
@@ -222,11 +263,17 @@ function ConveyorService:RemoveItem(itemId: string)
 end
 
 -- Problems found with the hand-built shared conveyor, for the debug panel.
--- The odds on this player's personal conveyor, after their rebirths.
+-- The odds on this player's personal conveyor, after their rebirths and
+-- Conveyor Luck.
 function ConveyorService:GetPersonalWeights(player: Player): { ConveyorConfig.WeightEntry }
 	local data = DataService:GetData(player)
-	local weights = ConveyorConfig.Personal.Weights
-	return if data then RebirthMath.personalWeights(weights, data.Rebirths) else weights
+	return if data then personalWeights(data) else ConveyorConfig.Personal.Weights
+end
+
+-- How much more likely variants are on this player's personal conveyor.
+function ConveyorService:GetVariantChance(player: Player): number
+	local data = DataService:GetData(player)
+	return if data then PerkMath.multiplier("VariantChance", PerkMath.level(data.Perks, "VariantChance")) else 1
 end
 
 function ConveyorService:GetProblems(): { string }
@@ -234,10 +281,11 @@ function ConveyorService:GetProblems(): { string }
 end
 
 -- Spawns a company of the given tier straight away, on a base's conveyor or
--- (with no base) on the shared conveyor. For admin testing.
-function ConveyorService:SpawnNow(base: BaseService.Base?, tierId: string): Item?
+-- (with no base) on the shared conveyor. For admin testing. variantId picks
+-- its variant ("regular" for none); without it, it's rolled as usual.
+function ConveyorService:SpawnNow(base: BaseService.Base?, tierId: string, variantId: string?): Item?
 	local lane = if base then personalLanes[base] else sharedLane
-	return if lane then spawnItem(lane, tierId) else nil
+	return if lane then spawnItem(lane, tierId, variantId) else nil
 end
 
 function ConveyorService:Init()

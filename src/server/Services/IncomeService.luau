@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
 local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
+local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
@@ -34,6 +35,7 @@ local IncomeService = {}
 local function multipliersFor(player: Player, data: DataService.Data): IncomeMath.Multipliers
 	local multipliers = IncomeMath.noMultipliers()
 	multipliers.gamePass = if Passes.owns(player, "DoubleIncome") then Monetisation.IncomeMultiplier else 1
+	multipliers.upgrade = PerkMath.multiplier("Income", PerkMath.level(data.Perks, "Income"))
 	multipliers.floorPet = PetMath.incomeMultipliers(data.Pets)
 	multipliers.rebirth = RebirthMath.incomeMultiplier(data.Rebirths)
 	multipliers.boost = if data.Rewards.BoostSeconds > 0 then RewardsConfig.BoostMultiplier else 1

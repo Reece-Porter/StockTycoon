@@ -1,11 +1,13 @@
 --!strict
--- The floating label above a company: name, tier (in the tier's colour) and a
--- detail line such as price and income. Used on conveyors and plots.
+-- The floating label above a company: name (with its variant in front, in the
+-- variant's colour), tier (in the tier's colour) and a detail line such as
+-- price and income. Used on conveyors and plots.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 
 local SIZE = UDim2.fromOffset(200, 72)
 local MAX_DISTANCE = 80
@@ -68,7 +70,10 @@ function CompanyLabel.attach(model: Model, companyId: string, tierId: string, de
 	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	layout.Parent = gui
 
-	addText(gui, 1, company.name, 20, Color3.new(1, 1, 1), true)
+	local variantId = model:GetAttribute("Variant")
+	local variant = if typeof(variantId) == "string" then Variants.byId[variantId] else nil
+	local name = if variant then `{variant.name} {company.name}` else company.name
+	addText(gui, 1, name, 20, if variant then variant.colour else Color3.new(1, 1, 1), true)
 	addText(gui, 2, tier.name, 15, tier.color, true)
 	addText(gui, 3, detail, 15, Color3.fromRGB(230, 230, 230), false)
 

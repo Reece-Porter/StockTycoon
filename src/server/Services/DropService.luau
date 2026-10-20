@@ -128,7 +128,7 @@ function DropService:Drop(player: Player): boolean
 	local instanceId = company.instanceId
 
 	local ground = if character and root then groundBelow(character, root.Position) else nil
-	local model = if ground then CompanyModels.clone(company.companyId, true) else nil
+	local model = if ground then CompanyModels.clone(company.companyId, true, company.variant) else nil
 	if root == nil or ground == nil or model == nil then
 		-- Nowhere to put it (off the edge of the map, or no model): it goes
 		-- straight back.

@@ -119,4 +119,12 @@ return {
 
 	-- Client to server: () stop showing the new-player guide.
 	SkipTutorial = event("SkipTutorial"),
+
+	-- Client to server: (perkId: string) buy the next level of an upgrade at
+	-- the upgrade station.
+	BuyPerk = event("BuyPerk"),
+
+	-- Client to server: (destination: string) teleport to "Home", "Upgrades"
+	-- or "Weapons".
+	Travel = event("Travel"),
 }

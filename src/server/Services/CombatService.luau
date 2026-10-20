@@ -8,7 +8,8 @@
 -- that the target is in range and in line of sight, and that the target isn't
 -- protected, before anything happens. Then:
 --   - a target carrying a company drops it (DropService),
---   - they take the weapon's damage, are pushed back and maybe stunned.
+--   - they take the weapon's damage (more with the attacker's Damage upgrade,
+--     PerkMath), are pushed back and maybe stunned.
 --
 -- Nobody takes damage on their own base; anyone attacking them there can
 -- still be hit by them. Players get Config/Combat.SpawnProtectionSeconds of
@@ -22,6 +23,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.Combat)
+local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local AdminService = require(script.Parent.AdminService)
@@ -169,7 +171,11 @@ local function attack(attacker: Player, targetValue: unknown): string
 	-- Drop first, so a knockout never counts as dying while carrying.
 	local dropped = DropService:Drop(target)
 	local wasStanding = to.humanoid.Health > 0
-	to.humanoid.Health = math.max(0, to.humanoid.Health - weapon.damage)
+	-- The attacker's Damage upgrade.
+	local attackerData = DataService:GetData(attacker)
+	local damageLevel = if attackerData then PerkMath.level(attackerData.Perks, "Damage") else 0
+	local damage = math.floor(weapon.damage * PerkMath.multiplier("Damage", damageLevel) + 0.5)
+	to.humanoid.Health = math.max(0, to.humanoid.Health - damage)
 	if wasStanding and to.humanoid.Health <= 0 then
 		DataService:AddStat(attacker, "Knockouts")
 	end
@@ -179,9 +185,7 @@ local function attack(attacker: Player, targetValue: unknown): string
 	end
 	flash(to)
 
-	return `Hit {target.Name} with the {weapon.name} for {weapon.damage}{if dropped
-		then ", dropped their company"
-		else ""}`
+	return `Hit {target.Name} with the {weapon.name} for {damage}{if dropped then ", dropped their company" else ""}`
 end
 
 -- Swaps every joint for a loose ball socket so the character flops over.

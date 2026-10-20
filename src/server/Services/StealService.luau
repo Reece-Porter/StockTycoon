@@ -1,7 +1,8 @@
 --!strict
 -- Stealing and base locks (docs/design.md, "Stealing").
 --
--- Any player can walk into someone else's base and hold the prompt on a placed
+-- Any player can walk into someone else's base (through the front: nobody
+-- can take a company through the glass walls) and hold the prompt on a placed
 -- company to pick it up. The client reports when the hold starts (StealBegin)
 -- and ends (StealFinish); the server times it itself and checks everything
 -- else. While the thief carries it, the company stays in its owner's save
@@ -88,6 +89,21 @@ end
 local function isWithin(player: Player, part: BasePart, reach: number): boolean
 	local root = rootOf(player)
 	return root ~= nil and (root.Position - part.Position).Magnitude <= reach
+end
+
+-- Whether a base's glass walls (Glass, from studio/BuildMap.luau) are between
+-- the player and the part, so nobody steals through them.
+local function throughGlass(player: Player, base: BaseService.Base, part: BasePart): boolean
+	local root = rootOf(player)
+	local glass = base.model:FindFirstChild("Glass")
+	if root == nil or glass == nil then
+		return false
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { glass }
+	local target = part.Position + Vector3.new(0, part.Size.Y / 2 + 1, 0)
+	return workspace:Raycast(root.Position, target - root.Position, params) ~= nil
 end
 
 local function findBase(baseName: string): BaseService.Base?
@@ -219,6 +235,9 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 	end
 	if not isWithin(thief, plot.part, StealConfig.StealDistance + StealConfig.StealDistanceTolerance) then
 		return "Get closer to take it."
+	end
+	if throughGlass(thief, base, plot.part) then
+		return "You can't reach it through the glass. The way in is at the front."
 	end
 
 	if not CarryService:CarryStolen(thief, { company = company, owner = owner, plotKey = plot.key }) then

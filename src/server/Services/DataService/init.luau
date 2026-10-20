@@ -14,6 +14,7 @@ local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
+local PerksConfig = require(ReplicatedStorage.Shared.Config.Perks)
 local PetsConfig = require(ReplicatedStorage.Shared.Config.Pets)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -566,6 +567,36 @@ function DataService:Discover(player: Player, companyIds: { string }): { string 
 	return added
 end
 
+-- Adds variants to the player's Index. Returns the ids that were new.
+function DataService:DiscoverVariants(player: Player, variantIds: { string }): { string }
+	local profile = profiles[player]
+	local added = {}
+	if profile == nil then
+		return added
+	end
+	for _, variantId in variantIds do
+		if not profile.Data.Index.Variants[variantId] then
+			profile.Data.Index.Variants[variantId] = true
+			table.insert(added, variantId)
+		end
+	end
+	if #added > 0 then
+		dataChanged(player)
+	end
+	return added
+end
+
+-- Sets an upgrade station level (PerkService checks it first).
+function DataService:SetPerkLevel(player: Player, perkId: string, level: number): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	profile.Data.Perks[perkId] = level
+	dataChanged(player)
+	return true
+end
+
 -- Records an Index prize as claimed. Fails if it already was.
 function DataService:ClaimIndex(player: Player, count: number): boolean
 	local profile = profiles[player]
@@ -616,8 +647,9 @@ function DataService:RedeemCode(player: Player, code: string): boolean
 end
 
 -- Rebirth: Cash back to a new player's, every company and base upgrade gone,
--- pets back in the inventory, and one more rebirth. Weapons, pets and the
--- rebirth count are kept. RebirthService checks the requirements first.
+-- upgrade station levels too (Config/Perks.ResetOnRebirth), pets back in the
+-- inventory, and one more rebirth. Weapons, pets and the rebirth count are
+-- kept. RebirthService checks the requirements first.
 function DataService:Rebirth(player: Player): boolean
 	local profile = profiles[player]
 	if profile == nil then
@@ -630,6 +662,9 @@ function DataService:Rebirth(player: Player): boolean
 	data.Carrying = nil
 	data.Machine = nil
 	data.UnlockedPlots = deepCopy(Template.UnlockedPlots)
+	if PerksConfig.ResetOnRebirth then
+		data.Perks = {}
+	end
 	for _, pet in data.Pets do
 		pet.slotKey = nil
 	end

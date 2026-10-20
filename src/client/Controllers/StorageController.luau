@@ -13,8 +13,9 @@ local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 
-type Entry = { instanceId: string, companyId: string, tier: string, income: number }
+type Entry = { instanceId: string, companyId: string, tier: string, variant: string?, income: number }
 
 local BUTTON_HEIGHT = 48
 local ROW_HEIGHT = 56
@@ -77,6 +78,10 @@ local function addRow(list: ScrollingFrame, order: number, entry: Entry)
 	text.TextWrapped = true
 	text.RichText = true
 	local name = if company then company.name else entry.companyId
+	local variant = if entry.variant then Variants.byId[entry.variant] else nil
+	if variant then
+		name = `<font color="#{variant.colour:ToHex()}">{variant.name}</font> {name}`
+	end
 	local tierName = if tier then tier.name else entry.tier
 	text.Text = `<b>{name}</b>\n{tierName}  ·  {Format.income(entry.income)}`
 	text.Parent = row

@@ -29,7 +29,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - Weights scale with rebirth count: each rebirth shifts a small share of weight from lower tiers to higher ones (exact rule to be agreed before building).
 
 ## Conveyors (starting assumption)
-- Personal conveyor spawns one company every 6 seconds; shared every 5.7 seconds. (Personal halved from 3 after playtesting: the belts were too busy. Shared went from 2 to 4, then 30% fewer when its belt was made 4 times longer.)
+- Personal conveyor spawns one company every 6 seconds; shared every 8.8 seconds. (Personal halved from 3 after playtesting: the belts were too busy. Shared went from 2 to 4, then 30% fewer when its belt was made 4 times longer, then 35% fewer again for more space between companies, at the same speed.)
 - Companies move at a set speed: 1.6 studs per second on personal belts (about 20 seconds along a 32-stud belt), 2.4 on the shared belt (about 2 minutes 10 seconds along its 316 studs, which run the length of the map). They despawn at the End if unbought.
 - Buying uses a ProximityPrompt on the company.
 - Shared conveyor tier announcements: Conglomerate and Monopoly spawns trigger a server-wide message.
@@ -140,10 +140,30 @@ Boost rules
 
 ## Rebirth (starting assumption)
 - Requirement: 1,000,000 Cash and owning at least one Blue Chip company or better (placed or in storage). Not while carrying a company or with a Valuation Machine run going.
-- Resets: Cash, placed and stored companies, plot and floor upgrades.
+- Resets: Cash, placed and stored companies, plot and floor upgrades, upgrade station levels.
 - Keeps: rebirth count, weapons, pets, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
 - Reward: income multiplier = 1 + 0.5 x rebirth count, plus slightly better personal conveyor odds: every tier above Startup weighs 10% more per rebirth, up to double.
 - Rebirth requirements scale up each time (x3 Cash per rebirth).
+
+## Variants (starting assumption)
+- Any company can turn up as a variant on either conveyor. A variant earns a multiple of the company's normal income, and the more it earns, the rarer it is: Shiny 1.5x (1 in 20), Pixel 2x (1 in 50), Molten 3x (1 in 120), Galaxy 5x (1 in 300), Rainbow 7x (1 in 600), Glitched 10x (1 in 1,500). Values live in `Config/Variants.luau`.
+- A variant costs the same as a regular company: finding one is luck. It keeps its variant for good, through the Valuation Machine (which multiplies on top, separately) and stealing.
+- Each variant has its own particles, and Molten has flames; labels show the variant's name in its colour. The Index has a Variants section showing the ones a player has owned.
+- Galaxy and rarer variants on the shared conveyor are announced to the server. The Variant Chance upgrade makes variants more likely on the player's own conveyor only.
+
+## Upgrade station (starting assumption)
+- A station at one end of the street sells upgrades for Cash only, one level at a time, 10 levels each (`Config/Perks.luau`):
+  - Walk Speed: +6% a level.
+  - Damage: +10% a level.
+  - Conveyor Luck: tiers above Startup on your own conveyor weigh +10% more a level, on top of rebirth luck.
+  - Money Multiplier: +10% income a level.
+  - Variant Chance: +15% a level on your own conveyor.
+- Each level costs the base cost times the growth to the power of levels owned: Walk Speed 300 x1.8, Damage 500 x1.8, Conveyor Luck 1,000 x2, Money Multiplier 2,000 x2.1, Variant Chance 2,500 x2.1.
+- Levels reset on rebirth (`ResetOnRebirth`), like base upgrades. Nothing at the station is sold for Robux or touches the Valuation Machine.
+
+## Teleports (starting assumption)
+- Buttons at the top of the screen teleport to Home (your base), Upgrades (the upgrade station) and Weapons (the weapon shop, beside the pet shop).
+- Not while carrying a company, which must still be carried home on foot, and at most once every 5 seconds (`Config/Travel.luau`).
 
 ## Offline earnings (starting assumption)
 - Companies earn 25% of normal income while offline, capped at 4 hours.
@@ -172,8 +192,8 @@ Boost rules
 
 ## Server and leaderboards (starting assumption)
 - 8 players per server, one base each. Set Max Players to 8 in the place's settings.
-- The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The shops face each other across the conveyor halfway along, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
-- Each base (36 wide, 86 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine, the lock button and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), pet slots at the back, and stairs zigzagging up behind the hall.
+- The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The weapon and pet shops stand side by side at one end of the street and the upgrade station at the other, all facing back along it, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
+- Each base (36 wide, 86 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine, the lock button and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
@@ -204,7 +224,8 @@ Boost rules
 - Each base's `Conveyor` model holds the belt plus two parts named `Start` and `End`. Companies appear at `Start` and travel in a straight line to `End`, sitting on the bottom face of those parts, so place them on the belt surface. `Spawn` is a part the owner appears on.
 - `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots and floors are hidden or greyed out by code.
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
-- `Workspace.Map.Shops.WeaponShop` and `Workspace.Map.Shops.PetShop`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it.
+- `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
+- Each base's `Glass` model holds its glass walls; stealing is refused if any of it is between the thief and the plot.
 - `Workspace.Map.Leaderboards` with four parts, `IncomeBoard`, `RebirthsBoard`, `StealsBoard` and `KnockoutsBoard`. The game writes each list on the part's front face.
 - Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. A model named `Default` is used for any company without its own model yet.
 - Weapon models in `ReplicatedStorage.Assets.Weapons`, pet models in `ReplicatedStorage.Assets.Pets`, named by id. Each weapon is a Tool with a `Handle` part; a Tool named `Default` is used for any weapon without its own yet. A pet model named `Default` is used for any pet without its own; its parts with a `RarityTint` attribute take the pet's rarity colour.
@@ -227,5 +248,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to locking their base and the shared conveyor, leaderboards fill in and update, each code works once per player and not after it expires.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
 16. **Monetisation**: Check: each pass's perk turns on when it's bought in game and when an owner joins, each product is given once per purchase (also after a rejoin), and nothing for sale touches the Valuation Machine.
+
+After the build order: variants, the upgrade station, teleports, glass walls and the stations at the street ends. Check: variants turn up at about their odds (`/testvariants`) and earn their multiple, each upgrade's effect applies and resets on rebirth, teleports refuse while carrying, and nobody can steal through the glass.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.

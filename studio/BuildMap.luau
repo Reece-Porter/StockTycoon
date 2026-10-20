@@ -30,6 +30,7 @@ local STEP = Color3.fromRGB(190, 190, 200)
 local PLOT = Color3.fromRGB(150, 170, 200)
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
+local GLASS = Color3.fromRGB(185, 225, 245)
 
 -- Eight bases, four either side of a street with the middle conveyor down
 -- the centre, all facing it. Each base is BASE_WIDTH along the street and
@@ -76,8 +77,9 @@ local HILLS = 140 -- how far beyond the edge hills can reach
 -- tunnel in the hills at each end.
 local TUNNEL = 16
 local BELT_LENGTH = 2 * (PLAY_HALF_Z + TUNNEL)
--- The shops face each other across the conveyor, halfway along the street.
-local SHOP_Z = 0
+-- The weapon and pet shops stand at one end of the street and the upgrade
+-- station at the other, this far from the middle.
+local STATION_Z = PLAY_HALF_Z - 16
 
 local function newPart(
 	parent: Instance,
@@ -299,6 +301,26 @@ for index, spot in BASE_SPOTS do
 		end
 	end
 
+	-- Glass walls along both sides and the back, from the front of the hall
+	-- to the back of the stairs and from the ground to the top floor's
+	-- railings, so the only way in is from the front.
+	local glassWalls = freshModel(base, "Glass")
+	local glassHeight = tops[4] + RAIL_HEIGHT - groundTop
+	local glassY = groundTop + glassHeight / 2
+	local function glass(size: Vector3, cframe: CFrame)
+		local pane = newPart(glassWalls, "Glass", size, cframe, GLASS, 0.6)
+		pane.Material = Enum.Material.Glass
+		pane.CastShadow = false
+	end
+	for _, side in { -1, 1 } do
+		local length = HALL_FRONT + halfDepth
+		glass(
+			Vector3.new(length, glassHeight, 0.5),
+			at((HALL_FRONT - halfDepth) / 2, glassY, side * (halfWidth - 0.25))
+		)
+	end
+	glass(Vector3.new(0.5, glassHeight, BASE_WIDTH - 1), at(-halfDepth + 0.25, glassY, 0))
+
 	-- Stairs up to each floor behind the hall. Floors 2 and 4 go up one
 	-- strip towards +z and floor 3 comes back up the other, each from a
 	-- landing to a landing that meets the back of the floor it serves.
@@ -325,9 +347,9 @@ for index, spot in BASE_SPOTS do
 				newPart(access, "Step", Vector3.new(6, 1, tread), at(stairX, stepTop - 0.5, z), STEP)
 			end
 		end
-		-- The landing at the top, across both strips, with rails round its
-		-- outside. From the top floor's landing there are no stairs on, so
-		-- the other strip is railed off too.
+		-- The landing at the top, across both strips; the glass walls guard
+		-- its outside. From the top floor's landing there are no stairs on,
+		-- so the other strip is railed off.
 		local landingZ = dir * (LANDING_Z + halfWidth) / 2
 		if n == 2 then
 			local height = high - groundTop
@@ -338,10 +360,6 @@ for index, spot in BASE_SPOTS do
 			newPart(access, "TopLanding", size, at(landingX, high - 0.5, landingZ), PLATFORM)
 		end
 		local railY = high + RAIL_HEIGHT / 2
-		local outside = at(landingX, railY, dir * (halfWidth - 0.25))
-		newPart(access, "LandingRail", Vector3.new(landingWidth, RAIL_HEIGHT, 0.5), outside, accent, 0.35)
-		local back = at(-halfDepth + 0.25, railY, landingZ)
-		newPart(access, "LandingRail", Vector3.new(0.5, RAIL_HEIGHT, landingLength), back, accent, 0.35)
 		if n == 4 then
 			local across = at(STAIRS_X[2], railY, dir * (LANDING_Z + 0.25))
 			newPart(access, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, accent, 0.35)
@@ -361,10 +379,9 @@ for index, spot in BASE_SPOTS do
 		end
 	end
 
-	-- Railings round the upper floors, open at the back onto the landing
-	-- each floor's stairs arrive at.
-	local hallLength = HALL_FRONT - HALL_BACK
-	local hallMiddle = (HALL_FRONT + HALL_BACK) / 2
+	-- Railings along the front of the upper floors and at the back, open onto
+	-- the landing each floor's stairs arrive at. The glass walls guard the
+	-- sides.
 	for n = 2, 4 do
 		local floor = folder(floors, "Floor" .. n)
 		local railings = freshModel(floor, "Railings")
@@ -372,10 +389,7 @@ for index, spot in BASE_SPOTS do
 		local function rail(size: Vector3, railX: number, z: number)
 			newPart(railings, "Rail", size, at(railX, y, z), accent, 0.35)
 		end
-		for _, side in { -1, 1 } do
-			rail(Vector3.new(hallLength, RAIL_HEIGHT, 0.5), hallMiddle, side * (halfWidth - 0.25))
-		end
-		rail(Vector3.new(0.5, RAIL_HEIGHT, BASE_WIDTH), HALL_FRONT - 0.25, 0)
+		rail(Vector3.new(0.5, RAIL_HEIGHT, BASE_WIDTH - 1), HALL_FRONT - 0.25, 0)
 		local dir = if n % 2 == 0 then 1 else -1
 		local backLength = halfWidth + LANDING_Z
 		rail(Vector3.new(0.5, RAIL_HEIGHT, backLength), HALL_BACK + 0.25, -dir * (halfWidth - backLength / 2))
@@ -404,11 +418,13 @@ for _, item in Workspace:GetDescendants() do
 	end
 end
 
--- 5. The shops, facing each other across the middle conveyor halfway along
--- the street. An existing shop is moved into place; a missing one is built
--- there.
+-- 5. The weapon and pet shops side by side at one end of the street and the
+-- upgrade station at the other, each facing back along the street. They're
+-- rebuilt each run, so they're always in the right place and turned the
+-- right way.
 type ShopStyle = {
 	x: number,
+	z: number,
 	counter: Color3,
 	prompt: Color3,
 	promptMaterial: Enum.Material,
@@ -420,6 +436,7 @@ type ShopStyle = {
 local shopStyles: { [string]: ShopStyle } = {
 	WeaponShop = {
 		x = -20,
+		z = -STATION_Z,
 		counter = Color3.fromRGB(150, 95, 55),
 		prompt = GOLD,
 		promptMaterial = Enum.Material.Metal,
@@ -430,6 +447,7 @@ local shopStyles: { [string]: ShopStyle } = {
 	},
 	PetShop = {
 		x = 20,
+		z = -STATION_Z,
 		counter = Color3.fromRGB(240, 235, 225),
 		prompt = Color3.fromRGB(190, 150, 255),
 		promptMaterial = Enum.Material.Neon,
@@ -438,51 +456,57 @@ local shopStyles: { [string]: ShopStyle } = {
 		sign = "PETS",
 		signColour = Color3.fromRGB(190, 150, 255),
 	},
+	UpgradeStation = {
+		x = -20,
+		z = STATION_Z,
+		counter = Color3.fromRGB(90, 110, 140),
+		prompt = Color3.fromRGB(90, 230, 140),
+		promptMaterial = Enum.Material.Neon,
+		wall = Color3.fromRGB(45, 70, 60),
+		roof = Color3.fromRGB(80, 170, 90),
+		sign = "UPGRADES",
+		signColour = Color3.fromRGB(140, 255, 170),
+	},
 }
 local shops = folder(map, "Shops")
 for name, style in shopStyles do
-	local shop = shops:FindFirstChild(name)
-	local shopFloor = shop and shop:FindFirstChild("Floor")
-	if shop and shopFloor and shopFloor:IsA("BasePart") then
-		local shift = Vector3.new(style.x, 0, SHOP_Z) - shopFloor.CFrame.Position * Vector3.new(1, 0, 1)
-		for _, part in shop:GetDescendants() do
-			if part:IsA("BasePart") then
-				part.CFrame = part.CFrame + shift
-			end
-		end
-	else
-		if shop then
-			shop:Destroy()
-		end
-		local newShop = Instance.new("Model")
-		newShop.Name = name
-		local cx, cz, y = style.x, SHOP_Z, groundY
-		local function block(blockName: string, size: Vector3, bx: number, bottom: number, bz: number, colour: Color3)
-			return newPart(newShop, blockName, size, CFrame.new(bx, bottom + size.Y / 2, bz), colour)
-		end
-		block("Floor", Vector3.new(14, 0.4, 9), cx, y, cz, Color3.fromRGB(95, 95, 105))
-		block("Counter", Vector3.new(10, 3, 2), cx, y + 0.4, cz - 2, style.counter)
-		block("ShopPrompt", Vector3.new(2, 1, 1.2), cx, y + 3.4, cz - 2, style.prompt).Material = style.promptMaterial
-		block("BackWall", Vector3.new(14, 9, 1), cx, y + 0.4, cz + 4, style.wall)
-		block("PostLeft", Vector3.new(0.8, 8.4, 0.8), cx - 6.5, y + 0.4, cz - 4, Color3.fromRGB(230, 230, 235))
-		block("PostRight", Vector3.new(0.8, 8.4, 0.8), cx + 6.5, y + 0.4, cz - 4, Color3.fromRGB(230, 230, 235))
-		block("Roof", Vector3.new(15, 0.8, 10), cx, y + 8.8, cz, style.roof)
-		local sign = block("Sign", Vector3.new(11, 2.2, 0.4), cx, y + 9.6, cz - 4.6, Color3.fromRGB(35, 35, 45))
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Front
-		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 50
-		gui.Parent = sign
-		local text = Instance.new("TextLabel")
-		text.Size = UDim2.fromScale(1, 1)
-		text.BackgroundTransparency = 1
-		text.Font = Enum.Font.BuilderSansBold
-		text.TextScaled = true
-		text.TextColor3 = style.signColour
-		text.Text = style.sign
-		text.Parent = gui
-		newShop.Parent = shops
+	local old = shops:FindFirstChild(name)
+	if old then
+		old:Destroy()
 	end
+	local newShop = Instance.new("Model")
+	newShop.Name = name
+	-- Built in its own frame with its front towards local -z, then turned so
+	-- the front faces the middle of the street.
+	local facing = if style.z < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.new()
+	local frame = CFrame.new(style.x, groundY, style.z) * facing
+	local function block(blockName: string, size: Vector3, bx: number, bottom: number, bz: number, colour: Color3)
+		return newPart(newShop, blockName, size, frame * CFrame.new(bx, bottom + size.Y / 2, bz), colour)
+	end
+	block("Floor", Vector3.new(14, 0.4, 9), 0, 0, 0, Color3.fromRGB(95, 95, 105))
+	block("Counter", Vector3.new(10, 3, 2), 0, 0.4, -2, style.counter)
+	block("ShopPrompt", Vector3.new(2, 1, 1.2), 0, 3.4, -2, style.prompt).Material = style.promptMaterial
+	block("BackWall", Vector3.new(14, 9, 1), 0, 0.4, 4, style.wall)
+	block("PostLeft", Vector3.new(0.8, 8.4, 0.8), -6.5, 0.4, -4, Color3.fromRGB(230, 230, 235))
+	block("PostRight", Vector3.new(0.8, 8.4, 0.8), 6.5, 0.4, -4, Color3.fromRGB(230, 230, 235))
+	block("Roof", Vector3.new(15, 0.8, 10), 0, 8.8, 0, style.roof)
+	local sign = block("Sign", Vector3.new(11, 2.2, 0.4), 0, 9.6, -4.6, Color3.fromRGB(35, 35, 45))
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 50
+	gui.Parent = sign
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.BuilderSansBold
+	text.TextScaled = true
+	text.TextColor3 = style.signColour
+	text.Text = style.sign
+	text.Parent = gui
+	-- Teleports arrive in front of the counter, from this pivot.
+	newShop.WorldPivot = frame
+	newShop.Parent = shops
 end
 
 -- 6. The leaderboards, two either side of the street in the gaps between the
