@@ -13,11 +13,20 @@ local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 
 local Admins = require(ReplicatedStorage.Shared.Config.Admins)
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
+local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local BaseService = require(script.Parent.BaseService)
+local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 
 -- Keeps typed amounts well inside the range a number stores exactly.
 local MAX_AMOUNT = 1e15
+
+local DEFAULT_ODDS_ROLLS = 10_000
+local MAX_ODDS_ROLLS = 1_000_000
 
 local NOT_LOADED_MESSAGE = "Your data hasn't loaded yet."
 
@@ -35,6 +44,53 @@ local function parseAmount(text: string?): number?
 		return nil
 	end
 	return math.floor(amount)
+end
+
+-- Matches "bluechip", "blue-chip", "Blue Chip" and so on to a tier.
+local function findTier(text: string?): Tiers.Tier?
+	if text == nil then
+		return nil
+	end
+	local wanted = string.lower((string.gsub(text, "[%s%-]", "")))
+	for _, tier in Tiers.list do
+		if string.lower(tier.id) == wanted then
+			return tier
+		end
+	end
+	return nil
+end
+
+local function tierNames(): string
+	local names = {}
+	for _, tier in Tiers.list do
+		table.insert(names, string.lower(tier.id))
+	end
+	return table.concat(names, ", ")
+end
+
+-- Rolls the personal conveyor's tier the given number of times, using the same
+-- function as real spawns, and compares the results with Config/Conveyor.
+local function oddsReport(rolls: number): string
+	local weights = ConveyorConfig.Personal.Weights
+	local random = Random.new()
+	local counts: { [string]: number } = {}
+	for _ = 1, rolls do
+		local tier = SpawnRoll.pickTier(weights, random:NextNumber())
+		counts[tier] = (counts[tier] or 0) + 1
+	end
+
+	local total = 0
+	for _, entry in weights do
+		total += entry.weight
+	end
+
+	local lines = { `{rolls} rolls (got / expected):` }
+	for _, entry in weights do
+		local got = (counts[entry.tier] or 0) / rolls * 100
+		local expected = entry.weight / total * 100
+		table.insert(lines, string.format("%s %.1f%% / %.1f%%", Tiers.byId[entry.tier].name, got, expected))
+	end
+	return table.concat(lines, "\n")
 end
 
 local commands: { Command } = {
@@ -64,6 +120,37 @@ local commands: { Command } = {
 				return NOT_LOADED_MESSAGE
 			end
 			return `Set your Cash to {amount}.`
+		end,
+	},
+	{
+		alias = "/spawn",
+		usage = "/spawn <tier>",
+		run = function(player, args)
+			local tier = findTier(args[1])
+			if tier == nil then
+				return `Usage: /spawn <tier>, where tier is one of: {tierNames()}`
+			end
+			local base = BaseService:GetBase(player)
+			if base == nil then
+				return "You don't have a base."
+			end
+			if ConveyorService:SpawnOnBase(base, tier.id) == nil then
+				return "Couldn't spawn it. Check the console for a missing model."
+			end
+			return `Spawned a {tier.name} on your conveyor.`
+		end,
+	},
+	{
+		alias = "/testodds",
+		usage = "/testodds [rolls]",
+		run = function(player, args)
+			local rolls = if args[1] then parseAmount(args[1]) else DEFAULT_ODDS_ROLLS
+			if rolls == nil or rolls < 1 or rolls > MAX_ODDS_ROLLS then
+				return `Usage: /testodds [rolls], up to {MAX_ODDS_ROLLS}`
+			end
+			local report = oddsReport(rolls)
+			AdminService:SetDebugValue(player, "OddsTest", report)
+			return report
 		end,
 	},
 	{
@@ -124,6 +211,11 @@ local function onPlayerAdded(player: Player)
 
 	player:SetAttribute("IsAdmin", true)
 	AdminService:SetDebugValue(player, "Commands", table.concat(usages, "\n"))
+
+	local problems = BaseService:GetProblems()
+	if #problems > 0 then
+		AdminService:SetDebugValue(player, "MapProblems", table.concat(problems, "\n"))
+	end
 end
 
 local function onDataLoaded(player: Player)
@@ -137,6 +229,13 @@ local function onDataLoaded(player: Player)
 		"Saving",
 		if DataService:IsSaving() then "On" else "Off (turn on Studio Access to API Services)"
 	)
+end
+
+local function onDataChanged(player: Player)
+	local data = DataService:GetData(player)
+	if data then
+		AdminService:SetDebugValue(player, "Storage", `{#data.Storage}/{BaseConfig.StorageCapacity}`)
+	end
 end
 
 function AdminService:Init()
@@ -158,7 +257,14 @@ function AdminService:Start()
 	for _, player in Players:GetPlayers() do
 		onPlayerAdded(player)
 	end
-	DataService:OnDataLoaded(onDataLoaded)
+	DataService:OnDataLoaded(function(player)
+		onDataLoaded(player)
+		onDataChanged(player)
+	end)
+	DataService:OnDataChanged(onDataChanged)
+	BaseService:OnBaseAssigned(function(player, base)
+		AdminService:SetDebugValue(player, "Base", base.name)
+	end)
 end
 
 return AdminService

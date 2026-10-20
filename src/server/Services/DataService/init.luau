@@ -7,9 +7,13 @@
 -- Other services read and change player data only through this module.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
+
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Types = require(ReplicatedStorage.Shared.Types)
 
 local Migrations = require(script.Migrations)
 local Template = require(script.Template)
@@ -32,6 +36,7 @@ local profiles: { [Player]: Profile } = {}
 local cashValues: { [Player]: IntValue } = {}
 local loading: { [Player]: true } = {}
 local loadedCallbacks: { (Player) -> () } = {}
+local changedCallbacks: { (Player) -> () } = {}
 
 local DataService = {}
 
@@ -106,10 +111,15 @@ local function createLeaderstats(player: Player, cash: number)
 	leaderstats.Parent = player
 end
 
-local function onCashChanged(player: Player, cash: number)
+-- Call after every change to a player's data.
+local function dataChanged(player: Player)
+	local profile = profiles[player]
 	local cashValue = cashValues[player]
-	if cashValue then
-		cashValue.Value = math.floor(cash)
+	if profile and cashValue then
+		cashValue.Value = math.floor(profile.Data.Cash)
+	end
+	for _, callback in changedCallbacks do
+		task.spawn(callback, player)
 	end
 end
 
@@ -173,7 +183,8 @@ local function onPlayerRemoving(player: Player)
 end
 
 -- The player's save, or nil if it hasn't loaded yet. Treat it as read-only and
--- make changes through the functions below, so the player list stays in sync.
+-- make changes through the functions below, so the player list and anything
+-- listening with OnDataChanged stay in sync.
 function DataService:GetData(player: Player): Data?
 	local profile = profiles[player]
 	return if profile then profile.Data else nil
@@ -194,6 +205,11 @@ function DataService:OnDataLoaded(callback: (Player) -> ())
 	end
 end
 
+-- Runs callback(player) after any change made through this module.
+function DataService:OnDataChanged(callback: (Player) -> ())
+	table.insert(changedCallbacks, callback)
+end
+
 function DataService:AddCash(player: Player, amount: number): boolean
 	local profile = profiles[player]
 	if profile == nil or not isValidCash(amount) then
@@ -204,7 +220,18 @@ function DataService:AddCash(player: Player, amount: number): boolean
 		return false
 	end
 	profile.Data.Cash = cash
-	onCashChanged(player, cash)
+	dataChanged(player)
+	return true
+end
+
+-- Takes Cash only if the player has enough. Returns whether it was taken.
+function DataService:SpendCash(player: Player, amount: number): boolean
+	local profile = profiles[player]
+	if profile == nil or not isValidCash(amount) or profile.Data.Cash < amount then
+		return false
+	end
+	profile.Data.Cash -= amount
+	dataChanged(player)
 	return true
 end
 
@@ -214,7 +241,23 @@ function DataService:SetCash(player: Player, amount: number): boolean
 		return false
 	end
 	profile.Data.Cash = amount
-	onCashChanged(player, amount)
+	dataChanged(player)
+	return true
+end
+
+function DataService:HasStorageSpace(player: Player): boolean
+	local profile = profiles[player]
+	return profile ~= nil and #profile.Data.Storage < BaseConfig.StorageCapacity
+end
+
+-- Adds a company to the player's storage if there is room.
+function DataService:AddToStorage(player: Player, company: Types.CompanyInstance): boolean
+	local profile = profiles[player]
+	if profile == nil or #profile.Data.Storage >= BaseConfig.StorageCapacity then
+		return false
+	end
+	table.insert(profile.Data.Storage, company)
+	dataChanged(player)
 	return true
 end
 
@@ -225,7 +268,7 @@ function DataService:ResetData(player: Player): boolean
 		return false
 	end
 	replaceData(profile, deepCopy(Template))
-	onCashChanged(player, profile.Data.Cash)
+	dataChanged(player)
 	return true
 end
 
