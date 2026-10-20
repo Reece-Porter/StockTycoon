@@ -37,6 +37,7 @@ local cashValues: { [Player]: IntValue } = {}
 local loading: { [Player]: true } = {}
 local loadedCallbacks: { (Player) -> () } = {}
 local changedCallbacks: { (Player) -> () } = {}
+local cashCallbacks: { (Player) -> () } = {}
 
 local DataService = {}
 
@@ -111,13 +112,21 @@ local function createLeaderstats(player: Player, cash: number)
 	leaderstats.Parent = player
 end
 
--- Call after every change to a player's data.
-local function dataChanged(player: Player)
+-- Call after a change to Cash only. Kept separate because income changes Cash
+-- every second and most listeners only care about the rest of the save.
+local function cashChanged(player: Player)
 	local profile = profiles[player]
 	local cashValue = cashValues[player]
 	if profile and cashValue then
 		cashValue.Value = math.floor(profile.Data.Cash)
 	end
+	for _, callback in cashCallbacks do
+		task.spawn(callback, player)
+	end
+end
+
+-- Call after any other change to a player's data.
+local function dataChanged(player: Player)
 	for _, callback in changedCallbacks do
 		task.spawn(callback, player)
 	end
@@ -184,7 +193,7 @@ end
 
 -- The player's save, or nil if it hasn't loaded yet. Treat it as read-only and
 -- make changes through the functions below, so the player list and anything
--- listening with OnDataChanged stay in sync.
+-- listening with OnDataChanged or OnCashChanged stay in sync.
 function DataService:GetData(player: Player): Data?
 	local profile = profiles[player]
 	return if profile then profile.Data else nil
@@ -205,9 +214,15 @@ function DataService:OnDataLoaded(callback: (Player) -> ())
 	end
 end
 
--- Runs callback(player) after any change made through this module.
+-- Runs callback(player) after any change made through this module, other
+-- than a change to Cash alone (see OnCashChanged).
 function DataService:OnDataChanged(callback: (Player) -> ())
 	table.insert(changedCallbacks, callback)
+end
+
+-- Runs callback(player) after the player's Cash changes.
+function DataService:OnCashChanged(callback: (Player) -> ())
+	table.insert(cashCallbacks, callback)
 end
 
 function DataService:AddCash(player: Player, amount: number): boolean
@@ -220,7 +235,7 @@ function DataService:AddCash(player: Player, amount: number): boolean
 		return false
 	end
 	profile.Data.Cash = cash
-	dataChanged(player)
+	cashChanged(player)
 	return true
 end
 
@@ -231,7 +246,7 @@ function DataService:SpendCash(player: Player, amount: number): boolean
 		return false
 	end
 	profile.Data.Cash -= amount
-	dataChanged(player)
+	cashChanged(player)
 	return true
 end
 
@@ -241,7 +256,7 @@ function DataService:SetCash(player: Player, amount: number): boolean
 		return false
 	end
 	profile.Data.Cash = amount
-	dataChanged(player)
+	cashChanged(player)
 	return true
 end
 
@@ -332,6 +347,7 @@ function DataService:ResetData(player: Player): boolean
 		return false
 	end
 	replaceData(profile, deepCopy(Template))
+	cashChanged(player)
 	dataChanged(player)
 	return true
 end
