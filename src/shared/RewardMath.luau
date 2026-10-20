@@ -85,7 +85,10 @@ end
 -- 5 min" or "1 free pet spin".
 function RewardMath.describe(grant: RewardsConfig.Grant): string
 	if grant.kind == "cash" then
-		local text = `{grant.incomeSeconds or 0}s of income`
+		if (grant.incomeSeconds or 0) == 0 then
+			return Format.cash(grant.minimum or 0)
+		end
+		local text = `{grant.incomeSeconds}s of income`
 		local minimum = grant.minimum
 		return if minimum and minimum > 0 then `{text} (at least {Format.cash(minimum)})` else text
 	elseif grant.kind == "boost" then

@@ -293,6 +293,7 @@ local function complete(thief: Player, plot: BaseService.Plot): string
 	end
 
 	-- Ownership changes from stealing are saved straight away.
+	DataService:AddStat(thief, "Steals")
 	DataService:SaveNow(owner)
 	DataService:SaveNow(thief)
 	refreshOwner(owner)

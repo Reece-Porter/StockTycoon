@@ -1,7 +1,7 @@
 --!strict
 -- The Rewards button (bottom left, with a badge counting rewards ready to
--- claim) and its window: today's playtime rewards, the 7-day daily streak, and
--- any boost time and free pet spins banked. The server times everything and
+-- claim) and its window: today's playtime rewards, the 7-day daily streak, any
+-- boost time and free pet spins banked, and a box for codes. The server times everything and
 -- checks every claim; this works out what to show from the attributes it sends
 -- (see RewardsService) and the shared server clock.
 
@@ -284,6 +284,44 @@ function RewardsController:Start()
 	dailyButton.Parent = list
 	dailyButton.Activated:Connect(function()
 		Remotes.ClaimDaily:FireServer()
+	end)
+
+	-- Codes: type one and press Redeem. The server checks it.
+	local codesTitle = text(list, nextOrder(), 18, true)
+	codesTitle.Text = "Codes"
+	local codeRow = Instance.new("Frame")
+	codeRow.LayoutOrder = nextOrder()
+	codeRow.Size = UDim2.new(1, -6, 0, 48)
+	codeRow.BackgroundTransparency = 1
+	codeRow.Parent = list
+	local codeBox = Instance.new("TextBox")
+	codeBox.Size = UDim2.new(1, -122, 1, 0)
+	codeBox.BackgroundColor3 = BUTTON_COLOUR
+	codeBox.Font = Enum.Font.BuilderSansMedium
+	codeBox.TextSize = 18
+	codeBox.TextColor3 = Color3.new(1, 1, 1)
+	codeBox.PlaceholderText = "Enter a code"
+	codeBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 170)
+	codeBox.Text = ""
+	codeBox.ClearTextOnFocus = false
+	corner(codeBox)
+	codeBox.Parent = codeRow
+	local redeem = button("Redeem", CLAIM)
+	redeem.AnchorPoint = Vector2.new(1, 0)
+	redeem.Position = UDim2.fromScale(1, 0)
+	redeem.Size = UDim2.new(0, 114, 1, 0)
+	redeem.Parent = codeRow
+	local function sendCode()
+		if codeBox.Text ~= "" then
+			Remotes.RedeemCode:FireServer(string.sub(codeBox.Text, 1, 32))
+			codeBox.Text = ""
+		end
+	end
+	redeem.Activated:Connect(sendCode)
+	codeBox.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			sendCode()
+		end
 	end)
 
 	local function refresh()

@@ -22,6 +22,10 @@ export type Milestone = { minutes: number, grants: { Grant } }
 local function cash(incomeSeconds: number, minimum: number): Grant
 	return { kind = "cash", incomeSeconds = incomeSeconds, minimum = minimum }
 end
+-- An exact amount of Cash, whatever the player's income.
+local function fixedCash(amount: number): Grant
+	return { kind = "cash", incomeSeconds = 0, minimum = amount }
+end
 local function boost(minutes: number): Grant
 	return { kind = "boost", seconds = minutes * 60 }
 end
@@ -61,8 +65,9 @@ return {
 	BoostMultiplier = 2,
 	MaxBoostSeconds = 60 * 60,
 
-	-- Helpers for Config/Index.
+	-- Helpers for Config/Index and the server's Config/Codes.
 	cash = cash,
+	fixedCash = fixedCash,
 	boost = boost,
 	spins = spins,
 }

@@ -410,7 +410,25 @@ for name, style in shopStyles do
 	end
 end
 
--- 5. Models the game copies: the Default company, the weapon Tools and the
+-- 5. The leaderboards, in a row at the opposite end from the shops, facing the
+-- middle of the map. The game writes the lists on each board's front face.
+local leaderboards = folder(map, "Leaderboards")
+local stands = freshModel(leaderboards, "Stands")
+local boardSpots = {
+	{ name = "IncomeBoard", x = -24 },
+	{ name = "RebirthsBoard", x = -12 },
+	{ name = "StealsBoard", x = 12 },
+	{ name = "KnockoutsBoard", x = 24 },
+}
+for _, spot in boardSpots do
+	-- Turned so the front face points at the middle of the map.
+	local facing = CFrame.new(spot.x, groundY + 8, -50) * CFrame.Angles(0, math.pi, 0)
+	place(leaderboards, spot.name, Vector3.new(10, 12, 1), facing, Color3.fromRGB(20, 22, 30))
+	newPart(stands, spot.name .. "Back", Vector3.new(11, 13, 0.6), facing * CFrame.new(0, 0.5, 0.8), GOLD)
+	newPart(stands, spot.name .. "Plinth", Vector3.new(11, 2, 2.2), CFrame.new(spot.x, groundY + 1, -50.3), DARK)
+end
+
+-- 6. Models the game copies: the Default company, the weapon Tools and the
 -- Default pet. Any that already exist (including ones built by hand) are
 -- left alone.
 local assets = folder(ReplicatedStorage, "Assets")

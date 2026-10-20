@@ -148,6 +148,7 @@ Boost rules
 ## Offline earnings (starting assumption)
 - Companies earn 25% of normal income while offline, capped at 4 hours.
 - Shown in a "while you were away" popup on join.
+- Counted from the income the player had when they left, without any 2x reward boost. Under a minute away earns nothing. Needs saving on (in Studio, API access).
 
 ## Monetisation (starting assumption, needs review)
 - Game passes: 2x income, VIP (chat tag, cosmetic base trim), +1 pet slot per floor.
@@ -160,10 +161,12 @@ Boost rules
 - On-screen arrow guides them: buy from the personal conveyor, carry it home, place it.
 - After placing the first company, prompt them to try the Valuation Machine on their second one.
 - After 2 minutes, point them at the shared conveyor and the shops.
+- Each step finishes when the save or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor and shop steps finish on their own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
 
 ## Server and leaderboards (starting assumption)
 - 8 players per server.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
+- All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
 ## Admin and debug tools (starting assumption)
 - Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier on any conveyor, grant pets and weapons, skip playtime, reset own data.
@@ -173,6 +176,7 @@ Boost rules
 ## Codes (starting assumption)
 - Redeemable codes for Cash, boosts or pet spin tokens, used for social media and update announcements.
 - Each code: reward, optional expiry date, one use per player. Stored in Config so a new code is a one-line change.
+- The list is `src/server/Config/Codes.luau`, on the server only, so players can't read it. Expiry dates are the last day a code works, in UTC.
 
 ## Analytics (starting assumption)
 - Use Roblox AnalyticsService so balance can be tuned from real data rather than guessed.
@@ -188,6 +192,7 @@ Boost rules
 - `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots and floors are hidden or greyed out by code.
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
 - `Workspace.Map.Shops.WeaponShop` and `Workspace.Map.Shops.PetShop`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it.
+- `Workspace.Map.Leaderboards` with four parts, `IncomeBoard`, `RebirthsBoard`, `StealsBoard` and `KnockoutsBoard`. The game writes each list on the part's front face.
 - Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. A model named `Default` is used for any company without its own model yet.
 - Weapon models in `ReplicatedStorage.Assets.Weapons`, pet models in `ReplicatedStorage.Assets.Pets`, named by id. Each weapon is a Tool with a `Handle` part; a Tool named `Default` is used for any weapon without its own yet. A pet model named `Default` is used for any pet without its own; its parts with a `RarityTint` attribute take the pet's rarity colour.
 
@@ -206,7 +211,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 11. **Pet shop and floor modifiers**: Check: spin odds match Config over 10,000 test rolls, pets modify only their floor, guard pets increase hold time, pets survive rebirth.
 12. **Rebirth**: Check: correct resets and keeps, multiplier applies.
 13. **Playtime and daily rewards, and the Index**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack, owning a new company adds it to the Index, Index prizes unlock at the right counts and can only be claimed once.
-14. **Offline earnings, onboarding, leaderboards, codes**.
+14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to the shops, leaderboards fill in and update, each code works once per player and not after it expires.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
 16. **Monetisation**.
 

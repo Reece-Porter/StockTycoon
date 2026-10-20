@@ -168,7 +168,11 @@ local function attack(attacker: Player, targetValue: unknown): string
 
 	-- Drop first, so a knockout never counts as dying while carrying.
 	local dropped = DropService:Drop(target)
+	local wasStanding = to.humanoid.Health > 0
 	to.humanoid.Health = math.max(0, to.humanoid.Health - weapon.damage)
+	if wasStanding and to.humanoid.Health <= 0 then
+		DataService:AddStat(attacker, "Knockouts")
+	end
 	knockBack(to, from.root.Position, weapon.knockback)
 	if weapon.stunSeconds then
 		Movement.stun(target, weapon.stunSeconds)
