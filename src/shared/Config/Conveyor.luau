@@ -25,9 +25,9 @@ return {
 	-- The conveyor in the middle of the map; anyone can buy, first come first
 	-- served. Better odds, plus the two tiers found nowhere else.
 	Shared = {
-		-- 30% fewer companies than the 4 seconds it was, now the belt is
-		-- 4 times longer.
-		SpawnSeconds = 5.7,
+		-- 35% fewer companies than the 5.7 seconds it was (itself 30% fewer
+		-- than the original 4), for more space between them.
+		SpawnSeconds = 8.8,
 		-- The belt runs the length of the map, 316 studs between the tunnels,
 		-- so at this pace a company takes about 2 minutes 10 seconds to cross.
 		StudsPerSecond = 2.4,

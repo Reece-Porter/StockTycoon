@@ -29,7 +29,9 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `/givecash <amount> [player]`       | Adds Cash to you, or to another player (e.g. `/givecash 1000 Player2`)                                  |
 | `/setcash <amount>`                 | Sets Cash to an exact amount                                                                            |
-| `/spawn <tier> [shared]`            | Puts a company of that tier on your conveyor, or the shared one (e.g. `/spawn monopoly shared`)         |
+| `/spawn <tier> [shared] [variant]`  | Puts a company of that tier on your conveyor, or the shared one (e.g. `/spawn monopoly shared galaxy`)  |
+| `/testvariants [rolls]`             | Simulates variant rolls with your Variant Chance upgrade and compares them with Config                  |
+| `/setupgrade <upgrade> <level> [player]` | Sets an upgrade station level for free (e.g. `/setupgrade walkspeed 5`)                            |
 | `/testodds [shared] [rolls]`        | Simulates conveyor spawns and compares the odds with Config                                             |
 | `/racetest`                         | Every player tries to buy the same shared-conveyor company in the same instant; shows who got it        |
 | `/protect [player] [seconds]`       | Protects a player from stealing as if they were new (default 300 s; `0` removes it)                     |
