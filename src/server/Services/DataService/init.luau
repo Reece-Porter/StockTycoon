@@ -39,6 +39,7 @@ local loading: { [Player]: true } = {}
 local loadedCallbacks: { (Player) -> () } = {}
 local changedCallbacks: { (Player) -> () } = {}
 local cashCallbacks: { (Player) -> () } = {}
+local leavingCallbacks: { (Player) -> () } = {}
 
 local DataService = {}
 
@@ -188,6 +189,13 @@ local function onPlayerRemoving(player: Player)
 	loading[player] = nil
 	local profile = profiles[player]
 	if profile then
+		-- Last changes before the save is released. One failing can't stop it
+		-- being saved.
+		for _, callback in leavingCallbacks do
+			xpcall(callback, function(problem)
+				warn(`[DataService] Leaving callback failed: {problem}`)
+			end, player)
+		end
 		-- Offline earnings count from now.
 		profile.Data.LastSeen = os.time()
 		profile:EndSession()
@@ -236,6 +244,12 @@ end
 -- than a change to Cash alone (see OnCashChanged).
 function DataService:OnDataChanged(callback: (Player) -> ())
 	table.insert(changedCallbacks, callback)
+end
+
+-- Runs callback(player) when a player with a loaded save leaves, straight
+-- away and before the save is released, so it can still read and change it.
+function DataService:OnPlayerLeaving(callback: (Player) -> ())
+	table.insert(leavingCallbacks, callback)
 end
 
 -- Runs callback(player) after the player's Cash changes.
@@ -478,6 +492,17 @@ function DataService:UpdateRewards(player: Player, change: (Types.RewardsState) 
 		return false
 	end
 	change(profile.Data.Rewards)
+	return true
+end
+
+-- Changes the player's analytics record. Nothing on screen shows it, so
+-- nothing listening is told.
+function DataService:UpdateAnalytics(player: Player, change: (Types.AnalyticsState) -> ()): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	change(profile.Data.Analytics)
 	return true
 end
 

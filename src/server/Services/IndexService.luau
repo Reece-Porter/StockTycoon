@@ -111,7 +111,7 @@ local function claim(player: Player, count: number): string
 	if not DataService:ClaimIndex(player, count) then
 		return "You've already claimed that prize."
 	end
-	return `Index prize for {count} companies: {RewardsService:Grant(player, milestone.grants)}!`
+	return `Index prize for {count} companies: {RewardsService:Grant(player, milestone.grants, "Index")}!`
 end
 
 -- Admin testing: discovers up to this many companies the player hasn't found

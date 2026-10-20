@@ -165,7 +165,8 @@ Boost rules
 - Each step finishes when the save, the base or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor step finishes on its own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
 
 ## Server and leaderboards (starting assumption)
-- 8 players per server.
+- 8 players per server, one base each. Set Max Players to 8 in the place's settings.
+- The map (`studio/BuildMap.luau`): four bases on each side of a street with the shared conveyor down the middle, all facing it, 12 studs apart so a player pushed out of a locked base never lands in the next one. Base1 to Base4 are the middle four and fill first. The shops are halfway along the street and the leaderboards stand across one end.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
@@ -184,6 +185,10 @@ Boost rules
 - Onboarding funnel: joined, bought first company, placed it, used the machine, first shared conveyor purchase, first steal.
 - Economy events: Cash earned by source (income, rewards, codes, offline) and spent by sink (companies, upgrades, weapons, spins).
 - Custom events: machine Take multiplier and how many players let it run out, steals attempted vs completed, rebirth timings.
+- Built as: everything is reported by the server (`Services/AnalyticsService`, `server/Config/Analytics.luau`) and a failed report never affects play.
+  - Funnel steps `Joined`, `BoughtCompany`, `PlacedCompany`, `UsedMachine`, `SharedPurchase`, `FirstSteal`, each once per player (saved). Players from before analytics count as past the funnel.
+  - Cash sources `Income` (added up and sent every 5 minutes and on leaving, not every second), `Offline`, `Playtime`, `Daily`, `Index`, `Code`. Sinks `Company` (by tier), `Upgrade` (plot or floor), `Weapon` (by weapon), `PetSpin` (Cash spins only). Cash from admin commands isn't reported.
+  - Custom events `MachineResult` (the multiplier; Taken, RanOut or Left; the tier), `StealStarted` (from a Plot or the Ground; the tier), `StealCompleted` (the tier) and `Rebirth` (minutes played since the last rebirth; the rebirth number).
 
 ## Map naming (to be built by hand in Studio)
 - `Workspace.Map.Bases.Base1` to `Base8` (each a Model), each containing `Conveyor`, `Machine`, `LockButton`, `Spawn`, `Entrance` and `Floors`.

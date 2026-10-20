@@ -13,6 +13,7 @@ local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local CarryService = require(script.Parent.CarryService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
@@ -80,6 +81,11 @@ local function buy(player: Player, itemId: string, ignoreDistance: boolean?): st
 		return "Your hands are full. Place or store what you're carrying first."
 	end
 	ConveyorService:RemoveItem(item.id)
+	AnalyticsService:Spent(player, "Company", item.price, item.tier)
+	AnalyticsService:Funnel(player, "BoughtCompany")
+	if item.ownerUserId == 0 then
+		AnalyticsService:Funnel(player, "SharedPurchase")
+	end
 
 	return `Bought {Companies.byId[item.companyId].name} for {Format.cash(item.price)}! Take it to a plot.`
 end

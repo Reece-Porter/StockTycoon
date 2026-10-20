@@ -29,6 +29,7 @@ local MachineConfig = require(ReplicatedStorage.Shared.Config.Machine)
 local MachinePath = require(ReplicatedStorage.Shared.MachinePath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local AdminService = require(script.Parent.AdminService)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
@@ -101,8 +102,9 @@ local function publish(player: Player, run: Types.MachineRun?)
 end
 
 -- Ends the player's run and gives the company its multiplier. With no
--- elapsed time given, it is valued as if time ran out.
-local function settle(player: Player, elapsed: number?)
+-- elapsed time given, it is valued as if time ran out. rejoined means the run
+-- was left behind when the player last left.
+local function settle(player: Player, elapsed: number?, rejoined: boolean?)
 	local run = DataService:TakeMachineRun(player)
 	if run == nil then
 		return
@@ -124,6 +126,8 @@ local function settle(player: Player, elapsed: number?)
 		where = " It's in your storage."
 	end
 
+	local outcome = if rejoined then "Left" elseif timedOut then "RanOut" else "Taken"
+	AnalyticsService:Event(player, "MachineResult", multiplier, { outcome, company.tier })
 	Remotes.ValuationFinished:FireClient(player, multiplier, timedOut)
 	Remotes.Notify:FireClient(
 		player,
@@ -193,6 +197,7 @@ local function start(player: Player): string?
 
 	showOnPad(player, pad, company)
 	publish(player, run)
+	AnalyticsService:Funnel(player, "UsedMachine")
 	return nil
 end
 
@@ -207,7 +212,7 @@ function MachineService:Start()
 	DataService:OnDataLoaded(function(player)
 		local data = DataService:GetData(player)
 		if data and data.Machine then
-			settle(player, nil)
+			settle(player, nil, true)
 		else
 			publish(player, nil)
 		end

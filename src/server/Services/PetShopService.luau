@@ -14,6 +14,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local RewardsService = require(script.Parent.RewardsService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
@@ -72,6 +73,9 @@ local function spin(player: Player): string?
 			DataService:AddCash(player, cost)
 		end
 		return `You have {Pets.InventoryCap} pets, the most you can keep. Let some go first.`
+	end
+	if not usedToken then
+		AnalyticsService:Spent(player, "PetSpin", cost)
 	end
 	Remotes.PetSpun:FireClient(player, pet.id)
 

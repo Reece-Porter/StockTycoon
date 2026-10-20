@@ -20,6 +20,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
@@ -173,6 +174,7 @@ local function place(player: Player, plotKey: string): string
 		return "That plot is taken."
 	end
 	sync(player)
+	AnalyticsService:Funnel(player, "PlacedCompany")
 	return `Placed {companyName(company)}.`
 end
 
