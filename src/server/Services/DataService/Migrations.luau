@@ -21,4 +21,8 @@ return {
 	[3] = function(data)
 		data.UnlockedPlots = { 6 }
 	end,
+
+	-- Version 5 adds Machine: the company in the Valuation Machine, if any. It
+	-- is optional and starts empty, so there is nothing to fill in.
+	[4] = function(_data) end,
 } :: { [number]: (data: { [string]: any }) -> () }

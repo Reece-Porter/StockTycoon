@@ -51,4 +51,14 @@ return {
 
 	-- Client to server: () buy the next base upgrade.
 	BuyUpgrade = event("BuyUpgrade"),
+
+	-- Client to server: () put the carried company into the Valuation Machine.
+	StartValuation = event("StartValuation"),
+
+	-- Client to server: () lock the current multiplier. Nothing else is sent;
+	-- the server works the value out from its own clock.
+	TakeValuation = event("TakeValuation"),
+
+	-- Server to client: (multiplier: number, timedOut: boolean) the run ended.
+	ValuationFinished = event("ValuationFinished"),
 }

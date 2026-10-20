@@ -340,6 +340,29 @@ function DataService:TakeFromPlot(player: Player, plotKey: string): Types.Compan
 	return company
 end
 
+-- Puts a company into the Valuation Machine. Fails if a run is already going.
+function DataService:StartMachineRun(player: Player, run: Types.MachineRun): boolean
+	local profile = profiles[player]
+	if profile == nil or profile.Data.Machine ~= nil then
+		return false
+	end
+	profile.Data.Machine = run
+	dataChanged(player)
+	return true
+end
+
+-- Ends the player's Valuation Machine run and returns it.
+function DataService:TakeMachineRun(player: Player): Types.MachineRun?
+	local profile = profiles[player]
+	local run = profile and profile.Data.Machine
+	if profile == nil or run == nil then
+		return nil
+	end
+	profile.Data.Machine = nil
+	dataChanged(player)
+	return run
+end
+
 -- Sets the plots open on each floor. UpgradeService decides what is allowed.
 function DataService:SetUnlockedPlots(player: Player, unlockedPlots: { number }): boolean
 	local profile = profiles[player]
