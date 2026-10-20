@@ -1,8 +1,9 @@
 --!strict
 -- Buying companies off conveyors. The client only says which item it wants;
--- the server checks everything else: who may buy it, distance, Cash and
--- storage space. Nothing between the checks and the purchase yields, so the
--- first valid request for an item wins and any later one finds it gone.
+-- the server checks everything else: who may buy it, distance, Cash and that
+-- the buyer's hands are free. A bought company goes into their hands to carry
+-- home. Nothing between the checks and the purchase yields, so the first valid
+-- request for an item wins and any later one finds it gone.
 
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,6 +13,7 @@ local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local CarryService = require(script.Parent.CarryService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
@@ -57,6 +59,9 @@ local function buy(player: Player, itemId: string): string
 	if not isInRange(player, item) then
 		return "Get closer to buy that."
 	end
+	if CarryService:IsCarrying(player) then
+		return "Your hands are full. Place or store what you're carrying first."
+	end
 
 	local data = DataService:GetData(player)
 	if data == nil then
@@ -65,20 +70,17 @@ local function buy(player: Player, itemId: string): string
 	if data.Cash < item.price then
 		return `You need {Format.cash(item.price)} to buy that.`
 	end
-	if not DataService:HasStorageSpace(player) then
-		return "Your storage is full."
-	end
 
 	if not DataService:SpendCash(player, item.price) then
 		return `You need {Format.cash(item.price)} to buy that.`
 	end
-	if not DataService:AddToStorage(player, newCompanyInstance(player, item)) then
+	if not CarryService:Carry(player, newCompanyInstance(player, item)) then
 		DataService:AddCash(player, item.price)
-		return "Your storage is full."
+		return "Your hands are full. Place or store what you're carrying first."
 	end
 	ConveyorService:RemoveItem(item.id)
 
-	return `Bought {Companies.byId[item.companyId].name} for {Format.cash(item.price)}!`
+	return `Bought {Companies.byId[item.companyId].name} for {Format.cash(item.price)}! Take it to a plot.`
 end
 
 function PurchaseService:Start()

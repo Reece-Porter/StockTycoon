@@ -36,4 +36,16 @@ return {
 
 	-- Client to server: (itemId: string) buy a company off a conveyor.
 	BuyConveyorItem = event("BuyConveyorItem"),
+
+	-- Client to server: (plotKey: string) place the carried company on a plot.
+	PlaceOnPlot = event("PlaceOnPlot"),
+
+	-- Client to server: (plotKey: string) pick up the company on a plot.
+	PickUpFromPlot = event("PickUpFromPlot"),
+
+	-- Client to server: () put the carried company into storage.
+	StoreCarried = event("StoreCarried"),
+
+	-- Client to server: (instanceId: string) take a company out of storage.
+	TakeFromStorage = event("TakeFromStorage"),
 }

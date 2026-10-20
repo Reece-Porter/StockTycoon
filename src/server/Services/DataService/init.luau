@@ -245,20 +245,84 @@ function DataService:SetCash(player: Player, amount: number): boolean
 	return true
 end
 
+-- Companies move between Carrying, Storage and Placed only through the
+-- functions below. Each one either makes its whole change or none of it.
+
 function DataService:HasStorageSpace(player: Player): boolean
 	local profile = profiles[player]
 	return profile ~= nil and #profile.Data.Storage < BaseConfig.StorageCapacity
 end
 
--- Adds a company to the player's storage if there is room.
-function DataService:AddToStorage(player: Player, company: Types.CompanyInstance): boolean
+-- Adds a company to storage if there is room. With force, adds it even when
+-- storage is full, for companies returned automatically so they are never lost.
+function DataService:AddToStorage(player: Player, company: Types.CompanyInstance, force: boolean?): boolean
 	local profile = profiles[player]
-	if profile == nil or #profile.Data.Storage >= BaseConfig.StorageCapacity then
+	if profile == nil or (not force and #profile.Data.Storage >= BaseConfig.StorageCapacity) then
 		return false
 	end
 	table.insert(profile.Data.Storage, company)
 	dataChanged(player)
 	return true
+end
+
+function DataService:TakeFromStorage(player: Player, instanceId: string): Types.CompanyInstance?
+	local profile = profiles[player]
+	if profile == nil then
+		return nil
+	end
+	for index, company in profile.Data.Storage do
+		if company.instanceId == instanceId then
+			table.remove(profile.Data.Storage, index)
+			dataChanged(player)
+			return company
+		end
+	end
+	return nil
+end
+
+-- Puts a company in the player's hands. Fails if they already hold one.
+function DataService:SetCarrying(player: Player, company: Types.CompanyInstance): boolean
+	local profile = profiles[player]
+	if profile == nil or profile.Data.Carrying ~= nil then
+		return false
+	end
+	profile.Data.Carrying = company
+	dataChanged(player)
+	return true
+end
+
+-- Empties the player's hands and returns what they held.
+function DataService:TakeCarrying(player: Player): Types.CompanyInstance?
+	local profile = profiles[player]
+	local company = profile and profile.Data.Carrying
+	if profile == nil or company == nil then
+		return nil
+	end
+	profile.Data.Carrying = nil
+	dataChanged(player)
+	return company
+end
+
+-- Puts a company on a plot. Fails if the plot already has one.
+function DataService:PlaceOnPlot(player: Player, plotKey: string, company: Types.CompanyInstance): boolean
+	local profile = profiles[player]
+	if profile == nil or profile.Data.Placed[plotKey] ~= nil then
+		return false
+	end
+	profile.Data.Placed[plotKey] = company
+	dataChanged(player)
+	return true
+end
+
+function DataService:TakeFromPlot(player: Player, plotKey: string): Types.CompanyInstance?
+	local profile = profiles[player]
+	local company = profile and profile.Data.Placed[plotKey]
+	if profile == nil or company == nil then
+		return nil
+	end
+	profile.Data.Placed[plotKey] = nil
+	dataChanged(player)
+	return company
 end
 
 -- Wipes the player's save back to a brand new player's.

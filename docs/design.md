@@ -168,7 +168,7 @@ Boost rules
 - Custom events: machine Take multiplier and how many players let it run out, steals attempted vs completed, rebirth timings.
 
 ## Map naming (to be built by hand in Studio)
-- `Workspace.Map.Bases.Base1` to `Base8`, each containing `Conveyor`, `Machine`, `LockButton`, `Spawn`, `Entrance` and `Floors`.
+- `Workspace.Map.Bases.Base1` to `Base8` (each a Model), each containing `Conveyor`, `Machine`, `LockButton`, `Spawn`, `Entrance` and `Floors`.
 - Each base's `Conveyor` model holds the belt plus two parts named `Start` and `End`. Companies appear at `Start` and travel in a straight line to `End`, sitting on the bottom face of those parts, so place them on the belt surface. `Spawn` is a part the owner appears on.
 - `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots and floors are hidden or greyed out by code.
 - `Workspace.Map.SharedConveyor`.

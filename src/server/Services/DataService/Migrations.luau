@@ -9,4 +9,10 @@ return {
 	[1] = function(data)
 		data.Storage = {}
 	end,
+
+	-- Version 3 adds Placed: companies on plots, by plot key. (Carrying, the
+	-- company in the player's hands, is optional and starts empty.)
+	[2] = function(data)
+		data.Placed = {}
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

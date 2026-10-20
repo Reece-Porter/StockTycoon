@@ -17,6 +17,7 @@ local CompanyStats = require(ReplicatedStorage.Shared.CompanyStats)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local ConveyorPath = require(ReplicatedStorage.Shared.ConveyorPath)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
+local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
 
 export type Item = {
 	id: string,
@@ -41,52 +42,6 @@ local itemsFolder: Folder
 
 local ConveyorService = {}
 
-local function companyModelsFolder(): Instance?
-	local assets = ReplicatedStorage:FindFirstChild("Assets")
-	return assets and assets:FindFirstChild("Companies")
-end
-
--- The company's own model, or the Default model until it has one.
-local function findModel(companyId: string): Model?
-	local folder = companyModelsFolder()
-	if folder == nil then
-		return nil
-	end
-	local model = folder:FindFirstChild(companyId) or folder:FindFirstChild("Default")
-	return if model and model:IsA("Model") then model else nil
-end
-
--- Says once, at startup, which models are missing, rather than inventing any.
-local function reportMissingModels()
-	local folder = companyModelsFolder()
-	if folder == nil then
-		warn("[ConveyorService] ReplicatedStorage.Assets.Companies is missing, so no companies can spawn.")
-		return
-	end
-
-	local missing = {}
-	for _, company in Companies.list do
-		if folder:FindFirstChild(company.id) == nil then
-			table.insert(missing, company.id)
-		end
-	end
-	if #missing == 0 then
-		return
-	end
-
-	local default = folder:FindFirstChild("Default")
-	if default and default:IsA("Model") then
-		print(`[ConveyorService] {#missing} companies have no model yet and use Default: {table.concat(missing, ", ")}`)
-	else
-		warn(
-			`[ConveyorService] ReplicatedStorage.Assets.Companies.Default is missing, so these companies can't spawn: {table.concat(
-				missing,
-				", "
-			)}`
-		)
-	end
-end
-
 -- Start and End CFrames that sit the model's bottom on the belt, facing the
 -- way it travels. Start and End parts mark the belt surface with their bottom.
 local function pathFor(base: BaseService.Base, model: Model): (CFrame, CFrame)
@@ -94,8 +49,7 @@ local function pathFor(base: BaseService.Base, model: Model): (CFrame, CFrame)
 	local startPoint = startPart.Position - Vector3.new(0, startPart.Size.Y / 2, 0)
 	local endPoint = endPart.Position - Vector3.new(0, endPart.Size.Y / 2, 0)
 
-	local boxCFrame, boxSize = model:GetBoundingBox()
-	local lift = Vector3.new(0, model:GetPivot().Position.Y - (boxCFrame.Position.Y - boxSize.Y / 2), 0)
+	local lift = Vector3.new(0, CompanyModels.pivotHeight(model), 0)
 	local facing = CFrame.lookAt(startPoint, endPoint).Rotation
 
 	return CFrame.new(startPoint + lift) * facing, CFrame.new(endPoint + lift) * facing
@@ -114,18 +68,9 @@ local function spawnItem(base: BaseService.Base, tierId: string?): Item?
 	end
 	local company = choices[SpawnRoll.pickIndex(#choices, random:NextNumber())]
 
-	local template = findModel(company.id)
-	if template == nil then
+	local model = CompanyModels.clone(company.id, true)
+	if model == nil then
 		return nil
-	end
-	local model = template:Clone()
-	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			descendant.Anchored = true
-			descendant.CanCollide = false
-			descendant.CanTouch = false
-		end
 	end
 
 	local startCFrame, endCFrame = pathFor(base, model)
@@ -194,7 +139,7 @@ function ConveyorService:Init()
 	itemsFolder = Instance.new("Folder")
 	itemsFolder.Name = "ConveyorItems"
 	itemsFolder.Parent = workspace
-	reportMissingModels()
+	CompanyModels.reportMissing()
 end
 
 function ConveyorService:Start()
