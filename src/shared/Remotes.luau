@@ -31,6 +31,6 @@ local function event(name: string): RemoteEvent
 end
 
 return {
-	-- Server to client: a short message shown to that player in chat.
+	-- Server to client: a short message shown to that player on screen.
 	Notify = event("Notify"),
 }
