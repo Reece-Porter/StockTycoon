@@ -7,6 +7,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -22,13 +23,17 @@ export type Data = {
 	-- The company in the player's hands, saved so it can never be lost. A save
 	-- that loads with one (the server stopped mid-carry) moves it to Storage.
 	Carrying: Types.CompanyInstance?,
+	-- Plots open on each floor, e.g. { 10, 7 }: Floor 1 full, Floor 2 has 7.
+	-- The number of entries is the number of floors opened.
+	UnlockedPlots: { number },
 }
 
 local Template: Data = {
-	DataVersion = 3,
+	DataVersion = 4,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
+	UnlockedPlots = { BaseConfig.StartingPlots },
 }
 
 return Template

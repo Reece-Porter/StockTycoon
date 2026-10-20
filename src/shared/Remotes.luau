@@ -48,4 +48,7 @@ return {
 
 	-- Client to server: (instanceId: string) take a company out of storage.
 	TakeFromStorage = event("TakeFromStorage"),
+
+	-- Client to server: () buy the next base upgrade.
+	BuyUpgrade = event("BuyUpgrade"),
 }

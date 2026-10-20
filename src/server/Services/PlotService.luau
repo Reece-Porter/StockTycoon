@@ -1,6 +1,7 @@
 --!strict
 -- Placing companies on plots and picking them up again. Shows each placed
--- company standing on its plot and greys out plots the owner hasn't unlocked.
+-- company standing on its plot and greys out plots the owner hasn't unlocked
+-- (Data.UnlockedPlots, raised by UpgradeService).
 --
 -- Plot state reaches clients through attributes on the plot parts: PlotKey and
 -- Unlocked, plus CompanyId and InstanceId while a company is placed. The models shown on
@@ -12,6 +13,7 @@ local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
@@ -32,9 +34,8 @@ local function companyName(company: Types.CompanyInstance): string
 	return if config then config.name else company.companyId
 end
 
--- Until base upgrades exist, the first StartingPlots plots on Floor 1 are open.
-local function isUnlocked(plot: BaseService.Plot): boolean
-	return plot.floor == 1 and plot.index <= BaseConfig.StartingPlots
+local function isUnlocked(plot: BaseService.Plot, data: DataService.Data): boolean
+	return UpgradeMath.isUnlocked(data.UnlockedPlots, plot.floor, plot.index)
 end
 
 local function clearPlot(plot: BaseService.Plot)
@@ -99,7 +100,7 @@ local function sync(player: Player)
 		return
 	end
 	for _, plot in base.plots do
-		local unlocked = isUnlocked(plot)
+		local unlocked = isUnlocked(plot, data)
 		setLocked(plot.part, not unlocked)
 		plot.part:SetAttribute("PlotKey", plot.key)
 		plot.part:SetAttribute("Unlocked", unlocked)
@@ -144,7 +145,7 @@ local function place(player: Player, plotKey: string): string
 	if not CarryService:IsCarrying(player) then
 		return "You're not carrying anything."
 	end
-	if not isUnlocked(plot) then
+	if not isUnlocked(plot, data) then
 		return "That plot is locked."
 	end
 	if data.Placed[plot.key] ~= nil then

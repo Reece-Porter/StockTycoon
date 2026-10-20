@@ -104,7 +104,7 @@ function StorageController:Start()
 	openButton.BackgroundTransparency = 0.2
 	openButton.AnchorPoint = Vector2.new(0, 0.5)
 	openButton.Position = UDim2.new(0, 12, 0.5, 0)
-	openButton.Size = UDim2.fromOffset(132, BUTTON_HEIGHT)
+	openButton.Size = UDim2.fromOffset(160, BUTTON_HEIGHT)
 	openButton.Parent = gui
 
 	local panel = Instance.new("Frame")
