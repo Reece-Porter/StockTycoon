@@ -25,4 +25,11 @@ return {
 	-- Version 5 adds Machine: the company in the Valuation Machine, if any. It
 	-- is optional and starts empty, so there is nothing to fill in.
 	[4] = function(_data) end,
+
+	-- Version 6 adds OwnedWeapons and EquippedWeapon. Everyone starts with the
+	-- free Rolled-up Newspaper.
+	[5] = function(data)
+		data.OwnedWeapons = { "Newspaper" }
+		data.EquippedWeapon = "Newspaper"
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

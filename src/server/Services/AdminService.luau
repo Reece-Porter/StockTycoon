@@ -19,12 +19,14 @@ local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 local PurchaseService = require(script.Parent.PurchaseService)
 local StealService = require(script.Parent.StealService)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
+local WeaponShopService = require(script.Parent.WeaponShopService)
 
 -- Keeps typed amounts well inside the range a number stores exactly.
 local MAX_AMOUNT = 1e15
@@ -59,6 +61,21 @@ local function findTier(text: string?): Tiers.Tier?
 	for _, tier in Tiers.list do
 		if string.lower(tier.id) == wanted then
 			return tier
+		end
+	end
+	return nil
+end
+
+-- Matches "gavel", "Golden Calculator", "stapler-gun" and so on to a weapon.
+local function findWeapon(text: string?): Weapons.Weapon?
+	if text == nil then
+		return nil
+	end
+	local wanted = string.lower((string.gsub(text, "[%s%-]", "")))
+	for _, weapon in Weapons.list do
+		local name = string.lower((string.gsub(weapon.name, "[%s%-]", "")))
+		if string.lower(weapon.id) == wanted or name == wanted then
+			return weapon
 		end
 	end
 	return nil
@@ -238,6 +255,28 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/giveweapon",
+		usage = "/giveweapon <weapon> [player]",
+		run = function(player, args)
+			local weapon = findWeapon(args[1])
+			if weapon == nil then
+				local ids = {}
+				for _, each in Weapons.list do
+					table.insert(ids, each.id)
+				end
+				return `Usage: /giveweapon <weapon> [player], where weapon is one of: {table.concat(ids, ", ")}`
+			end
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
+			end
+			if not WeaponShopService:Give(target, weapon.id) then
+				return `{target.Name}'s data hasn't loaded yet.`
+			end
+			return `Gave {if target == player then "you" else target.Name} the {weapon.name}.`
+		end,
+	},
+	{
 		alias = "/resetdata",
 		usage = "/resetdata",
 		run = function(player)
@@ -298,6 +337,7 @@ local function onPlayerAdded(player: Player)
 
 	local problems = table.clone(BaseService:GetProblems())
 	table.move(ConveyorService:GetProblems(), 1, #ConveyorService:GetProblems(), #problems + 1, problems)
+	table.move(WeaponShopService:GetProblems(), 1, #WeaponShopService:GetProblems(), #problems + 1, problems)
 	if #problems > 0 then
 		AdminService:SetDebugValue(player, "MapProblems", table.concat(problems, "\n"))
 	end

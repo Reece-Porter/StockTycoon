@@ -11,6 +11,10 @@
 -- away. If the owner gets close enough to tag the thief, or the thief resets
 -- or leaves, or the owner leaves, it is simply back on its owner's plot.
 --
+-- A thief can also pick up a company knocked out of someone's hands
+-- (DropService). If it came out of its owner's storage rather than off a plot,
+-- the steal works the same way and it is back in their storage if it fails.
+--
 -- Owners lock their base from its LockButton for Config/Steal.LockSeconds.
 -- While locked nobody else can steal from it, and anyone else inside is moved
 -- out; when it runs out the owner presses the button again. New players can't
@@ -219,6 +223,41 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 	return `Got {companyName(company)}! Get it to a free plot on your base.`
 end
 
+-- Whether the company is still where it was in its owner's save.
+local function isStillThere(entry: CarryService.Stolen): boolean
+	local ownerData = DataService:GetData(entry.owner)
+	if entry.owner.Parent ~= Players or ownerData == nil then
+		return false
+	end
+	local plotKey = entry.plotKey
+	if plotKey then
+		local current = ownerData.Placed[plotKey]
+		return current ~= nil and current.instanceId == entry.company.instanceId
+	end
+	for _, company in ownerData.Storage do
+		if company.instanceId == entry.company.instanceId then
+			return true
+		end
+	end
+	return false
+end
+
+-- Takes the company out of its owner's save, or puts it back.
+local function takeFromOwner(entry: CarryService.Stolen): Types.CompanyInstance?
+	local plotKey = entry.plotKey
+	if plotKey then
+		return DataService:TakeFromPlot(entry.owner, plotKey)
+	end
+	return DataService:TakeFromStorage(entry.owner, entry.company.instanceId)
+end
+
+local function giveBackToOwner(entry: CarryService.Stolen, company: Types.CompanyInstance)
+	local plotKey = entry.plotKey
+	if plotKey == nil or not DataService:PlaceOnPlot(entry.owner, plotKey, company) then
+		DataService:AddToStorage(entry.owner, company, true)
+	end
+end
+
 -- Placing a stolen company on one of the thief's own plots (already checked by
 -- PlotService) moves it to their save and completes the steal.
 local function complete(thief: Player, plot: BaseService.Plot): string
@@ -227,15 +266,13 @@ local function complete(thief: Player, plot: BaseService.Plot): string
 		return "You're not carrying anything."
 	end
 	local owner = entry.owner
-	local ownerData = DataService:GetData(owner)
-	local current = if ownerData then ownerData.Placed[entry.plotKey] else nil
-	if owner.Parent ~= Players or current == nil or current.instanceId ~= entry.company.instanceId then
+	if not isStillThere(entry) then
 		CarryService:TakeStolen(thief)
 		refreshOwner(owner)
 		return "That company isn't there to take any more."
 	end
 
-	local company = DataService:TakeFromPlot(owner, entry.plotKey)
+	local company = takeFromOwner(entry)
 	CarryService:TakeStolen(thief)
 	if company == nil then
 		refreshOwner(owner)
@@ -245,7 +282,7 @@ local function complete(thief: Player, plot: BaseService.Plot): string
 	company.ownerUserId = thief.UserId
 	if not DataService:PlaceOnPlot(thief, plot.key, company) then
 		company.ownerUserId = owner.UserId
-		DataService:PlaceOnPlot(owner, entry.plotKey, company)
+		giveBackToOwner(entry, company)
 		refreshOwner(owner)
 		return "That plot is taken."
 	end
@@ -333,7 +370,8 @@ function StealService:Start()
 
 	CarryService:OnStolenReturned(function(_thief, entry)
 		refreshOwner(entry.owner)
-		notify(entry.owner, `Your {companyName(entry.company)} is back on its plot.`)
+		local place = if entry.plotKey then "on its plot" else "in your storage"
+		notify(entry.owner, `Your {companyName(entry.company)} is back {place}.`)
 	end)
 
 	DataService:OnDataLoaded(function(player)

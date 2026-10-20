@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 
 export type Data = {
 	DataVersion: number,
@@ -30,14 +31,20 @@ export type Data = {
 	-- so it can never be lost: a save that loads with one is settled as if
 	-- time ran out.
 	Machine: Types.MachineRun?,
+	-- Ids of the weapons the player owns (Config/Weapons), and the one in
+	-- their hands. Kept through rebirth.
+	OwnedWeapons: { string },
+	EquippedWeapon: string,
 }
 
 local Template: Data = {
-	DataVersion = 5,
+	DataVersion = 6,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
 	UnlockedPlots = { BaseConfig.StartingPlots },
+	OwnedWeapons = { Weapons.Starter },
+	EquippedWeapon = Weapons.Starter,
 }
 
 return Template

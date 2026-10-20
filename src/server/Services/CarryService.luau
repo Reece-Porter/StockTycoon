@@ -9,10 +9,12 @@
 -- join. On their own base, players can also store what they carry or take a
 -- company out of storage.
 --
--- A thief can instead be carrying a company they are stealing. That is held
--- here in memory only and never saved: the company stays in its owner's save
--- until the thief places it (StealService). If the thief resets, dies or
--- leaves, it simply goes back to its owner's plot.
+-- A thief can instead be carrying a company they are stealing, and a company
+-- knocked out of someone's hands can be lying on the ground (DropService).
+-- Both are held here in memory only and never saved: the company stays in its
+-- owner's save (on its plot, or in their storage) until a thief places it on
+-- their own base (StealService). If that never happens, it is simply back
+-- where it was.
 --
 -- The storage list is shared with the client as JSON in the player's
 -- StorageList attribute; CarryingCompanyId says what they hold, and
@@ -21,7 +23,6 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterPlayer = game:GetService("StarterPlayer")
 
 local CarryConfig = require(ReplicatedStorage.Shared.Config.Carry)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
@@ -30,6 +31,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
+local Movement = require(script.Parent.Parent.Lib.Movement)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local HELD_MODEL_NAME = "CarriedCompany"
@@ -37,11 +39,14 @@ local MAX_INSTANCE_ID_LENGTH = 64
 
 type Held = { model: Model, instanceId: string }
 
--- A company being stolen: still in its owner's save, on this plot.
-export type Stolen = { company: Types.CompanyInstance, owner: Player, plotKey: string }
+-- A company out of its owner's hands: still in its owner's save, on this plot
+-- (plotKey) or in their storage (plotKey nil).
+export type Stolen = { company: Types.CompanyInstance, owner: Player, plotKey: string? }
 
 local held: { [Player]: Held } = {}
 local stolen: { [Player]: Stolen } = {}
+-- Companies lying on the ground, by instanceId.
+local loose: { [string]: Stolen } = {}
 local stolenEndedCallbacks: { (thief: Player, entry: Stolen) -> () } = {}
 local storeLimiter = RateLimiter.new(4, 6)
 local takeLimiter = RateLimiter.new(4, 6)
@@ -95,6 +100,18 @@ local function attach(character: Model, root: BasePart, company: Types.CompanyIn
 	return model
 end
 
+-- Whether one of this player's companies is out of their hands: being carried
+-- off by someone else or lying on the ground.
+local function isAway(owner: Player, instanceId: string): boolean
+	for _, entry in stolen do
+		if entry.owner == owner and entry.company.instanceId == instanceId then
+			return true
+		end
+	end
+	local entry = loose[instanceId]
+	return entry ~= nil and entry.owner == owner
+end
+
 local function publishStorage(player: Player)
 	local data = DataService:GetData(player)
 	if data == nil then
@@ -102,6 +119,9 @@ local function publishStorage(player: Player)
 	end
 	local list = {}
 	for _, company in data.Storage do
+		if isAway(player, company.instanceId) then
+			continue
+		end
 		table.insert(list, {
 			instanceId = company.instanceId,
 			companyId = company.companyId,
@@ -135,8 +155,7 @@ local function sync(player: Player)
 	end
 
 	if humanoid then
-		local multiplier = if company then CarryConfig.WalkSpeedMultiplier else 1
-		humanoid.WalkSpeed = StarterPlayer.CharacterWalkSpeed * multiplier
+		Movement.set(player, "carry", if company then CarryConfig.WalkSpeedMultiplier else nil)
 	end
 	player:SetAttribute("CarryingCompanyId", if company then company.companyId else nil)
 	player:SetAttribute("CarryingValued", if company then company.hasBeenValued else nil)
@@ -144,14 +163,23 @@ local function sync(player: Player)
 	publishStorage(player)
 end
 
--- Sends a company being stolen back to its owner's plot (it never left their
--- save) and tells anything listening, such as StealService.
+-- A company leaving or going back to its owner's storage changes what their
+-- storage list shows.
+local function publishOwnerStorage(entry: Stolen)
+	if entry.plotKey == nil and entry.owner.Parent == Players then
+		publishStorage(entry.owner)
+	end
+end
+
+-- Sends a company being stolen back to its owner's plot or storage (it never
+-- left their save) and tells anything listening, such as StealService.
 local function returnStolen(thief: Player)
 	local entry = stolen[thief]
 	if entry == nil then
 		return
 	end
 	stolen[thief] = nil
+	publishOwnerStorage(entry)
 	if thief.Parent == Players then
 		sync(thief)
 		Remotes.Notify:FireClient(thief, `The {companyName(entry.company)} went back to its owner.`)
@@ -199,6 +227,7 @@ function CarryService:CarryStolen(thief: Player, entry: Stolen): boolean
 	end
 	stolen[thief] = entry
 	sync(thief)
+	publishOwnerStorage(entry)
 	return true
 end
 
@@ -209,6 +238,9 @@ function CarryService:TakeStolen(thief: Player): Stolen?
 	if thief.Parent == Players then
 		sync(thief)
 	end
+	if entry then
+		publishOwnerStorage(entry)
+	end
 	return entry
 end
 
@@ -216,14 +248,69 @@ function CarryService:GetStolen(thief: Player): Stolen?
 	return stolen[thief]
 end
 
--- Whether someone is carrying off the company on this player's plot.
+-- Whether the company on this player's plot is off it: being carried away by
+-- someone else or lying on the ground.
 function CarryService:IsPlotBeingStolen(owner: Player, plotKey: string): boolean
 	for _, entry in stolen do
 		if entry.owner == owner and entry.plotKey == plotKey then
 			return true
 		end
 	end
+	for _, entry in loose do
+		if entry.owner == owner and entry.plotKey == plotKey then
+			return true
+		end
+	end
 	return false
+end
+
+-- Whether a company in this player's storage is out on the ground or being
+-- carried off, so it can't be taken out.
+function CarryService:IsAway(owner: Player, instanceId: string): boolean
+	return isAway(owner, instanceId)
+end
+
+-- Knocks whatever the player is holding out of their hands and returns it as
+-- a loose company for DropService to put on the ground. A company of their
+-- own goes into their storage straight away, so it is safe whatever happens.
+function CarryService:DropCarried(player: Player): Stolen?
+	local entry = stolen[player]
+	if entry then
+		stolen[player] = nil
+	else
+		local company = DataService:TakeCarrying(player)
+		if company == nil then
+			return nil
+		end
+		DataService:AddToStorage(player, company, true)
+		entry = { company = company, owner = player, plotKey = nil }
+	end
+	local dropped = entry :: Stolen
+	loose[dropped.company.instanceId] = dropped
+	sync(player)
+	publishOwnerStorage(dropped)
+	return dropped
+end
+
+-- Takes a company off the ground, e.g. when it is picked up or goes home.
+function CarryService:TakeLoose(instanceId: string): Stolen?
+	local entry = loose[instanceId]
+	loose[instanceId] = nil
+	if entry then
+		publishOwnerStorage(entry)
+	end
+	return entry
+end
+
+-- Companies of this player's lying on the ground.
+function CarryService:GetLooseFrom(owner: Player): { Stolen }
+	local list = {}
+	for _, entry in loose do
+		if entry.owner == owner then
+			table.insert(list, entry)
+		end
+	end
+	return list
 end
 
 -- Every thief currently carrying off one of this player's companies.
@@ -238,7 +325,7 @@ function CarryService:GetThievesOf(owner: Player): { Player }
 end
 
 -- Runs callback(thief, entry) when a steal ends because the thief reset, died
--- or left, after the company has gone back to its owner's plot.
+-- or left, after the company has gone back to its owner's plot or storage.
 function CarryService:OnStolenReturned(callback: (thief: Player, entry: Stolen) -> ())
 	table.insert(stolenEndedCallbacks, callback)
 end
@@ -281,6 +368,9 @@ local function takeOut(player: Player, instanceId: string): string
 		return "Go back to your base to take companies out of storage."
 	end
 
+	if isAway(player, instanceId) then
+		return "That company is out of your storage right now."
+	end
 	local company = DataService:TakeFromStorage(player, instanceId)
 	if company == nil then
 		return "That company isn't in your storage."
