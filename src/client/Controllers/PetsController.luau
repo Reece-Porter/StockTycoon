@@ -17,7 +17,7 @@ local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 -- Beside the Weapons button, under Upgrade on the left edge.
-local BUTTON_POSITION = UDim2.new(0, 96, 0.5, 96)
+local BUTTON_POSITION = UDim2.new(0, 96, 0.5, 48)
 local BUTTON_SIZE = UDim2.fromOffset(76, 48)
 local ROW_HEIGHT = 60
 local PANEL_MAX_SIZE = Vector2.new(400, 480)

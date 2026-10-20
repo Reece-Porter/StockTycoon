@@ -1,8 +1,8 @@
 --!strict
 -- The pet shop screen, opened from the prompt at the pet shop
 -- (Workspace.Map.Shops.PetShop.ShopPrompt). It shows the spin cost (which
--- rises with rebirths), a Spin button, and the chance of every pet before
--- anyone spins. The server rolls
+-- rises with rebirths, or free while the player has free spins from rewards),
+-- a Spin button, and the chance of every pet before anyone spins. The server rolls
 -- the spin and sends the pet back with PetSpun; this only shows it.
 
 local Players = game:GetService("Players")
@@ -122,12 +122,19 @@ function PetShopController:Start()
 	close.Parent = panel
 
 	local spin = button("", SPIN)
+	-- Free spins from rewards are used first.
 	local function showCost()
+		local tokens = player:GetAttribute("SpinTokens")
+		if typeof(tokens) == "number" and tokens > 0 then
+			spin.Text = `Spin for a pet  ·  Free ({tokens} left)`
+			return
+		end
 		local rebirths = player:GetAttribute("Rebirths")
 		local cost = PetMath.spinCost(if typeof(rebirths) == "number" then rebirths else 0)
 		spin.Text = `Spin for a pet  ·  {Format.cash(cost)}`
 	end
 	player:GetAttributeChangedSignal("Rebirths"):Connect(showCost)
+	player:GetAttributeChangedSignal("SpinTokens"):Connect(showCost)
 	showCost()
 	spin.Position = UDim2.fromOffset(12, 60)
 	spin.Size = UDim2.new(1, -24, 0, 52)

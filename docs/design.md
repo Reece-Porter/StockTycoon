@@ -117,6 +117,8 @@ Daily login streak
   - **Day 6**: 2x income boost for 20 minutes
   - **Day 7**: 2 free pet spins and a 2x boost for 30 minutes
 - Missing a day resets the streak to Day 1. After Day 7 it loops back to Day 1.
+- Daily Cash rewards have minimums like the playtime ones, so new players get something: Day 1 at least 250, Day 3 at least 1,000, Day 5 at least 2,500.
+- Cash rewards use the player's income without any active reward boost, so one reward isn't doubled by another.
 - Show the full 7-day track on claim so players can see what's coming.
 
 Boost rules
@@ -125,10 +127,21 @@ Boost rules
 - Reward boosts stack multiplicatively with the 2x income game pass.
 - Free pet spins from rewards are stored as tokens and used at the pet shop.
 
+## Index (starting assumption)
+- The Index lists every company and marks the ones a player has ever owned (bought, or stolen and placed). Ones not found yet show as "???".
+- Prizes for collecting different companies, claimed with a button like rewards:
+  - **5**: 120 seconds of income (minimum 500 Cash)
+  - **10**: free pet spin
+  - **15**: 300 seconds of income (minimum 2,500 Cash) and a 2x boost for 10 minutes
+  - **20**: 2 free pet spins
+  - **25**: 600 seconds of income (minimum 10,000 Cash) and a 2x boost for 20 minutes
+  - **30 (all of them)**: 3 free pet spins and a 2x boost for 30 minutes
+- Kept through rebirth.
+
 ## Rebirth (starting assumption)
 - Requirement: 1,000,000 Cash and owning at least one Blue Chip company or better (placed or in storage). Not while carrying a company or with a Valuation Machine run going.
 - Resets: Cash, placed and stored companies, plot and floor upgrades.
-- Keeps: rebirth count, weapons, pets, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
+- Keeps: rebirth count, weapons, pets, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
 - Reward: income multiplier = 1 + 0.5 x rebirth count, plus slightly better personal conveyor odds: every tier above Startup weighs 10% more per rebirth, up to double.
 - Rebirth requirements scale up each time (x3 Cash per rebirth).
 
@@ -192,7 +205,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 10. **Combat and weapon shop**: Check: damage only applies after server validation, hitting a carrier drops the company, dropped companies return correctly, no damage in own base.
 11. **Pet shop and floor modifiers**: Check: spin odds match Config over 10,000 test rolls, pets modify only their floor, guard pets increase hold time, pets survive rebirth.
 12. **Rebirth**: Check: correct resets and keeps, multiplier applies.
-13. **Playtime and daily rewards**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack.
+13. **Playtime and daily rewards, and the Index**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack, owning a new company adds it to the Index, Index prizes unlock at the right counts and can only be claimed once.
 14. **Offline earnings, onboarding, leaderboards, codes**.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
 16. **Monetisation**.

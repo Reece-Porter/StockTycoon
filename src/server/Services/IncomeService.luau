@@ -13,6 +13,7 @@ local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
+local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 
@@ -24,13 +25,30 @@ local rates: { [Player]: number } = {}
 
 local IncomeService = {}
 
--- Floor pets and rebirths count now. Boost and game pass multipliers arrive
--- in later slices; until then they are 1.
+-- Floor pets, rebirths and reward boosts count now. The game pass multiplier
+-- arrives in a later slice; until then it is 1.
 local function multipliersFor(data: DataService.Data): IncomeMath.Multipliers
 	local multipliers = IncomeMath.noMultipliers()
 	multipliers.floorPet = PetMath.incomeMultipliers(data.Pets)
 	multipliers.rebirth = RebirthMath.incomeMultiplier(data.Rebirths)
+	multipliers.boost = if data.Rewards.BoostSeconds > 0 then RewardsConfig.BoostMultiplier else 1
 	return multipliers
+end
+
+-- Income per second from the companies on their plots. A company being
+-- carried off by a thief isn't on its plot, so it doesn't earn.
+local function rateOf(player: Player, data: DataService.Data, withoutBoost: boolean?): number
+	local placed = {}
+	for plotKey, company in data.Placed do
+		if not CarryService:IsPlotBeingStolen(player, plotKey) then
+			placed[plotKey] = company
+		end
+	end
+	local multipliers = multipliersFor(data)
+	if withoutBoost then
+		multipliers.boost = 1
+	end
+	return IncomeMath.total(placed, multipliers)
 end
 
 local function updateRate(player: Player)
@@ -38,14 +56,7 @@ local function updateRate(player: Player)
 	if data == nil or player.Parent ~= Players then
 		return
 	end
-	-- A company being carried off by a thief isn't on its plot, so it doesn't earn.
-	local placed = {}
-	for plotKey, company in data.Placed do
-		if not CarryService:IsPlotBeingStolen(player, plotKey) then
-			placed[plotKey] = company
-		end
-	end
-	local rate = IncomeMath.total(placed, multipliersFor(data))
+	local rate = rateOf(player, data)
 	rates[player] = rate
 	player:SetAttribute("IncomePerSecond", rate)
 end
@@ -62,7 +73,13 @@ function IncomeService:GetMultipliers(player: Player): IncomeMath.Multipliers
 	return if data then multipliersFor(data) else IncomeMath.noMultipliers()
 end
 
-function IncomeService:GetIncomePerSecond(player: Player): number
+-- The player's income per second; withoutBoost leaves out a reward boost (so
+-- a reward worth some seconds of income isn't doubled by another reward).
+function IncomeService:GetIncomePerSecond(player: Player, withoutBoost: boolean?): number
+	if withoutBoost then
+		local data = DataService:GetData(player)
+		return if data then rateOf(player, data, true) else 0
+	end
 	return rates[player] or 0
 end
 

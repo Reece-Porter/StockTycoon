@@ -1,16 +1,19 @@
 --!strict
--- The Cash display on the left of the screen, just above the Storage button:
--- the player's Cash and income per second. Reads leaderstats.Cash and the
--- IncomePerSecond attribute, both set by the server.
+-- The Cash display at the top of the buttons on the left of the screen: the
+-- player's Cash and income per second, and the time left on a 2x income boost.
+-- Reads leaderstats.Cash and the IncomePerSecond and BoostEndsAt attributes,
+-- all set by the server.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Format = require(ReplicatedStorage.Shared.Format)
+local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
 
 local SIZE = UDim2.fromOffset(160, 64)
--- Sits just above the Storage button, which is centred on the left edge.
-local POSITION = UDim2.new(0, 12, 0.5, -32)
+-- The top of the stack of buttons on the left edge (bottom edge given).
+local POSITION = UDim2.new(0, 12, 0.5, -80)
+local BOOST_COLOUR = Color3.fromRGB(255, 200, 70)
 
 local player = Players.LocalPlayer
 
@@ -52,12 +55,27 @@ function HudController:Start()
 	local incomeText = label(frame, UDim2.fromOffset(12, 38), 20, 17, Color3.fromRGB(120, 220, 130))
 	cashText.Text = Format.cash(0)
 
+	incomeText.RichText = true
 	local function renderIncome()
 		local rate = player:GetAttribute("IncomePerSecond")
-		incomeText.Text = Format.income(if typeof(rate) == "number" then rate else 0)
+		local text = Format.income(if typeof(rate) == "number" then rate else 0)
+		local endsAt = player:GetAttribute("BoostEndsAt")
+		local left = if typeof(endsAt) == "number" then endsAt - workspace:GetServerTimeNow() else 0
+		if left > 0 then
+			local hex = BOOST_COLOUR:ToHex()
+			text ..= `  <font color="#{hex}">{RewardsConfig.BoostMultiplier}x {Format.duration(left)}</font>`
+		end
+		incomeText.Text = text
 	end
 	player:GetAttributeChangedSignal("IncomePerSecond"):Connect(renderIncome)
+	player:GetAttributeChangedSignal("BoostEndsAt"):Connect(renderIncome)
 	renderIncome()
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			renderIncome()
+		end
+	end)
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 

@@ -16,7 +16,7 @@ local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 
 -- Under the Upgrade button, which is under Storage on the left edge, sharing
 -- the row with the Pets button.
-local BUTTON_POSITION = UDim2.new(0, 12, 0.5, 96)
+local BUTTON_POSITION = UDim2.new(0, 12, 0.5, 48)
 local BUTTON_SIZE = UDim2.fromOffset(76, 48)
 local ROW_HEIGHT = 76
 local PANEL_MAX_SIZE = Vector2.new(400, 480)

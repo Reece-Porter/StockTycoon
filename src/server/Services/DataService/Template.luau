@@ -40,10 +40,16 @@ export type Data = {
 	Pets: { Types.PetInstance },
 	-- How many times the player has rebirthed. Kept through rebirth.
 	Rebirths: number,
+	-- Playtime and daily rewards, banked boost and free spins. Kept through
+	-- rebirth.
+	Rewards: Types.RewardsState,
+	-- Every company ever owned, and the Index prizes claimed. Kept through
+	-- rebirth.
+	Index: Types.IndexState,
 }
 
 local Template: Data = {
-	DataVersion = 8,
+	DataVersion = 9,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -52,6 +58,19 @@ local Template: Data = {
 	EquippedWeapon = Weapons.Starter,
 	Pets = {},
 	Rebirths = 0,
+	Rewards = {
+		PlaytimeDay = 0,
+		PlaytimeSeconds = 0,
+		ClaimedPlaytime = {},
+		DailyStreak = 0,
+		LastDailyDay = 0,
+		BoostSeconds = 0,
+		SpinTokens = 0,
+	},
+	Index = {
+		Discovered = {},
+		Claimed = {},
+	},
 }
 
 return Template
