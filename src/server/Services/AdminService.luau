@@ -62,6 +62,17 @@ local function findTier(text: string?): Tiers.Tier?
 	return nil
 end
 
+-- A player in this server whose name starts with the text, ignoring case.
+local function findPlayer(text: string): Player?
+	local wanted = string.lower(text)
+	for _, candidate in Players:GetPlayers() do
+		if string.sub(string.lower(candidate.Name), 1, #wanted) == wanted then
+			return candidate
+		end
+	end
+	return nil
+end
+
 local function isShared(text: string?): boolean
 	return text ~= nil and string.lower(text) == "shared"
 end
@@ -105,16 +116,20 @@ end
 local commands: { Command } = {
 	{
 		alias = "/givecash",
-		usage = "/givecash <amount>",
+		usage = "/givecash <amount> [player]",
 		run = function(player, args)
 			local amount = parseAmount(args[1])
 			if amount == nil then
-				return "Usage: /givecash <amount>"
+				return "Usage: /givecash <amount> [player]"
 			end
-			if not DataService:AddCash(player, amount) then
-				return NOT_LOADED_MESSAGE
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
 			end
-			return `Gave you {amount} Cash.`
+			if not DataService:AddCash(target, amount) then
+				return `{target.Name}'s data hasn't loaded yet.`
+			end
+			return if target == player then `Gave you {amount} Cash.` else `Gave {target.Name} {amount} Cash.`
 		end,
 	},
 	{
