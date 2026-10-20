@@ -47,8 +47,9 @@ local function isInRange(player: Player, item: ConveyorService.Item): boolean
 	return distance <= ConveyorConfig.BuyDistance + ConveyorConfig.BuyDistanceTolerance
 end
 
--- Returns the message to show the player.
-local function buy(player: Player, itemId: string): string
+-- Returns the message to show the player. ignoreDistance is only for the
+-- admin race test, which can't put every player beside the belt at once.
+local function buy(player: Player, itemId: string, ignoreDistance: boolean?): string
 	local item = ConveyorService:GetItem(itemId)
 	if item == nil then
 		return "Too slow! That company is gone."
@@ -56,7 +57,7 @@ local function buy(player: Player, itemId: string): string
 	if item.ownerUserId ~= 0 and item.ownerUserId ~= player.UserId then
 		return "That's not your conveyor."
 	end
-	if not isInRange(player, item) then
+	if not ignoreDistance and not isInRange(player, item) then
 		return "Get closer to buy that."
 	end
 	if CarryService:IsCarrying(player) then
@@ -81,6 +82,19 @@ local function buy(player: Player, itemId: string): string
 	ConveyorService:RemoveItem(item.id)
 
 	return `Bought {Companies.byId[item.companyId].name} for {Format.cash(item.price)}! Take it to a plot.`
+end
+
+-- Admin race test: every player tries to buy the same item in the same server
+-- frame, through the normal checks apart from distance. Returns each player's
+-- result in the order they were tried.
+function PurchaseService:RaceForItem(players: { Player }, itemId: string): { string }
+	local results = {}
+	for _, player in players do
+		local message = buy(player, itemId, true)
+		Remotes.Notify:FireClient(player, message)
+		table.insert(results, `{player.Name}: {message}`)
+	end
+	return results
 end
 
 function PurchaseService:Start()
