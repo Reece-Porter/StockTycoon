@@ -34,6 +34,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/racetest`                         | Every player tries to buy the same shared-conveyor company in the same instant; shows who got it      |
 | `/protect [player] [seconds]`       | Protects a player from stealing as if they were new (default 300 s; `0` removes it)                   |
 | `/giveweapon <weapon> [player]`     | Gives and equips a weapon for free (e.g. `/giveweapon gavel`, `/giveweapon goldencalculator Player2`) |
+| `/setrebirths <count> [player]`     | Sets the rebirth count without resetting anything (e.g. `/setrebirths 3 Player2`)                     |
 | `/givepet <pet or rarity> [player]` | Gives a pet for free (e.g. `/givepet coffeecat`, or `/givepet mythic` for a random Mythic)            |
 | `/testspins [rolls]`                | Simulates pet spins (default 10,000) and compares the odds with Config                                |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                |

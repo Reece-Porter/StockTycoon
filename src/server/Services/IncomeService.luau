@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
+local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 
@@ -23,11 +24,12 @@ local rates: { [Player]: number } = {}
 
 local IncomeService = {}
 
--- Floor pets count now. Rebirth, boost and game pass multipliers arrive in
--- later slices; until then they are 1.
+-- Floor pets and rebirths count now. Boost and game pass multipliers arrive
+-- in later slices; until then they are 1.
 local function multipliersFor(data: DataService.Data): IncomeMath.Multipliers
 	local multipliers = IncomeMath.noMultipliers()
 	multipliers.floorPet = PetMath.incomeMultipliers(data.Pets)
+	multipliers.rebirth = RebirthMath.incomeMultiplier(data.Rebirths)
 	return multipliers
 end
 

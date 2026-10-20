@@ -33,6 +33,11 @@ function PetMath.spin(rarityRoll: number, petRoll: number): Pets.Pet
 	return choices[SpawnRoll.pickIndex(#choices, petRoll)]
 end
 
+-- Cash per spin for a player with this many rebirths.
+function PetMath.spinCost(rebirths: number): number
+	return Pets.SpinCost * (1 + Pets.SpinCostPerRebirth * rebirths)
+end
+
 -- The chance (0 to 1) that one spin gives this pet.
 function PetMath.chance(pet: Pets.Pet): number
 	local total = 0

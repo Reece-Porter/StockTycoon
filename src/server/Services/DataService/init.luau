@@ -467,6 +467,41 @@ function DataService:SetPetSlot(player: Player, instanceId: string, slotKey: str
 	return true
 end
 
+-- Rebirth: Cash back to a new player's, every company and base upgrade gone,
+-- pets back in the inventory, and one more rebirth. Weapons, pets and the
+-- rebirth count are kept. RebirthService checks the requirements first.
+function DataService:Rebirth(player: Player): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	local data = profile.Data
+	data.Cash = Template.Cash
+	data.Storage = {}
+	data.Placed = {}
+	data.Carrying = nil
+	data.Machine = nil
+	data.UnlockedPlots = deepCopy(Template.UnlockedPlots)
+	for _, pet in data.Pets do
+		pet.slotKey = nil
+	end
+	data.Rebirths += 1
+	cashChanged(player)
+	dataChanged(player)
+	return true
+end
+
+-- Admin testing: sets the rebirth count without resetting anything.
+function DataService:SetRebirths(player: Player, rebirths: number): boolean
+	local profile = profiles[player]
+	if profile == nil or rebirths < 0 or rebirths ~= math.floor(rebirths) then
+		return false
+	end
+	profile.Data.Rebirths = rebirths
+	dataChanged(player)
+	return true
+end
+
 -- Wipes the player's save back to a brand new player's.
 function DataService:ResetData(player: Player): boolean
 	local profile = profiles[player]

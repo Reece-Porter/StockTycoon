@@ -79,7 +79,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 
 ## Pet shop (starting assumption)
 - Next to the weapon shop.
-- One spin gives one random pet. Spin cost: 10,000 Cash, rising with rebirth count.
+- One spin gives one random pet. Spin cost: 10,000 Cash, plus 50% of that per rebirth (in step with the rebirth income multiplier).
 - Rarity odds, shown in the shop UI: Common 60%, Uncommon 25%, Rare 10%, Epic 4%, Legendary 0.9%, Mythic 0.1%.
 - Pets are placed in a floor's pet slot and modify that floor only.
 - Two modifier types:
@@ -126,10 +126,10 @@ Boost rules
 - Free pet spins from rewards are stored as tokens and used at the pet shop.
 
 ## Rebirth (starting assumption)
-- Requirement: 1,000,000 Cash and owning at least one Blue Chip company.
+- Requirement: 1,000,000 Cash and owning at least one Blue Chip company or better (placed or in storage). Not while carrying a company or with a Valuation Machine run going.
 - Resets: Cash, placed and stored companies, plot and floor upgrades.
-- Keeps: rebirth count, weapons, pets, game passes, cosmetics. Pets return to inventory and are re-placed once floors are rebuilt.
-- Reward: income multiplier = 1 + 0.5 x rebirth count, plus slightly better personal conveyor odds.
+- Keeps: rebirth count, weapons, pets, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
+- Reward: income multiplier = 1 + 0.5 x rebirth count, plus slightly better personal conveyor odds: every tier above Startup weighs 10% more per rebirth, up to double.
 - Rebirth requirements scale up each time (x3 Cash per rebirth).
 
 ## Offline earnings (starting assumption)
