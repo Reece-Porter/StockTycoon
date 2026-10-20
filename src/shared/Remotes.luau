@@ -61,4 +61,14 @@ return {
 
 	-- Server to client: (multiplier: number, timedOut: boolean) the run ended.
 	ValuationFinished = event("ValuationFinished"),
+
+	-- Client to server: (baseName: string, plotKey: string) started holding the
+	-- prompt to take someone else's company. The server times the hold.
+	StealBegin = event("StealBegin"),
+
+	-- Client to server: (baseName: string, plotKey: string) finished the hold.
+	StealFinish = event("StealFinish"),
+
+	-- Client to server: () lock your base from its lock button.
+	LockBase = event("LockBase"),
 }

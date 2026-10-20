@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
+local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 
 -- A payout never covers more than this many seconds, so a long server stall
@@ -32,9 +33,21 @@ local function updateRate(player: Player)
 	if data == nil or player.Parent ~= Players then
 		return
 	end
-	local rate = IncomeMath.total(data.Placed, multipliersFor(player))
+	-- A company being carried off by a thief isn't on its plot, so it doesn't earn.
+	local placed = {}
+	for plotKey, company in data.Placed do
+		if not CarryService:IsPlotBeingStolen(player, plotKey) then
+			placed[plotKey] = company
+		end
+	end
+	local rate = IncomeMath.total(placed, multipliersFor(player))
 	rates[player] = rate
 	player:SetAttribute("IncomePerSecond", rate)
+end
+
+-- Works the player's income out again, e.g. when a steal starts or ends.
+function IncomeService:Refresh(player: Player)
+	updateRate(player)
 end
 
 function IncomeService:GetIncomePerSecond(player: Player): number

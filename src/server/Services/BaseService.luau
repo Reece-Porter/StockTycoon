@@ -4,7 +4,8 @@
 --
 -- Bases are built by hand in Studio. Each Base<number> is a Model with a Spawn
 -- part, a Conveyor model containing Start and End parts, plots at
--- Floors.Floor<n>.Plots.Plot<m>, and a Machine containing a Pad part. A base missing Spawn or the conveyor is
+-- Floors.Floor<n>.Plots.Plot<m>, a Machine containing a Pad part, and a
+-- LockButton part. A base missing Spawn or the conveyor is
 -- skipped, and missing plots are reported, with a warning naming what's
 -- missing; nothing is ever patched up.
 
@@ -28,6 +29,8 @@ export type Base = {
 	plotsByKey: { [string]: Plot },
 	-- Where a company sits in the Valuation Machine; nil if it isn't built.
 	machinePad: BasePart?,
+	-- The button the owner presses to lock the base; nil if it isn't built.
+	lockButton: BasePart?,
 	-- The base's bounding box, for checking whether someone is on it.
 	boxCFrame: CFrame,
 	boxSize: Vector3,
@@ -165,6 +168,8 @@ local function loadBases()
 				table.insert(problems, `{path}.Machine is missing`)
 			end
 
+			local lockButton = findPart(model, "LockButton", path)
+
 			local boxCFrame, boxSize = model:GetBoundingBox()
 			table.insert(bases, {
 				model = model,
@@ -175,6 +180,7 @@ local function loadBases()
 				plots = plots,
 				plotsByKey = plotsByKey,
 				machinePad = machinePad,
+				lockButton = lockButton,
 				boxCFrame = boxCFrame,
 				boxSize = boxSize,
 				owner = nil,

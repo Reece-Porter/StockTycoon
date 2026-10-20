@@ -199,6 +199,21 @@ function DataService:GetData(player: Player): Data?
 	return if profile then profile.Data else nil
 end
 
+-- When the player first ever joined (os.time()), from ProfileStore.
+function DataService:GetFirstSessionTime(player: Player): number?
+	local profile = profiles[player]
+	return if profile then profile.FirstSessionTime else nil
+end
+
+-- Saves the player's data now rather than at the next autosave, for changes
+-- that must not be lost, such as a company changing hands in a steal.
+function DataService:SaveNow(player: Player)
+	local profile = profiles[player]
+	if profile and profile:IsActive() then
+		profile:Save()
+	end
+end
+
 -- False in Studio when "Enable Studio Access to API Services" is off. Saves
 -- then go to a temporary store and are lost when the test ends.
 function DataService:IsSaving(): boolean

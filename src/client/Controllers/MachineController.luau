@@ -158,13 +158,15 @@ local function setUpPrompt(pad: BasePart)
 		local company = if typeof(carrying) == "string" then Companies.byId[carrying] else nil
 		local valued = player:GetAttribute("CarryingValued") == true
 		prompt.ObjectText = if company then company.name else ""
-		prompt.Enabled = company ~= nil and not valued and player:GetAttribute("MachineRun") == nil
+		local stolen = player:GetAttribute("CarryingStolen") == true
+		prompt.Enabled = company ~= nil and not valued and not stolen and player:GetAttribute("MachineRun") == nil
 	end
 	prompt.Triggered:Connect(function()
 		Remotes.StartValuation:FireServer()
 	end)
 	player:GetAttributeChangedSignal("CarryingCompanyId"):Connect(refresh)
 	player:GetAttributeChangedSignal("CarryingValued"):Connect(refresh)
+	player:GetAttributeChangedSignal("CarryingStolen"):Connect(refresh)
 	player:GetAttributeChangedSignal("MachineRun"):Connect(refresh)
 	refresh()
 end
