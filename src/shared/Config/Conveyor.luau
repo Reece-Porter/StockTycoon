@@ -10,8 +10,8 @@ return {
 		SpawnSeconds = 6,
 		-- How fast companies move along the belt. A company disappears at the
 		-- End if nobody bought it, so a belt's length sets how long that takes
-		-- (a 40-stud belt: 20 seconds).
-		StudsPerSecond = 2,
+		-- (the 32-stud belts in studio/BuildMap.luau: 20 seconds).
+		StudsPerSecond = 1.6,
 		-- Out of 100, with no rebirths. Each rebirth makes the tiers above
 		-- Startup more likely (Config/Rebirth).
 		Weights = {
@@ -28,7 +28,8 @@ return {
 		-- 30% fewer companies than the 4 seconds it was, now the belt is
 		-- 4 times longer.
 		SpawnSeconds = 5.7,
-		-- The same pace as before; a 192-stud belt takes 80 seconds.
+		-- The belt runs the length of the map, 316 studs between the tunnels,
+		-- so at this pace a company takes about 2 minutes 10 seconds to cross.
 		StudsPerSecond = 2.4,
 		-- Out of 100.
 		Weights = {
