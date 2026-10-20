@@ -6,9 +6,9 @@
 --   Place: a company is on one of their plots.
 --   Machine: a company has been through (or is in) the Valuation Machine, or
 --     they've placed Config/Onboarding.MachineSkipAfterPlaced without trying.
+--   Lock: their base is locked.
 --   Middle: once they've played ExploreAfterSeconds this session, they go near
 --     the middle conveyor (or ExploreStepSeconds pass).
---   Shops: they go near a shop (or ExploreStepSeconds pass).
 -- The step is saved (TutorialStep), so the guide picks up where it left off.
 -- Players see it through the TutorialStep and TutorialShowAt (server time the
 -- current hint appears) attributes, and can skip it.
@@ -18,7 +18,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Onboarding = require(ReplicatedStorage.Shared.Config.Onboarding)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
+local StealService = require(script.Parent.StealService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local Steps = Onboarding.Steps
@@ -89,19 +91,14 @@ local function nearMiddle(position: Vector3): boolean
 	return (position - (a + along * t)).Magnitude <= Onboarding.VisitDistance
 end
 
-local function nearShop(position: Vector3): boolean
-	local found = false
-	for _, name in { "WeaponShop", "PetShop" } do
-		local prompt = mapPart({ "Shops", name, "ShopPrompt" })
-		if prompt then
-			found = true
-			if (prompt.Position - position).Magnitude <= Onboarding.VisitDistance then
-				return true
-			end
-		end
+-- Whether the player has locked their base. A base without a lock button has
+-- nothing to teach, so that counts too.
+local function lockedBase(player: Player): boolean
+	local base = BaseService:GetBase(player)
+	if base == nil then
+		return false
 	end
-	-- Without shops there's nothing to visit.
-	return not found
+	return base.lockButton == nil or StealService:IsBaseLocked(player)
 end
 
 local function publish(player: Player)
@@ -152,17 +149,16 @@ local function check(player: Player)
 		setStep(player, Steps.Machine)
 	elseif step == Steps.Machine then
 		if triedMachine(data) or placedCount(data) >= Onboarding.MachineSkipAfterPlaced then
+			setStep(player, Steps.Lock)
+		end
+	elseif step == Steps.Lock then
+		if lockedBase(player) then
 			setStep(player, Steps.Middle)
 		end
 	elseif step == Steps.Middle then
 		local showsAt = joined + Onboarding.ExploreAfterSeconds
 		local shownFor = now - math.max(showsAt, stepStartedAt[player] or now)
 		if now >= showsAt and ((position and nearMiddle(position)) or shownFor >= Onboarding.ExploreStepSeconds) then
-			setStep(player, Steps.Shops)
-		end
-	elseif step == Steps.Shops then
-		local shownFor = now - (stepStartedAt[player] or now)
-		if (position and nearShop(position)) or shownFor >= Onboarding.ExploreStepSeconds then
 			setStep(player, Steps.Done)
 		end
 	end

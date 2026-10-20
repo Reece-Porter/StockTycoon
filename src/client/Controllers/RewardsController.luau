@@ -209,6 +209,8 @@ function RewardsController:Start()
 
 	local banked = text(list, nextOrder(), 16, false)
 	local playtimeTitle = text(list, nextOrder(), 18, true)
+	-- With hours on both timers it can need two lines on a phone.
+	playtimeTitle.AutomaticSize = Enum.AutomaticSize.Y
 
 	-- One row per playtime reward.
 	local rows: { PlaytimeRow } = {}

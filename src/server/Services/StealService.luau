@@ -367,6 +367,12 @@ function StealService:GetProtectionLeft(player: Player): number
 	return protectionLeft(player)
 end
 
+-- Whether the player's base is locked right now.
+function StealService:IsBaseLocked(player: Player): boolean
+	local base = BaseService:GetBase(player)
+	return base ~= nil and isLocked(base)
+end
+
 -- Why this thief may not take anything of this owner's, wherever it is (on a
 -- plot or dropped on the ground), or nil if they may.
 function StealService:GetBlockReason(thief: Player, owner: Player): string?

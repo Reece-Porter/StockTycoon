@@ -27,10 +27,15 @@ function Format.number(value: number): string
 	return text .. SUFFIXES[index]
 end
 
--- A length of time as minutes and seconds, e.g. 3:07.
+-- A length of time as a countdown: minutes and seconds (3:07), with hours in
+-- front once it's an hour or more (13:05:42).
 function Format.duration(seconds: number): string
 	local whole = math.max(0, math.ceil(seconds))
-	return string.format("%d:%02d", whole // 60, whole % 60)
+	local hours, minutes = whole // 3600, (whole % 3600) // 60
+	if hours > 0 then
+		return string.format("%d:%02d:%02d", hours, minutes, whole % 60)
+	end
+	return string.format("%d:%02d", minutes, whole % 60)
 end
 
 -- A longer length of time in words, e.g. "2h 13m", "13m" or "45s".

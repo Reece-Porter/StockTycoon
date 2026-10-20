@@ -160,8 +160,9 @@ Boost rules
 - New player spawns at their base with enough Cash for one Startup.
 - On-screen arrow guides them: buy from the personal conveyor, carry it home, place it.
 - After placing the first company, prompt them to try the Valuation Machine on their second one.
-- After 2 minutes, point them at the shared conveyor and the shops.
-- Each step finishes when the save or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor and shop steps finish on their own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
+- Then show them how to lock their base with its lock button.
+- After 2 minutes, point them at the shared conveyor.
+- Each step finishes when the save, the base or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor step finishes on its own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
 
 ## Server and leaderboards (starting assumption)
 - 8 players per server.
@@ -211,7 +212,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 11. **Pet shop and floor modifiers**: Check: spin odds match Config over 10,000 test rolls, pets modify only their floor, guard pets increase hold time, pets survive rebirth.
 12. **Rebirth**: Check: correct resets and keeps, multiplier applies.
 13. **Playtime and daily rewards, and the Index**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack, owning a new company adds it to the Index, Index prizes unlock at the right counts and can only be claimed once.
-14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to the shops, leaderboards fill in and update, each code works once per player and not after it expires.
+14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to locking their base and the shared conveyor, leaderboards fill in and update, each code works once per player and not after it expires.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
 16. **Monetisation**.
 
