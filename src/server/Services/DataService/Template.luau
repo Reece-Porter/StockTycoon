@@ -56,10 +56,12 @@ export type Data = {
 	Stats: { Steals: number, Knockouts: number },
 	-- Codes redeemed, in capitals. Each code works once per player.
 	RedeemedCodes: { string },
+	-- What's been reported to Roblox analytics. Kept through rebirth.
+	Analytics: Types.AnalyticsState,
 }
 
 local Template: Data = {
-	DataVersion = 10,
+	DataVersion = 11,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -85,6 +87,7 @@ local Template: Data = {
 	TutorialStep = Onboarding.Steps.Buy,
 	Stats = { Steals = 0, Knockouts = 0 },
 	RedeemedCodes = {},
+	Analytics = { Funnel = {}, PlaySeconds = 0, RebirthPlaySeconds = 0 },
 }
 
 return Template

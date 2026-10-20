@@ -37,6 +37,7 @@ local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
@@ -224,6 +225,7 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 		return "Your hands are full."
 	end
 	refreshOwner(owner)
+	AnalyticsService:Event(thief, "StealStarted", 1, { "Plot", company.tier })
 	notify(owner, `{thief.Name} is stealing your {companyName(company)}! Touch them to get it back.`)
 	return `Got {companyName(company)}! Get it to a free plot on your base.`
 end
@@ -294,6 +296,8 @@ local function complete(thief: Player, plot: BaseService.Plot): string
 
 	-- Ownership changes from stealing are saved straight away.
 	DataService:AddStat(thief, "Steals")
+	AnalyticsService:Event(thief, "StealCompleted", 1, { company.tier })
+	AnalyticsService:Funnel(thief, "FirstSteal")
 	DataService:SaveNow(owner)
 	DataService:SaveNow(thief)
 	refreshOwner(owner)

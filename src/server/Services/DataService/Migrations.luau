@@ -81,4 +81,11 @@ return {
 		data.Stats = { Steals = 0, Knockouts = 0 }
 		data.RedeemedCodes = {}
 	end,
+
+	-- Version 11 adds Analytics. Players from before analytics are past the
+	-- new-player funnel, so every step counts as reported
+	-- (server/Config/Analytics.FunnelSteps) and only new players are counted.
+	[10] = function(data)
+		data.Analytics = { Funnel = { 1, 2, 3, 4, 5, 6 }, PlaySeconds = 0, RebirthPlaySeconds = 0 }
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

@@ -27,6 +27,7 @@ local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local IncomeService = require(script.Parent.IncomeService)
 local PlotService = require(script.Parent.PlotService)
@@ -92,12 +93,15 @@ local function refreshIncome(player: Player)
 end
 
 -- Gives a reward and returns what was given, e.g. "$1.2K + 1 free pet spin".
-function RewardsService:Grant(player: Player, grants: { RewardsConfig.Grant }): string
+-- source is what it's for, for analytics.
+function RewardsService:Grant(player: Player, grants: { RewardsConfig.Grant }, source: AnalyticsService.Source): string
 	local given = {}
 	for _, grant in grants do
 		if grant.kind == "cash" then
 			local amount = RewardMath.cashValue(grant, IncomeService:GetIncomePerSecond(player, true))
-			DataService:AddCash(player, amount)
+			if DataService:AddCash(player, amount) then
+				AnalyticsService:Earned(player, source, amount)
+			end
 			table.insert(given, Format.cash(amount))
 		elseif grant.kind == "boost" then
 			local startedNow, wasted = false, 0
@@ -203,7 +207,7 @@ local function claimPlaytime(player: Player, minutes: number): string
 		publish(player)
 		return result
 	end
-	return `{minutes} minutes played: {RewardsService:Grant(player, milestone.grants)}!`
+	return `{minutes} minutes played: {RewardsService:Grant(player, milestone.grants, "Playtime")}!`
 end
 
 local function claimDaily(player: Player): string
@@ -226,7 +230,7 @@ local function claimDaily(player: Player): string
 		local wait = RewardMath.secondsToNextDay(os.time())
 		return `You've claimed today's reward. Come back in {Format.duration(wait)}.`
 	end
-	return `Day {track}: {RewardsService:Grant(player, RewardsConfig.Daily[track])}!`
+	return `Day {track}: {RewardsService:Grant(player, RewardsConfig.Daily[track], "Daily")}!`
 end
 
 local function tick()

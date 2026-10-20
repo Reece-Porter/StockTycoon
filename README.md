@@ -41,6 +41,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/shiftday [days]`                  | Acts as if days have passed: playtime resets and the daily reward is ready (`/shiftday 2` misses a day) |
 | `/discover <count>`                 | Adds that many random companies to your Index                                                           |
 | `/refreshboards`                    | Saves everyone's leaderboard values and reloads the boards now, instead of within a minute              |
+| `/analytics`                        | Shows what this server has sent to Roblox analytics, newest first                                       |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack).

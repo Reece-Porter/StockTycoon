@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
@@ -64,6 +65,7 @@ local function buy(player: Player): string
 	end
 
 	DataService:SetUnlockedPlots(player, UpgradeMath.apply(data.UnlockedPlots, upgrade))
+	AnalyticsService:Spent(player, "Upgrade", upgrade.cost, upgrade.kind)
 	return if upgrade.kind == "floor"
 		then `Opened floor {upgrade.floor}!`
 		else `Unlocked plot {upgrade.plot} on floor {upgrade.floor}!`

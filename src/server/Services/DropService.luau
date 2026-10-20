@@ -23,6 +23,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.Combat)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
@@ -211,6 +212,7 @@ local function pickUp(player: Player, instanceId: string): string
 		refreshOwner(owner)
 		return "Your hands are full."
 	end
+	AnalyticsService:Event(player, "StealStarted", 1, { "Ground", entry.company.tier })
 	notify(owner, `{player.Name} grabbed your {name}! Touch them to get it back.`)
 	return `Got {name}! Get it to a free plot on your base.`
 end

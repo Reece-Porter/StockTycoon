@@ -23,6 +23,7 @@ local CombatConfig = require(ReplicatedStorage.Shared.Config.Combat)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
@@ -142,6 +143,7 @@ local function buy(player: Player, weaponId: string): string
 		return `You already own the {weapon.name}.`
 	end
 	DataService:SetEquippedWeapon(player, weapon.id)
+	AnalyticsService:Spent(player, "Weapon", weapon.price, weapon.id)
 	return `Bought the {weapon.name}! It's in your backpack.`
 end
 

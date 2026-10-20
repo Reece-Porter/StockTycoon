@@ -24,6 +24,7 @@ local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
@@ -410,6 +411,13 @@ local commands: { Command } = {
 				LeaderboardService:UpdateNow()
 			end)
 			return "Saving everyone's leaderboard values and reloading the boards."
+		end,
+	},
+	{
+		alias = "/analytics",
+		usage = "/analytics",
+		run = function()
+			return AnalyticsService:GetReport()
 		end,
 	},
 	{

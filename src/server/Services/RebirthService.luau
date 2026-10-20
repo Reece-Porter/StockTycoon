@@ -19,6 +19,7 @@ local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Types = require(ReplicatedStorage.Shared.Types)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
@@ -91,8 +92,9 @@ local function rebirth(player: Player): string
 	if not DataService:Rebirth(player) then
 		return "Your data hasn't loaded yet."
 	end
-	DataService:SaveNow(player)
 	local rebirths = data.Rebirths
+	AnalyticsService:Rebirthed(player, rebirths)
+	DataService:SaveNow(player)
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			notify(other, `{player.Name} rebirthed! (Rebirth {rebirths})`)

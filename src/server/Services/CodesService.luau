@@ -48,7 +48,7 @@ local function redeem(player: Player, typed: string): string
 	if not DataService:RedeemCode(player, code) then
 		return "You've already used that code."
 	end
-	return `Code {code}: {RewardsService:Grant(player, entry.grants)}!`
+	return `Code {code}: {RewardsService:Grant(player, entry.grants, "Code")}!`
 end
 
 function CodesService:Start()

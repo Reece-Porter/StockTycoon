@@ -57,4 +57,14 @@ export type IndexState = {
 	Claimed: { number },
 }
 
+-- What's been reported to Roblox analytics.
+export type AnalyticsState = {
+	-- New-player funnel steps already reported (Config/Analytics.FunnelSteps).
+	Funnel: { number },
+	-- Lifetime play time, and what it was at the last rebirth, for timing how
+	-- long each rebirth takes.
+	PlaySeconds: number,
+	RebirthPlaySeconds: number,
+}
+
 return {}

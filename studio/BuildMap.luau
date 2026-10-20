@@ -31,8 +31,27 @@ local PLOT = Color3.fromRGB(150, 170, 200)
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
 
--- Two bases either side of the middle conveyor, at these x positions.
-local BASE_POSITIONS = { -60, 60 }
+-- Eight bases, four either side of the middle conveyor, all facing it. Each
+-- is 60 studs square, with BASE_GAP between neighbours so a player pushed out
+-- of a locked base (Config/Steal.LockPushMargin) lands clear of the next one.
+-- The middle four come first, so they fill first; Base1 faces Base2.
+local BASE_SIZE = 60
+local BASE_GAP = 12
+local BASE_STEP = BASE_SIZE + BASE_GAP
+local BASE_SPOTS = {
+	{ x = -60, z = -BASE_STEP / 2 },
+	{ x = 60, z = -BASE_STEP / 2 },
+	{ x = -60, z = BASE_STEP / 2 },
+	{ x = 60, z = BASE_STEP / 2 },
+	{ x = -60, z = -BASE_STEP * 1.5 },
+	{ x = 60, z = -BASE_STEP * 1.5 },
+	{ x = -60, z = BASE_STEP * 1.5 },
+	{ x = 60, z = BASE_STEP * 1.5 },
+}
+-- From the middle of the map to the far edge of the end bases.
+local ROW_HALF = BASE_STEP * 1.5 + BASE_SIZE / 2
+-- The leaderboards stand across the end of the street between the bases.
+local BOARDS_Z = -(ROW_HALF + 10)
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
 local RUN = 21 -- length of every staircase
@@ -133,10 +152,10 @@ local groundY = if baseplate and baseplate:IsA("BasePart")
 
 local map = folder(Workspace, "Map")
 
--- 1. The ground: grass instead of the default grey grid, with a paved plaza
--- down the middle between the bases, under the middle conveyor, the shops and
--- the leaderboards. The plaza sits a tenth of a stud above the grass so the
--- two never flicker.
+-- 1. The ground: grass instead of the default grey grid, with a paved street
+-- down the middle between the two rows of bases, under the middle conveyor,
+-- the shops and the leaderboards. It sits a tenth of a stud above the grass so
+-- the two never flicker.
 if baseplate and baseplate:IsA("BasePart") then
 	baseplate.Material = Enum.Material.Grass
 	baseplate.Color = Color3.fromRGB(96, 156, 74)
@@ -150,7 +169,7 @@ end
 local plaza = place(
 	map,
 	"Plaza",
-	Vector3.new(60, 1, BELT_LENGTH + 8),
+	Vector3.new(60, 1, 2 * math.max(BELT_LENGTH / 2 + 4, -BOARDS_Z + 4)),
 	CFrame.new(0, groundY - 0.4, 0),
 	Color3.fromRGB(196, 190, 178),
 	Enum.Material.Pavement
@@ -163,12 +182,9 @@ local bases = folder(map, "Bases")
 -- 2. The bases. Each is laid out the same way in its own frame, where x
 -- points towards the middle of the map: the conveyor on the near side, the
 -- floors of plots on the far side, stairs in between.
-for index, x in BASE_POSITIONS do
+for index, spot in BASE_SPOTS do
 	local base = model(bases, "Base" .. index)
-	local ground = base:FindFirstChild("Floor")
-	local center = if ground and ground:IsA("BasePart")
-		then ground.CFrame.Position
-		else Vector3.new(x, groundY + 0.5, 0)
+	local center = Vector3.new(spot.x, groundY + 0.5, spot.z)
 	local turn = if center.X < 0 then CFrame.new() else CFrame.Angles(0, math.pi, 0)
 	local frame = CFrame.new(center.X, 0, center.Z) * turn
 	local function at(lx: number, ly: number, lz: number): CFrame
@@ -436,8 +452,8 @@ for name, style in shopStyles do
 	end
 end
 
--- 6. The leaderboards, in a row at the opposite end from the shops, facing the
--- middle of the map. The game writes the lists on each board's front face.
+-- 6. The leaderboards, in a row across the end of the street between the
+-- bases, facing up it. The game writes the lists on each board's front face.
 local leaderboards = folder(map, "Leaderboards")
 local stands = freshModel(leaderboards, "Stands")
 local boardSpots = {
@@ -448,10 +464,16 @@ local boardSpots = {
 }
 for _, spot in boardSpots do
 	-- Turned so the front face points at the middle of the map.
-	local facing = CFrame.new(spot.x, groundY + 8, -50) * CFrame.Angles(0, math.pi, 0)
+	local facing = CFrame.new(spot.x, groundY + 8, BOARDS_Z) * CFrame.Angles(0, math.pi, 0)
 	place(leaderboards, spot.name, Vector3.new(10, 12, 1), facing, Color3.fromRGB(20, 22, 30))
 	newPart(stands, spot.name .. "Back", Vector3.new(11, 13, 0.6), facing * CFrame.new(0, 0.5, 0.8), GOLD)
-	newPart(stands, spot.name .. "Plinth", Vector3.new(11, 2, 2.2), CFrame.new(spot.x, groundY + 1, -50.3), DARK)
+	newPart(
+		stands,
+		spot.name .. "Plinth",
+		Vector3.new(11, 2, 2.2),
+		CFrame.new(spot.x, groundY + 1, BOARDS_Z - 0.3),
+		DARK
+	)
 end
 
 -- 7. Models the game copies: the Default company, the weapon Tools and the

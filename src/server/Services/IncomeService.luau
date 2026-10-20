@@ -14,6 +14,7 @@ local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 
@@ -98,8 +99,8 @@ function IncomeService:Start()
 			local elapsed = math.min(now - last, MAX_PAYOUT_SECONDS)
 			last = now
 			for player, rate in rates do
-				if rate > 0 then
-					DataService:AddCash(player, rate * elapsed)
+				if rate > 0 and DataService:AddCash(player, rate * elapsed) then
+					AnalyticsService:Earned(player, "Income", rate * elapsed)
 				end
 			end
 		end

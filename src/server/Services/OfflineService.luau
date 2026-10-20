@@ -14,6 +14,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local OfflineMath = require(ReplicatedStorage.Shared.OfflineMath)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local IncomeService = require(script.Parent.IncomeService)
 
@@ -40,8 +41,8 @@ local function settle(player: Player)
 	-- Income as it is now, without a reward boost (boosts only run in game).
 	local away = now - lastSeen
 	local cash, counted = OfflineMath.earnings(IncomeService:GetIncomePerSecond(player, true), away)
-	if cash > 0 then
-		DataService:AddCash(player, cash)
+	if cash > 0 and DataService:AddCash(player, cash) then
+		AnalyticsService:Earned(player, "Offline", cash)
 		player:SetAttribute("OfflineEarnings", HttpService:JSONEncode({ away = away, counted = counted, cash = cash }))
 	end
 end
