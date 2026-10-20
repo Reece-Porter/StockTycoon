@@ -71,4 +71,14 @@ return {
 		add(data.Machine and data.Machine.company)
 		data.Index = { Discovered = discovered, Claimed = {} }
 	end,
+
+	-- Version 10 adds LastSeen (offline earnings start from the next visit),
+	-- TutorialStep, Stats and RedeemedCodes. Players from before the guide
+	-- already know the game, so it starts finished (Config/Onboarding.Steps.Done).
+	[9] = function(data)
+		data.LastSeen = 0
+		data.TutorialStep = 6
+		data.Stats = { Steals = 0, Knockouts = 0 }
+		data.RedeemedCodes = {}
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

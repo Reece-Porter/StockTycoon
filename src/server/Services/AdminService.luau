@@ -28,6 +28,7 @@ local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 local IndexService = require(script.Parent.IndexService)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local PetService = require(script.Parent.PetService)
 local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
@@ -400,6 +401,18 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/refreshboards",
+		usage = "/refreshboards",
+		run = function()
+			-- Saving and reading the boards waits on DataStores, so it runs on
+			-- its own rather than holding up the reply.
+			task.spawn(function()
+				LeaderboardService:UpdateNow()
+			end)
+			return "Saving everyone's leaderboard values and reloading the boards."
+		end,
+	},
+	{
 		alias = "/resetdata",
 		usage = "/resetdata",
 		run = function(player)
@@ -460,7 +473,14 @@ local function onPlayerAdded(player: Player)
 
 	local problems = table.clone(BaseService:GetProblems())
 	table.move(ConveyorService:GetProblems(), 1, #ConveyorService:GetProblems(), #problems + 1, problems)
-	for _, list in { WeaponShopService:GetProblems(), PetService:GetProblems(), PetShopService:GetProblems() } do
+	for _, list in
+		{
+			WeaponShopService:GetProblems(),
+			PetService:GetProblems(),
+			PetShopService:GetProblems(),
+			LeaderboardService:GetProblems(),
+		}
+	do
 		table.move(list, 1, #list, #problems + 1, problems)
 	end
 	if #problems > 0 then
@@ -504,6 +524,8 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Placed", placed)
 	AdminService:SetDebugValue(player, "Carrying", carryingName)
 	AdminService:SetDebugValue(player, "Pets", `{#data.Pets}/{Pets.InventoryCap}`)
+	AdminService:SetDebugValue(player, "Stats", `{data.Stats.Steals} steals, {data.Stats.Knockouts} knockouts`)
+	AdminService:SetDebugValue(player, "Tutorial", `step {data.TutorialStep}`)
 	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
 	local nextCost = RebirthMath.cashRequired(data.Rebirths)
 	AdminService:SetDebugValue(player, "Rebirths", `{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash)`)

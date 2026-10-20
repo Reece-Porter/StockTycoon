@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Onboarding = require(ReplicatedStorage.Shared.Config.Onboarding)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
@@ -46,10 +47,19 @@ export type Data = {
 	-- Every company ever owned, and the Index prizes claimed. Kept through
 	-- rebirth.
 	Index: Types.IndexState,
+	-- os.time() when the player was last in the game, for offline earnings.
+	-- 0 until they have been.
+	LastSeen: number,
+	-- How far through the new-player guide they are (Config/Onboarding.Steps).
+	TutorialStep: number,
+	-- Lifetime counts for the leaderboards. Kept through rebirth.
+	Stats: { Steals: number, Knockouts: number },
+	-- Codes redeemed, in capitals. Each code works once per player.
+	RedeemedCodes: { string },
 }
 
 local Template: Data = {
-	DataVersion = 9,
+	DataVersion = 10,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -71,6 +81,10 @@ local Template: Data = {
 		Discovered = {},
 		Claimed = {},
 	},
+	LastSeen = 0,
+	TutorialStep = Onboarding.Steps.Buy,
+	Stats = { Steals = 0, Knockouts = 0 },
+	RedeemedCodes = {},
 }
 
 return Template

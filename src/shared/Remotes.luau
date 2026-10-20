@@ -113,4 +113,10 @@ return {
 
 	-- Client to server: (count: number) claim an Index prize.
 	ClaimIndex = event("ClaimIndex"),
+
+	-- Client to server: (code: string) redeem a code.
+	RedeemCode = event("RedeemCode"),
+
+	-- Client to server: () stop showing the new-player guide.
+	SkipTutorial = event("SkipTutorial"),
 }

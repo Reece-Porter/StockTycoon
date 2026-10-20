@@ -40,9 +40,19 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/skipplaytime <minutes>`           | Adds minutes to today's playtime (e.g. `/skipplaytime 60`)                                              |
 | `/shiftday [days]`                  | Acts as if days have passed: playtime resets and the daily reward is ready (`/shiftday 2` misses a day) |
 | `/discover <count>`                 | Adds that many random companies to your Index                                                           |
+| `/refreshboards`                    | Saves everyone's leaderboard values and reloads the boards now, instead of within a minute              |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack).
+
+## Codes
+
+Players type codes into the **Codes** box at the bottom of the Rewards window. The list is in [`src/server/Config/Codes.luau`](src/server/Config/Codes.luau): a new code is one line there, with what it gives and an optional last day. Each code works once per player.
+
+| Code         | Gives                          | Last day   |
+| ------------ | ------------------------------ | ---------- |
+| `STOCKS`     | $5K and a 10 minute 2x boost   | none       |
+| `BULLMARKET` | 1 free pet spin                | 2026-12-31 |
 
 ## Building the map
 

@@ -33,6 +33,18 @@ function Format.duration(seconds: number): string
 	return string.format("%d:%02d", whole // 60, whole % 60)
 end
 
+-- A longer length of time in words, e.g. "2h 13m", "13m" or "45s".
+function Format.longDuration(seconds: number): string
+	local whole = math.max(0, math.floor(seconds))
+	local hours, minutes = whole // 3600, (whole % 3600) // 60
+	if hours > 0 then
+		return if minutes > 0 then `{hours}h {minutes}m` else `{hours}h`
+	elseif minutes > 0 then
+		return `{minutes}m`
+	end
+	return `{whole}s`
+end
+
 function Format.cash(value: number): string
 	return `${Format.number(value)}`
 end

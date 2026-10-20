@@ -188,6 +188,8 @@ local function onPlayerRemoving(player: Player)
 	loading[player] = nil
 	local profile = profiles[player]
 	if profile then
+		-- Offline earnings count from now.
+		profile.Data.LastSeen = os.time()
 		profile:EndSession()
 	end
 end
@@ -505,6 +507,44 @@ function DataService:ClaimIndex(player: Player, count: number): boolean
 		return false
 	end
 	table.insert(profile.Data.Index.Claimed, count)
+	dataChanged(player)
+	return true
+end
+
+-- Records when the player was last in the game, for offline earnings.
+function DataService:SetLastSeen(player: Player, time: number)
+	local profile = profiles[player]
+	if profile then
+		profile.Data.LastSeen = time
+	end
+end
+
+function DataService:SetTutorialStep(player: Player, step: number): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	profile.Data.TutorialStep = step
+	dataChanged(player)
+	return true
+end
+
+-- Adds one to a lifetime count, e.g. a steal or a knockout.
+function DataService:AddStat(player: Player, stat: "Steals" | "Knockouts")
+	local profile = profiles[player]
+	if profile then
+		profile.Data.Stats[stat] += 1
+		dataChanged(player)
+	end
+end
+
+-- Records a code as redeemed. Fails if the player already redeemed it.
+function DataService:RedeemCode(player: Player, code: string): boolean
+	local profile = profiles[player]
+	if profile == nil or table.find(profile.Data.RedeemedCodes, code) then
+		return false
+	end
+	table.insert(profile.Data.RedeemedCodes, code)
 	dataChanged(player)
 	return true
 end
