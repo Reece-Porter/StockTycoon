@@ -389,6 +389,33 @@ function DataService:SetUnlockedPlots(player: Player, unlockedPlots: { number })
 	return true
 end
 
+function DataService:OwnsWeapon(player: Player, weaponId: string): boolean
+	local profile = profiles[player]
+	return profile ~= nil and table.find(profile.Data.OwnedWeapons, weaponId) ~= nil
+end
+
+-- Adds a weapon the player has bought. Fails if they already own it.
+function DataService:AddWeapon(player: Player, weaponId: string): boolean
+	local profile = profiles[player]
+	if profile == nil or table.find(profile.Data.OwnedWeapons, weaponId) then
+		return false
+	end
+	table.insert(profile.Data.OwnedWeapons, weaponId)
+	dataChanged(player)
+	return true
+end
+
+-- Puts a weapon the player owns in their hands.
+function DataService:SetEquippedWeapon(player: Player, weaponId: string): boolean
+	local profile = profiles[player]
+	if profile == nil or table.find(profile.Data.OwnedWeapons, weaponId) == nil then
+		return false
+	end
+	profile.Data.EquippedWeapon = weaponId
+	dataChanged(player)
+	return true
+end
+
 -- Wipes the player's save back to a brand new player's.
 function DataService:ResetData(player: Player): boolean
 	local profile = profiles[player]

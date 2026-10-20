@@ -71,4 +71,18 @@ return {
 
 	-- Client to server: () lock your base from its lock button.
 	LockBase = event("LockBase"),
+
+	-- Client to server: (target: Player) the equipped weapon hit this player.
+	-- Only a request: the server checks the weapon, cooldown, range and line
+	-- of sight before anything happens.
+	Attack = event("Attack"),
+
+	-- Client to server: (instanceId: string) pick up a dropped company.
+	PickUpDropped = event("PickUpDropped"),
+
+	-- Client to server: (weaponId: string) buy a weapon at the weapon shop.
+	BuyWeapon = event("BuyWeapon"),
+
+	-- Client to server: (weaponId: string) hold a weapon you own.
+	EquipWeapon = event("EquipWeapon"),
 }
