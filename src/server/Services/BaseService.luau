@@ -2,23 +2,43 @@
 -- Gives each player a base from Workspace.Map.Bases when they join, frees it
 -- when they leave, and spawns their character on the base's Spawn part.
 --
--- Bases are built by hand in Studio. Each Base<number> needs a Spawn part and
--- a Conveyor model containing Start and End parts. A base missing any of these
--- is skipped with a warning naming what's missing; it is never patched up.
+-- Bases are built by hand in Studio. Each Base<number> is a Model with a Spawn
+-- part, a Conveyor model containing Start and End parts, and plots at
+-- Floors.Floor<n>.Plots.Plot<m>. A base missing Spawn or the conveyor is
+-- skipped, and missing plots are reported, with a warning naming what's
+-- missing; nothing is ever patched up.
 
 local Players = game:GetService("Players")
 
+export type Plot = {
+	-- e.g. "Floor1/Plot3"; how placed companies are saved.
+	key: string,
+	floor: number,
+	index: number,
+	part: BasePart,
+}
+
 export type Base = {
-	model: Instance,
+	model: Model,
 	name: string,
 	spawn: BasePart,
 	conveyorStart: BasePart,
 	conveyorEnd: BasePart,
+	plots: { Plot },
+	plotsByKey: { [string]: Plot },
+	-- The base's bounding box, for checking whether someone is on it.
+	boxCFrame: CFrame,
+	boxSize: Vector3,
 	owner: Player?,
 }
 
 -- Height above the Spawn part's top surface to place a character.
 local SPAWN_HEIGHT = 3
+
+-- How far outside its bounding box still counts as on a base: a little to the
+-- sides, and well above the top so jumping or a tall floor still counts.
+local ON_BASE_MARGIN = 4
+local ON_BASE_HEADROOM = 25
 
 local bases: { Base } = {}
 local playerBases: { [Player]: Base } = {}
@@ -37,8 +57,61 @@ local function findPart(parent: Instance, name: string, path: string): BasePart?
 	return nil
 end
 
+local function numbered(instance: Instance, prefix: string): number?
+	return tonumber((string.match(instance.Name, `^{prefix}(%d+)$`)))
+end
+
 local function baseNumber(instance: Instance): number?
-	return tonumber(string.match(instance.Name, "^Base(%d+)$"))
+	return numbered(instance, "Base")
+end
+
+local function sortByNumber<T>(instances: { T }, prefix: string)
+	table.sort(instances, function(a, b)
+		return (numbered(a :: any, prefix) :: number) < (numbered(b :: any, prefix) :: number)
+	end)
+end
+
+local function findPlots(model: Model, path: string): { Plot }
+	local plots: { Plot } = {}
+	local floorsFolder = model:FindFirstChild("Floors")
+	local floor1 = floorsFolder and floorsFolder:FindFirstChild("Floor1")
+	if floorsFolder == nil or floor1 == nil or floor1:FindFirstChild("Plots") == nil then
+		table.insert(problems, `{path}.Floors.Floor1.Plots is missing`)
+		return plots
+	end
+
+	local floors = {}
+	for _, child in floorsFolder:GetChildren() do
+		if numbered(child, "Floor") then
+			table.insert(floors, child)
+		end
+	end
+	sortByNumber(floors, "Floor")
+
+	for _, floor in floors do
+		local plotsFolder = floor:FindFirstChild("Plots")
+		if plotsFolder then
+			local parts = {}
+			for _, child in plotsFolder:GetChildren() do
+				if child:IsA("BasePart") and numbered(child, "Plot") then
+					table.insert(parts, child)
+				end
+			end
+			sortByNumber(parts, "Plot")
+
+			local floorNumber = numbered(floor, "Floor") :: number
+			for _, part in parts do
+				local index = numbered(part, "Plot") :: number
+				table.insert(plots, {
+					key = `Floor{floorNumber}/Plot{index}`,
+					floor = floorNumber,
+					index = index,
+					part = part :: BasePart,
+				})
+			end
+		end
+	end
+	return plots
 end
 
 local function loadBases()
@@ -52,12 +125,14 @@ local function loadBases()
 	local models = {}
 	for _, child in folder:GetChildren() do
 		if baseNumber(child) then
-			table.insert(models, child)
+			if child:IsA("Model") then
+				table.insert(models, child)
+			else
+				table.insert(problems, `Workspace.Map.Bases.{child.Name} must be a Model`)
+			end
 		end
 	end
-	table.sort(models, function(a, b)
-		return (baseNumber(a) :: number) < (baseNumber(b) :: number)
-	end)
+	sortByNumber(models, "Base")
 
 	for _, model in models do
 		local path = `Workspace.Map.Bases.{model.Name}`
@@ -77,12 +152,22 @@ local function loadBases()
 		end
 
 		if spawn and conveyorStart and conveyorEnd then
+			local plots = findPlots(model, path)
+			local plotsByKey = {}
+			for _, plot in plots do
+				plotsByKey[plot.key] = plot
+			end
+			local boxCFrame, boxSize = model:GetBoundingBox()
 			table.insert(bases, {
 				model = model,
 				name = model.Name,
 				spawn = spawn,
 				conveyorStart = conveyorStart,
 				conveyorEnd = conveyorEnd,
+				plots = plots,
+				plotsByKey = plotsByKey,
+				boxCFrame = boxCFrame,
+				boxSize = boxSize,
 				owner = nil,
 			})
 		end
@@ -149,6 +234,21 @@ end
 
 function BaseService:GetBases(): { Base }
 	return bases
+end
+
+-- Whether the player's character is standing on (or just above) the base.
+function BaseService:IsOnBase(player: Player, base: Base): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return false
+	end
+	local offset = base.boxCFrame:PointToObjectSpace(root.Position)
+	local half = base.boxSize / 2
+	return math.abs(offset.X) <= half.X + ON_BASE_MARGIN
+		and math.abs(offset.Z) <= half.Z + ON_BASE_MARGIN
+		and offset.Y >= -half.Y - ON_BASE_MARGIN
+		and offset.Y <= half.Y + ON_BASE_HEADROOM
 end
 
 -- Problems found with the hand-built map, for the debug panel.

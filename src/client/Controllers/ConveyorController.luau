@@ -14,11 +14,7 @@ local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local ConveyorPath = require(ReplicatedStorage.Shared.ConveyorPath)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
-local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
-
-local LABEL_SIZE = UDim2.fromOffset(200, 72)
-local LABEL_MAX_DISTANCE = 80
-local LABEL_GAP = 1.5
+local CompanyLabel = require(script.Parent.Parent.Ui.CompanyLabel)
 
 type Path = {
 	startCFrame: CFrame,
@@ -31,54 +27,6 @@ local player = Players.LocalPlayer
 local paths: { [Model]: Path } = {}
 
 local ConveyorController = {}
-
-local function mainPart(model: Model): BasePart?
-	return model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
-end
-
-local function addText(parent: Instance, order: number, text: string, size: number, color: Color3, bold: boolean)
-	local label = Instance.new("TextLabel")
-	label.LayoutOrder = order
-	label.Size = UDim2.new(1, 0, 0, size + 4)
-	label.BackgroundTransparency = 1
-	label.Font = if bold then Enum.Font.BuilderSansBold else Enum.Font.BuilderSansMedium
-	label.TextSize = size
-	label.TextColor3 = color
-	label.TextStrokeTransparency = 0.4
-	label.Text = text
-	label.Parent = parent
-end
-
-local function addLabel(
-	model: Model,
-	adornee: BasePart,
-	companyName: string,
-	tier: Tiers.Tier,
-	price: number,
-	income: number
-)
-	local boxCFrame, boxSize = model:GetBoundingBox()
-	local topAboveAdornee = (boxCFrame.Position.Y + boxSize.Y / 2) - adornee.Position.Y
-
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "Label"
-	gui.Adornee = adornee
-	gui.Size = LABEL_SIZE
-	gui.StudsOffsetWorldSpace = Vector3.new(0, topAboveAdornee + LABEL_GAP, 0)
-	gui.MaxDistance = LABEL_MAX_DISTANCE
-	gui.LightInfluence = 0
-
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-	layout.Parent = gui
-
-	addText(gui, 1, companyName, 20, Color3.new(1, 1, 1), true)
-	addText(gui, 2, tier.name, 15, tier.color, true)
-	addText(gui, 3, `{Format.cash(price)}  ·  {Format.income(income)}`, 15, Color3.fromRGB(230, 230, 230), false)
-
-	gui.Parent = model
-end
 
 local function addBuyPrompt(adornee: BasePart, itemId: string, companyName: string, price: number)
 	local prompt = Instance.new("ProximityPrompt")
@@ -131,14 +79,13 @@ local function track(instance: Instance)
 		travelSeconds = travelSeconds,
 	}
 
+	CompanyLabel.attach(model, companyId, tierId, `{Format.cash(price)}  ·  {Format.income(income)}`)
+
 	local company = Companies.byId[companyId]
-	local tier = Tiers.byId[tierId]
-	local adornee = mainPart(model)
-	if company == nil or tier == nil or adornee == nil then
+	local adornee = CompanyLabel.mainPart(model)
+	if company == nil or adornee == nil then
 		return
 	end
-
-	addLabel(model, adornee, company.name, tier, price, income)
 	if ownerUserId == 0 or ownerUserId == player.UserId then
 		addBuyPrompt(adornee, itemId, company.name, price)
 	end

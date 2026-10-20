@@ -14,6 +14,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Admins = require(ReplicatedStorage.Shared.Config.Admins)
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
@@ -233,9 +234,20 @@ end
 
 local function onDataChanged(player: Player)
 	local data = DataService:GetData(player)
-	if data then
-		AdminService:SetDebugValue(player, "Storage", `{#data.Storage}/{BaseConfig.StorageCapacity}`)
+	if data == nil then
+		return
 	end
+
+	local placed = 0
+	for _ in data.Placed do
+		placed += 1
+	end
+	local carrying = data.Carrying
+	local carryingName = if carrying then Companies.byId[carrying.companyId].name else "nothing"
+
+	AdminService:SetDebugValue(player, "Storage", `{#data.Storage}/{BaseConfig.StorageCapacity}`)
+	AdminService:SetDebugValue(player, "Placed", placed)
+	AdminService:SetDebugValue(player, "Carrying", carryingName)
 end
 
 function AdminService:Init()
