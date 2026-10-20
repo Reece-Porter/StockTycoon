@@ -21,13 +21,17 @@ local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
+local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
+local IndexService = require(script.Parent.IndexService)
 local PetService = require(script.Parent.PetService)
 local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
+local RewardsService = require(script.Parent.RewardsService)
 local StealService = require(script.Parent.StealService)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local WeaponShopService = require(script.Parent.WeaponShopService)
@@ -356,6 +360,46 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/skipplaytime",
+		usage = "/skipplaytime <minutes>",
+		run = function(player, args)
+			local minutes = parseAmount(args[1])
+			if minutes == nil or minutes < 1 then
+				return "Usage: /skipplaytime <minutes>, e.g. /skipplaytime 60"
+			end
+			if not RewardsService:SkipPlaytime(player, minutes) then
+				return NOT_LOADED_MESSAGE
+			end
+			return `Added {minutes} minutes to today's playtime.`
+		end,
+	},
+	{
+		alias = "/shiftday",
+		usage = "/shiftday [days]",
+		run = function(player, args)
+			local days = if args[1] then parseAmount(args[1]) else 1
+			if days == nil or days < 1 then
+				return "Usage: /shiftday [days], e.g. /shiftday 2 to miss a day"
+			end
+			if not RewardsService:ShiftDays(player, days) then
+				return NOT_LOADED_MESSAGE
+			end
+			return `Acting as if {days} day(s) have passed: playtime resets within a second and the daily reward is ready.`
+		end,
+	},
+	{
+		alias = "/discover",
+		usage = "/discover <count>",
+		run = function(player, args)
+			local count = parseAmount(args[1])
+			if count == nil or count < 1 then
+				return "Usage: /discover <count>, e.g. /discover 5"
+			end
+			local added = IndexService:DiscoverRandom(player, count)
+			return `Added {added} companies to your Index ({IndexService:GetDiscoveredCount(player)}/{#Companies.list}).`
+		end,
+	},
+	{
 		alias = "/resetdata",
 		usage = "/resetdata",
 		run = function(player)
@@ -480,6 +524,40 @@ function AdminService:Init()
 	end
 end
 
+-- Rewards change every second without a data change, so their rows are
+-- refreshed on a timer.
+local function refreshRewardRows(player: Player)
+	local data = DataService:GetData(player)
+	if data == nil then
+		return
+	end
+	local rewards = data.Rewards
+	local today = RewardMath.day(os.time())
+	local daily = RewardMath.daily(rewards.LastDailyDay, rewards.DailyStreak, today)
+	local played = Format.duration(rewards.PlaytimeSeconds)
+	local claimed = table.concat(rewards.ClaimedPlaytime, ", ")
+	AdminService:SetDebugValue(
+		player,
+		"Playtime",
+		`{played} on day {rewards.PlaytimeDay} (today is {today}), claimed: {claimed}`
+	)
+	AdminService:SetDebugValue(
+		player,
+		"Daily",
+		`streak {daily.streak}, next Day {daily.nextDay}, {if daily.claimable then "ready" else "claimed today"}`
+	)
+	AdminService:SetDebugValue(player, "Boost", Format.duration(rewards.BoostSeconds))
+	AdminService:SetDebugValue(player, "SpinTokens", rewards.SpinTokens)
+	AdminService:SetDebugValue(
+		player,
+		"Index",
+		`{IndexService:GetDiscoveredCount(player)}/{#Companies.list}, prizes claimed: {table.concat(
+			data.Index.Claimed,
+			", "
+		)}`
+	)
+end
+
 function AdminService:Start()
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, player in Players:GetPlayers() do
@@ -492,6 +570,16 @@ function AdminService:Start()
 	DataService:OnDataChanged(onDataChanged)
 	BaseService:OnBaseAssigned(function(player, base)
 		AdminService:SetDebugValue(player, "Base", base.name)
+	end)
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			for _, player in Players:GetPlayers() do
+				if AdminService:IsAdmin(player) then
+					refreshRewardRows(player)
+				end
+			end
+		end
 	end)
 end
 

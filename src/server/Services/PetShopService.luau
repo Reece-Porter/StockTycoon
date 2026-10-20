@@ -1,7 +1,8 @@
 --!strict
 -- The pet shop: spins at Workspace.Map.Shops.PetShop's ShopPrompt part
--- (docs/design.md, "Pet shop"). A spin costs Cash only (PetMath.spinCost,
--- rising with rebirths): there are no Robux spins. The server rolls every spin itself
+-- (docs/design.md, "Pet shop"). A spin uses a free spin token from rewards if
+-- the player has one, and otherwise costs Cash (PetMath.spinCost, rising with
+-- rebirths). There are no Robux spins. The server rolls every spin itself
 -- with PetMath, adds the pet to the player's inventory and tells their client
 -- which pet it was with PetSpun, for the reveal. The client only asks to spin.
 
@@ -14,6 +15,7 @@ local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
+local RewardsService = require(script.Parent.RewardsService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local random = Random.new()
@@ -57,13 +59,18 @@ local function spin(player: Player): string?
 		return `You have {Pets.InventoryCap} pets, the most you can keep. Let some go first.`
 	end
 	local cost = PetMath.spinCost(data.Rebirths)
-	if not DataService:SpendCash(player, cost) then
+	local usedToken = RewardsService:UseSpinToken(player)
+	if not usedToken and not DataService:SpendCash(player, cost) then
 		return `A spin costs {Format.cash(cost)}.`
 	end
 
 	local pet = PetMath.spin(random:NextNumber(), random:NextNumber())
 	if not addPet(player, pet) then
-		DataService:AddCash(player, cost)
+		if usedToken then
+			RewardsService:ReturnSpinToken(player)
+		else
+			DataService:AddCash(player, cost)
+		end
 		return `You have {Pets.InventoryCap} pets, the most you can keep. Let some go first.`
 	end
 	Remotes.PetSpun:FireClient(player, pet.id)

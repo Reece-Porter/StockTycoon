@@ -467,6 +467,48 @@ function DataService:SetPetSlot(player: Player, instanceId: string, slotKey: str
 	return true
 end
 
+-- Changes the player's rewards in place. Playtime and boost time change every
+-- second, so this fires no change signal: RewardsService publishes what the
+-- client needs itself.
+function DataService:UpdateRewards(player: Player, change: (Types.RewardsState) -> ()): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	change(profile.Data.Rewards)
+	return true
+end
+
+-- Adds companies to the player's Index. Returns the ids that were new.
+function DataService:Discover(player: Player, companyIds: { string }): { string }
+	local profile = profiles[player]
+	local added = {}
+	if profile == nil then
+		return added
+	end
+	for _, companyId in companyIds do
+		if not profile.Data.Index.Discovered[companyId] then
+			profile.Data.Index.Discovered[companyId] = true
+			table.insert(added, companyId)
+		end
+	end
+	if #added > 0 then
+		dataChanged(player)
+	end
+	return added
+end
+
+-- Records an Index prize as claimed. Fails if it already was.
+function DataService:ClaimIndex(player: Player, count: number): boolean
+	local profile = profiles[player]
+	if profile == nil or table.find(profile.Data.Index.Claimed, count) then
+		return false
+	end
+	table.insert(profile.Data.Index.Claimed, count)
+	dataChanged(player)
+	return true
+end
+
 -- Rebirth: Cash back to a new player's, every company and base upgrade gone,
 -- pets back in the inventory, and one more rebirth. Weapons, pets and the
 -- rebirth count are kept. RebirthService checks the requirements first.

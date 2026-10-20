@@ -104,4 +104,13 @@ return {
 
 	-- Client to server: () rebirth. The server checks every requirement.
 	Rebirth = event("Rebirth"),
+
+	-- Client to server: (minutes: number) claim a playtime reward.
+	ClaimPlaytime = event("ClaimPlaytime"),
+
+	-- Client to server: () claim today's daily reward.
+	ClaimDaily = event("ClaimDaily"),
+
+	-- Client to server: (count: number) claim an Index prize.
+	ClaimIndex = event("ClaimIndex"),
 }

@@ -10,8 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
--- Just below the Storage button, which is centred on the left edge.
-local POSITION = UDim2.new(0, 12, 0.5, 32)
+-- Just below the Storage button on the left edge.
+local POSITION = UDim2.new(0, 12, 0.5, -16)
 local SIZE = UDim2.fromOffset(160, 56)
 local AFFORDABLE = Color3.fromRGB(205, 150, 40)
 local UNAFFORDABLE = Color3.fromRGB(70, 65, 55)

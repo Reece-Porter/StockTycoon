@@ -34,4 +34,27 @@ export type PetInstance = {
 	slotKey: string?,
 }
 
+-- Playtime and daily rewards, saved so they carry over between sessions.
+export type RewardsState = {
+	-- The UTC day (RewardMath.day) the playtime below counts for.
+	PlaytimeDay: number,
+	PlaytimeSeconds: number,
+	-- Playtime milestones claimed that day, in minutes.
+	ClaimedPlaytime: { number },
+	-- The track day (1 to 7) last claimed, and the UTC day it was claimed (0
+	-- if never).
+	DailyStreak: number,
+	LastDailyDay: number,
+	-- Banked 2x income boost; it only runs down while the player is in game.
+	BoostSeconds: number,
+	-- Free pet spins waiting to be used at the pet shop.
+	SpinTokens: number,
+}
+
+-- The Index: every company id ever owned, and the milestones claimed.
+export type IndexState = {
+	Discovered: { [string]: boolean },
+	Claimed: { number },
+}
+
 return {}

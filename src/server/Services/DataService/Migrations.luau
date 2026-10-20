@@ -42,4 +42,33 @@ return {
 	[7] = function(data)
 		data.Rebirths = 0
 	end,
+
+	-- Version 9 adds Rewards (playtime, daily streak, boost, free spins) and
+	-- the Index. The Index starts with every company the player owns now.
+	[8] = function(data)
+		data.Rewards = {
+			PlaytimeDay = 0,
+			PlaytimeSeconds = 0,
+			ClaimedPlaytime = {},
+			DailyStreak = 0,
+			LastDailyDay = 0,
+			BoostSeconds = 0,
+			SpinTokens = 0,
+		}
+		local discovered = {}
+		local function add(company)
+			if type(company) == "table" and type(company.companyId) == "string" then
+				discovered[company.companyId] = true
+			end
+		end
+		for _, company in data.Storage or {} do
+			add(company)
+		end
+		for _, company in data.Placed or {} do
+			add(company)
+		end
+		add(data.Carrying)
+		add(data.Machine and data.Machine.company)
+		data.Index = { Discovered = discovered, Claimed = {} }
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }
