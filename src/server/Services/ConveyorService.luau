@@ -34,6 +34,9 @@ export type Lane = {
 	endPart: BasePart,
 	weights: { ConveyorConfig.WeightEntry },
 	spawnSeconds: number,
+	-- How long a company takes from Start to End: the belt's length over its
+	-- speed.
+	travelSeconds: number,
 	-- The base this is the personal conveyor of; nil for the shared conveyor.
 	base: BaseService.Base?,
 	nextSpawnAt: number?,
@@ -48,6 +51,7 @@ export type Item = {
 	-- Only this player may buy it. 0 means anyone (the shared conveyor).
 	ownerUserId: number,
 	spawnedAt: number,
+	travelSeconds: number,
 	startCFrame: CFrame,
 	endCFrame: CFrame,
 	model: Model,
@@ -78,6 +82,10 @@ end
 
 -- Who may buy from the lane: the base owner, 0 for anyone, or nil if a
 -- personal lane's base has no owner right now.
+local function travelSecondsFor(startPart: BasePart, endPart: BasePart, studsPerSecond: number): number
+	return (endPart.Position - startPart.Position).Magnitude / studsPerSecond
+end
+
 local function laneOwnerId(lane: Lane): number?
 	local base = lane.base
 	if base == nil then
@@ -127,6 +135,7 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 		income = CompanyStats.income(company.id),
 		ownerUserId = ownerUserId,
 		spawnedAt = workspace:GetServerTimeNow(),
+		travelSeconds = lane.travelSeconds,
 		startCFrame = startCFrame,
 		endCFrame = endCFrame,
 		model = model,
@@ -141,7 +150,7 @@ local function spawnItem(lane: Lane, tierId: string?): Item?
 	model:SetAttribute("Income", item.income)
 	model:SetAttribute("OwnerUserId", item.ownerUserId)
 	model:SetAttribute("SpawnedAt", item.spawnedAt)
-	model:SetAttribute("TravelSeconds", ConveyorConfig.TravelSeconds)
+	model:SetAttribute("TravelSeconds", item.travelSeconds)
 	model:SetAttribute("StartCFrame", startCFrame)
 	model:SetAttribute("EndCFrame", endCFrame)
 	model:PivotTo(startCFrame)
@@ -176,6 +185,7 @@ local function findSharedLane()
 		endPart = endPart,
 		weights = ConveyorConfig.Shared.Weights,
 		spawnSeconds = ConveyorConfig.Shared.SpawnSeconds,
+		travelSeconds = travelSecondsFor(startPart, endPart, ConveyorConfig.Shared.StudsPerSecond),
 		base = nil,
 		nextSpawnAt = nil,
 	}
@@ -198,7 +208,7 @@ function ConveyorService:GetItemPosition(item: Item): Vector3
 		item.startCFrame,
 		item.endCFrame,
 		item.spawnedAt,
-		ConveyorConfig.TravelSeconds,
+		item.travelSeconds,
 		workspace:GetServerTimeNow()
 	).Position
 end
@@ -249,6 +259,11 @@ function ConveyorService:Start()
 			endPart = base.conveyorEnd,
 			weights = ConveyorConfig.Personal.Weights,
 			spawnSeconds = ConveyorConfig.Personal.SpawnSeconds,
+			travelSeconds = travelSecondsFor(
+				base.conveyorStart,
+				base.conveyorEnd,
+				ConveyorConfig.Personal.StudsPerSecond
+			),
 			base = base,
 			nextSpawnAt = nil,
 		}
@@ -289,7 +304,7 @@ function ConveyorService:Start()
 		end
 
 		for itemId, item in items do
-			if now - item.spawnedAt >= ConveyorConfig.TravelSeconds then
+			if now - item.spawnedAt >= item.travelSeconds then
 				ConveyorService:RemoveItem(itemId)
 			end
 		end

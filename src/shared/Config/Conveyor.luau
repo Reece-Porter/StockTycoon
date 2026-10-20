@@ -5,13 +5,13 @@
 export type WeightEntry = { tier: string, weight: number }
 
 return {
-	-- Seconds a company takes to travel from the belt's Start to its End,
-	-- after which it disappears if nobody bought it.
-	TravelSeconds = 20,
-
 	-- Each base's own conveyor; only the owner can buy from it.
 	Personal = {
 		SpawnSeconds = 6,
+		-- How fast companies move along the belt. A company disappears at the
+		-- End if nobody bought it, so a belt's length sets how long that takes
+		-- (a 40-stud belt: 20 seconds).
+		StudsPerSecond = 2,
 		-- Out of 100, with no rebirths. Each rebirth makes the tiers above
 		-- Startup more likely (Config/Rebirth).
 		Weights = {
@@ -25,7 +25,11 @@ return {
 	-- The conveyor in the middle of the map; anyone can buy, first come first
 	-- served. Better odds, plus the two tiers found nowhere else.
 	Shared = {
-		SpawnSeconds = 4,
+		-- 30% fewer companies than the 4 seconds it was, now the belt is
+		-- 4 times longer.
+		SpawnSeconds = 5.7,
+		-- The same pace as before; a 192-stud belt takes 80 seconds.
+		StudsPerSecond = 2.4,
 		-- Out of 100.
 		Weights = {
 			{ tier = "Startup", weight = 55 },

@@ -29,8 +29,8 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - Weights scale with rebirth count: each rebirth shifts a small share of weight from lower tiers to higher ones (exact rule to be agreed before building).
 
 ## Conveyors (starting assumption)
-- Personal conveyor spawns one company every 6 seconds; shared every 4 seconds. (Halved from 3 and 2 after playtesting: the belts were too busy.)
-- A company takes about 20 seconds to travel the belt, then despawns if unbought.
+- Personal conveyor spawns one company every 6 seconds; shared every 5.7 seconds. (Personal halved from 3 after playtesting: the belts were too busy. Shared went from 2 to 4, then 30% fewer when its belt was made 4 times longer.)
+- Companies move at a set speed: 2 studs per second on personal belts (about 20 seconds along a 40-stud belt), 2.4 on the shared belt (about 80 seconds along its 192 studs). They despawn at the End if unbought.
 - Buying uses a ProximityPrompt on the company.
 - Shared conveyor tier announcements: Conglomerate and Monopoly spawns trigger a server-wide message.
 
