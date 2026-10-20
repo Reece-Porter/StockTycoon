@@ -11,6 +11,8 @@ Roblox tycoon game. Game rules and working agreements are in [`CLAUDE.md`](CLAUD
 
 Rojo refuses to start if `ServerPackages/` is missing, so run `wally install` first after a fresh clone.
 
+`servePlaceIds` in `default.project.json` limits syncing to the Test place (88809294007206). The Rojo plugin refuses to connect from any other place, including Live.
+
 ## Checks
 
 ```sh
