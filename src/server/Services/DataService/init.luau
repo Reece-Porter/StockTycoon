@@ -13,6 +13,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local PetsConfig = require(ReplicatedStorage.Shared.Config.Pets)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -493,6 +494,46 @@ function DataService:UpdateRewards(player: Player, change: (Types.RewardsState) 
 	end
 	change(profile.Data.Rewards)
 	return true
+end
+
+-- Developer products (MonetisationService): gives a purchase exactly once.
+-- If this purchase id is new, runs grant (which returns whether it worked)
+-- and records the id with what it gave; then waits until a save holding the
+-- id has been written. Returns whether the purchase is given and saved, so
+-- Roblox can be told it's done.
+function DataService:ProcessReceipt(player: Player, purchaseId: string, grant: () -> boolean): boolean
+	local profile = profiles[player]
+	if profile == nil or not profile:IsActive() then
+		return false
+	end
+	local receipts = profile.Data.Receipts
+	if table.find(receipts, purchaseId) == nil then
+		if not grant() then
+			return false
+		end
+		table.insert(receipts, purchaseId)
+		while #receipts > Monetisation.ReceiptsKept do
+			table.remove(receipts, 1)
+		end
+	end
+	while profile:IsActive() do
+		local thread = coroutine.running()
+		local connection
+		connection = profile.OnAfterSave:Connect(function(saved)
+			connection:Disconnect()
+			task.spawn(thread, saved)
+		end)
+		profile:Save()
+		local saved = coroutine.yield()
+		if
+			typeof(saved) == "table"
+			and typeof(saved.Receipts) == "table"
+			and table.find(saved.Receipts, purchaseId)
+		then
+			return true
+		end
+	end
+	return false
 end
 
 -- Changes the player's analytics record. Nothing on screen shows it, so

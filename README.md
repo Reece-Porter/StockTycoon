@@ -42,6 +42,9 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/discover <count>`                 | Adds that many random companies to your Index                                                           |
 | `/refreshboards`                    | Saves everyone's leaderboard values and reloads the boards now, instead of within a minute              |
 | `/analytics`                        | Shows what this server has sent to Roblox analytics, newest first                                       |
+| `/givepass <pass> [player]`         | Gives a game pass for this session (`doubleincome`, `vip` or `extrapetslot`)                            |
+| `/removepass <pass> [player]`       | Takes a game pass away for this session                                                                 |
+| `/buyproduct <product>`             | Gives a developer product as if it was bought (`cashsmall`, `cashmedium`, `cashlarge` or `locknow`)     |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack).
@@ -54,6 +57,16 @@ Players type codes into the **Codes** box at the bottom of the Rewards window. T
 | ------------ | ------------------------------ | ---------- |
 | `STOCKS`     | $5K and a 10 minute 2x boost   | none       |
 | `BULLMARKET` | 1 free pet spin                | 2026-12-31 |
+
+## Setting up the store
+
+The Store button sells three game passes and four developer products (`src/shared/Config/Monetisation.luau`). Until each has an id it shows as "Not on sale yet". To put them on sale:
+
+1. On the [Creator Dashboard](https://create.roblox.com/dashboard/creations), open the game, then **Monetization > Passes**. Create 2x Income, VIP and Extra Pet Slot, give each a picture and a price, and put them on sale.
+2. In **Monetization > Developer Products**, create Cash Pack, Big Cash Pack, Huge Cash Pack and Lock Base Now with their prices.
+3. Copy each one's id into `id = 0` for the matching entry in `Config/Monetisation.luau`.
+
+Purchases made in Studio are test purchases and cost nothing. Game passes bought in Studio only last for that test, so `/givepass` is the easiest way to try them.
 
 ## Building the map
 

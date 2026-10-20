@@ -371,6 +371,18 @@ function StealService:GetProtectionLeft(player: Player): number
 	return protectionLeft(player)
 end
 
+-- Lock Base Now (MonetisationService): locks the player's base from wherever
+-- they are for Config/Steal.LockSeconds, or adds that much to a lock already
+-- on. Returns false if they have no base.
+function StealService:LockFromAnywhere(owner: Player): boolean
+	local base = BaseService:GetBase(owner)
+	if base == nil then
+		return false
+	end
+	setLock(base, math.max(lockedUntil[base] or 0, now()) + StealConfig.LockSeconds)
+	return true
+end
+
 -- Whether the player's base is locked right now.
 function StealService:IsBaseLocked(player: Player): boolean
 	local base = BaseService:GetBase(player)

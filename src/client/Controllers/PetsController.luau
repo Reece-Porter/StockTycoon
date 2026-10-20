@@ -9,9 +9,11 @@
 -- rarity and what it does. The server checks every request.
 
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -35,6 +37,16 @@ local player = Players.LocalPlayer
 local refreshers: { [BasePart]: () -> () } = {}
 
 local PetsController = {}
+
+-- The Extra Pet Slot pass's id, or 0 if it isn't on sale yet.
+local function extraSlotPassId(): number
+	for _, pass in Monetisation.Passes do
+		if pass.name == "ExtraPetSlot" then
+			return pass.id
+		end
+	end
+	return 0
+end
 
 local function corner(parent: Instance)
 	local uiCorner = Instance.new("UICorner")
@@ -332,14 +344,28 @@ function PetsController:Start()
 			end
 			local isMine = base:GetAttribute("OwnerUserId") == player.UserId
 			local unlocked = part:GetAttribute("Unlocked") == true
-			prompt.ActionText = if pet then "Take back" else "Place pet"
-			prompt.ObjectText = if pet then pet.name else "Pet slot"
-			prompt.Enabled = isMine and unlocked
+			local needsPass = part:GetAttribute("NeedsPass") == true and extraSlotPassId() ~= 0
+			if needsPass and not unlocked then
+				prompt.ActionText = "Unlock"
+				prompt.ObjectText = "Extra Pet Slot pass"
+			else
+				prompt.ActionText = if pet then "Take back" else "Place pet"
+				prompt.ObjectText = if pet then pet.name else "Pet slot"
+			end
+			prompt.Enabled = isMine and (unlocked or needsPass)
 		end
 
 		prompt.Triggered:Connect(function()
 			local slotKey = part:GetAttribute("SlotKey")
 			if typeof(slotKey) ~= "string" then
+				return
+			end
+			if part:GetAttribute("Unlocked") ~= true then
+				-- A slot only the Extra Pet Slot pass opens.
+				local passId = extraSlotPassId()
+				if part:GetAttribute("NeedsPass") == true and passId ~= 0 then
+					MarketplaceService:PromptGamePassPurchase(player, passId)
+				end
 				return
 			end
 			if part:GetAttribute("PetId") ~= nil then

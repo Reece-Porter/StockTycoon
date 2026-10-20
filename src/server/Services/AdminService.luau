@@ -16,6 +16,7 @@ local Admins = require(ReplicatedStorage.Shared.Config.Admins)
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
+local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
@@ -30,6 +31,7 @@ local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 local IndexService = require(script.Parent.IndexService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
+local MonetisationService = require(script.Parent.MonetisationService)
 local PetService = require(script.Parent.PetService)
 local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
@@ -114,6 +116,24 @@ local function findPet(text: string?): Pets.Pet?
 end
 
 -- A player in this server whose name starts with the text, ignoring case.
+local function findPass(text: string?): Monetisation.Pass?
+	local wanted = string.lower(text or "")
+	for _, pass in Monetisation.Passes do
+		if string.lower(pass.name) == wanted then
+			return pass
+		end
+	end
+	return nil
+end
+
+local function passNames(): string
+	local names = {}
+	for _, pass in Monetisation.Passes do
+		table.insert(names, string.lower(pass.name))
+	end
+	return table.concat(names, "|")
+end
+
 local function findPlayer(text: string): Player?
 	local wanted = string.lower(text)
 	for _, candidate in Players:GetPlayers() do
@@ -414,6 +434,53 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/givepass",
+		usage = "/givepass <pass> [player]",
+		run = function(player, args)
+			local pass = findPass(args[1])
+			local target = if args[2] then findPlayer(args[2]) else player
+			if pass == nil or target == nil then
+				return `Usage: /givepass <{passNames()}> [player]`
+			end
+			MonetisationService:SetPass(target, pass.name, true)
+			return `{if target == player then "You have" else target.Name .. " has"} {pass.title} for this session.`
+		end,
+	},
+	{
+		alias = "/removepass",
+		usage = "/removepass <pass> [player]",
+		run = function(player, args)
+			local pass = findPass(args[1])
+			local target = if args[2] then findPlayer(args[2]) else player
+			if pass == nil or target == nil then
+				return `Usage: /removepass <{passNames()}> [player]`
+			end
+			MonetisationService:SetPass(target, pass.name, false)
+			return `{if target == player then "You don't" else target.Name .. " doesn't"} have {pass.title} for this session.`
+		end,
+	},
+	{
+		alias = "/buyproduct",
+		usage = "/buyproduct <product>",
+		run = function(player, args)
+			local wanted = string.lower(args[1] or "")
+			local keys = {}
+			for _, product in Monetisation.Products do
+				table.insert(keys, string.lower(product.key))
+				if string.lower(product.key) == wanted then
+					-- Giving and saving it waits on the save, so it runs on its own.
+					task.spawn(function()
+						if not MonetisationService:TestProduct(player, product.key) then
+							Remotes.Notify:FireClient(player, `Couldn't give {product.title}.`)
+						end
+					end)
+					return `Giving {product.title} as if it was bought...`
+				end
+			end
+			return `Usage: /buyproduct <{table.concat(keys, "|")}>`
+		end,
+	},
+	{
 		alias = "/analytics",
 		usage = "/analytics",
 		run = function()
@@ -534,6 +601,14 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Pets", `{#data.Pets}/{Pets.InventoryCap}`)
 	AdminService:SetDebugValue(player, "Stats", `{data.Stats.Steals} steals, {data.Stats.Knockouts} knockouts`)
 	AdminService:SetDebugValue(player, "Tutorial", `step {data.TutorialStep}`)
+	local owned = {}
+	for _, pass in Monetisation.Passes do
+		if player:GetAttribute(`Pass{pass.name}`) == true then
+			table.insert(owned, pass.title)
+		end
+	end
+	local passText = if #owned > 0 then table.concat(owned, ", ") else "none"
+	AdminService:SetDebugValue(player, "Passes", `{passText}; {#data.Receipts} purchases given`)
 	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
 	local nextCost = RebirthMath.cashRequired(data.Rebirths)
 	AdminService:SetDebugValue(player, "Rebirths", `{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash)`)

@@ -155,6 +155,12 @@ Boost rules
 - Developer products: Cash packs, an extra base lock activation.
 - Nothing purchasable may affect the Valuation Machine.
 - No weapons, damage boosts or guard boosts for Robux at launch. Decide later how pay-to-win the game should feel.
+- Built as (`Config/Monetisation.luau`, `Services/MonetisationService`, the Store button):
+  - 2x Income doubles all income, offline earnings included. VIP gives a gold [VIP] tag in chat and gold trim on the owner's base. Extra Pet Slot opens each floor's second pet slot; if the pass is gone (say, refunded), a pet in that slot goes back to the player's pets.
+  - Cash packs give 15 minutes, 1 hour or 4 hours of the player's income (without reward boosts), at least $5K, $25K or $100K, so they stay worth buying as income grows.
+  - Lock Base Now locks the player's base from wherever they are for the usual 60 seconds, or adds 60 seconds to a lock already on. Base locks are otherwise free and renewable at the lock button, so this sells convenience, not protection players can't get.
+  - Developer products are given exactly once per purchase: the purchase id is saved with what it gave before Roblox is told it's done (save version 12 keeps the last 100).
+  - Prices are set on the Creator Dashboard, not in code. Each pass and product needs its id in `Config/Monetisation.luau`; until then it shows as not on sale.
 
 ## Onboarding (starting assumption)
 - New player spawns at their base with enough Cash for one Startup.
@@ -220,6 +226,6 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 13. **Playtime and daily rewards, and the Index**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack, owning a new company adds it to the Index, Index prizes unlock at the right counts and can only be claimed once.
 14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to locking their base and the shared conveyor, leaderboards fill in and update, each code works once per player and not after it expires.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
-16. **Monetisation**.
+16. **Monetisation**: Check: each pass's perk turns on when it's bought in game and when an owner joins, each product is given once per purchase (also after a rejoin), and nothing for sale touches the Valuation Machine.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.
