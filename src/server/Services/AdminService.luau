@@ -22,6 +22,7 @@ local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
+local PurchaseService = require(script.Parent.PurchaseService)
 
 -- Keeps typed amounts well inside the range a number stores exactly.
 local MAX_AMOUNT = 1e15
@@ -61,6 +62,21 @@ local function findTier(text: string?): Tiers.Tier?
 	return nil
 end
 
+-- A player in this server whose name starts with the text, ignoring case.
+local function findPlayer(text: string): Player?
+	local wanted = string.lower(text)
+	for _, candidate in Players:GetPlayers() do
+		if string.sub(string.lower(candidate.Name), 1, #wanted) == wanted then
+			return candidate
+		end
+	end
+	return nil
+end
+
+local function isShared(text: string?): boolean
+	return text ~= nil and string.lower(text) == "shared"
+end
+
 local function tierNames(): string
 	local names = {}
 	for _, tier in Tiers.list do
@@ -69,10 +85,12 @@ local function tierNames(): string
 	return table.concat(names, ", ")
 end
 
--- Rolls the personal conveyor's tier the given number of times, using the same
--- function as real spawns, and compares the results with Config/Conveyor.
-local function oddsReport(rolls: number): string
-	local weights = ConveyorConfig.Personal.Weights
+-- Rolls a conveyor's tier the given number of times, using the same function
+-- as real spawns, and compares the results with Config/Conveyor.
+local function oddsReport(shared: boolean, rolls: number): string
+	local weights: { ConveyorConfig.WeightEntry } = if shared
+		then ConveyorConfig.Shared.Weights
+		else ConveyorConfig.Personal.Weights
 	local random = Random.new()
 	local counts: { [string]: number } = {}
 	for _ = 1, rolls do
@@ -85,11 +103,12 @@ local function oddsReport(rolls: number): string
 		total += entry.weight
 	end
 
-	local lines = { `{rolls} rolls (got / expected):` }
+	local conveyor = if shared then "Shared" else "Personal"
+	local lines = { `{conveyor} conveyor, {rolls} rolls (got / expected):` }
 	for _, entry in weights do
 		local got = (counts[entry.tier] or 0) / rolls * 100
 		local expected = entry.weight / total * 100
-		table.insert(lines, string.format("%s %.1f%% / %.1f%%", Tiers.byId[entry.tier].name, got, expected))
+		table.insert(lines, string.format("%s %.2f%% / %.2f%%", Tiers.byId[entry.tier].name, got, expected))
 	end
 	return table.concat(lines, "\n")
 end
@@ -97,16 +116,20 @@ end
 local commands: { Command } = {
 	{
 		alias = "/givecash",
-		usage = "/givecash <amount>",
+		usage = "/givecash <amount> [player]",
 		run = function(player, args)
 			local amount = parseAmount(args[1])
 			if amount == nil then
-				return "Usage: /givecash <amount>"
+				return "Usage: /givecash <amount> [player]"
 			end
-			if not DataService:AddCash(player, amount) then
-				return NOT_LOADED_MESSAGE
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
 			end
-			return `Gave you {amount} Cash.`
+			if not DataService:AddCash(target, amount) then
+				return `{target.Name}'s data hasn't loaded yet.`
+			end
+			return if target == player then `Gave you {amount} Cash.` else `Gave {target.Name} {amount} Cash.`
 		end,
 	},
 	{
@@ -125,32 +148,67 @@ local commands: { Command } = {
 	},
 	{
 		alias = "/spawn",
-		usage = "/spawn <tier>",
+		usage = "/spawn <tier> [shared]",
 		run = function(player, args)
 			local tier = findTier(args[1])
 			if tier == nil then
-				return `Usage: /spawn <tier>, where tier is one of: {tierNames()}`
+				return `Usage: /spawn <tier> [shared], where tier is one of: {tierNames()}`
 			end
-			local base = BaseService:GetBase(player)
-			if base == nil then
+			local shared = isShared(args[2])
+			local base = if shared then nil else BaseService:GetBase(player)
+			if not shared and base == nil then
 				return "You don't have a base."
 			end
-			if ConveyorService:SpawnOnBase(base, tier.id) == nil then
-				return "Couldn't spawn it. Check the console for a missing model."
+			if ConveyorService:SpawnNow(base, tier.id) == nil then
+				return "Couldn't spawn it. Check the console for a missing model or conveyor."
 			end
-			return `Spawned a {tier.name} on your conveyor.`
+			return `Spawned a {tier.name} on {if shared then "the shared" else "your"} conveyor.`
 		end,
 	},
 	{
 		alias = "/testodds",
-		usage = "/testodds [rolls]",
+		usage = "/testodds [shared] [rolls]",
 		run = function(player, args)
-			local rolls = if args[1] then parseAmount(args[1]) else DEFAULT_ODDS_ROLLS
-			if rolls == nil or rolls < 1 or rolls > MAX_ODDS_ROLLS then
-				return `Usage: /testodds [rolls], up to {MAX_ODDS_ROLLS}`
+			local shared, rolls = false, DEFAULT_ODDS_ROLLS
+			for _, arg in args do
+				if isShared(arg) then
+					shared = true
+				else
+					rolls = parseAmount(arg) or -1
+				end
 			end
-			local report = oddsReport(rolls)
+			if rolls < 1 or rolls > MAX_ODDS_ROLLS then
+				return `Usage: /testodds [shared] [rolls], up to {MAX_ODDS_ROLLS} rolls`
+			end
+			local report = oddsReport(shared, rolls)
 			AdminService:SetDebugValue(player, "OddsTest", report)
+			return report
+		end,
+	},
+	{
+		alias = "/racetest",
+		usage = "/racetest",
+		run = function(player)
+			local item = ConveyorService:SpawnNow(nil, "Startup")
+			if item == nil then
+				return "Couldn't spawn on the shared conveyor. Check the console."
+			end
+			-- Shuffle so it isn't always the same player tried first.
+			local players = Players:GetPlayers()
+			for index = #players, 2, -1 do
+				local swap = math.random(index)
+				players[index], players[swap] = players[swap], players[index]
+			end
+
+			local results = PurchaseService:RaceForItem(players, item.id)
+			local owners = 0
+			for _, result in results do
+				if string.find(result, ": Bought ", 1, true) then
+					owners += 1
+				end
+			end
+			local report = `Race for one Startup, {#players} buyers, {owners} owner(s):\n{table.concat(results, "\n")}`
+			AdminService:SetDebugValue(player, "RaceTest", report)
 			return report
 		end,
 	},
@@ -213,7 +271,8 @@ local function onPlayerAdded(player: Player)
 	player:SetAttribute("IsAdmin", true)
 	AdminService:SetDebugValue(player, "Commands", table.concat(usages, "\n"))
 
-	local problems = BaseService:GetProblems()
+	local problems = table.clone(BaseService:GetProblems())
+	table.move(ConveyorService:GetProblems(), 1, #ConveyorService:GetProblems(), #problems + 1, problems)
 	if #problems > 0 then
 		AdminService:SetDebugValue(player, "MapProblems", table.concat(problems, "\n"))
 	end
