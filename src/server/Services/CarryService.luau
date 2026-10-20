@@ -126,6 +126,7 @@ local function sync(player: Player)
 		humanoid.WalkSpeed = StarterPlayer.CharacterWalkSpeed * multiplier
 	end
 	player:SetAttribute("CarryingCompanyId", if company then company.companyId else nil)
+	player:SetAttribute("CarryingValued", if company then company.hasBeenValued else nil)
 	publishStorage(player)
 end
 

@@ -15,4 +15,15 @@ export type CompanyInstance = {
 	ownerUserId: number,
 }
 
+-- A company in the Valuation Machine. The parameters come from
+-- MachinePath.generate; startedAt is workspace:GetServerTimeNow() at the start.
+export type MachineRun = {
+	company: CompanyInstance,
+	seed: number,
+	duration: number,
+	peak: number,
+	peakTime: number,
+	startedAt: number,
+}
+
 return {}

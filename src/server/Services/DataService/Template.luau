@@ -26,10 +26,14 @@ export type Data = {
 	-- Plots open on each floor, e.g. { 10, 7 }: Floor 1 full, Floor 2 has 7.
 	-- The number of entries is the number of floors opened.
 	UnlockedPlots: { number },
+	-- The company in the player's Valuation Machine, if a run is going. Saved
+	-- so it can never be lost: a save that loads with one is settled as if
+	-- time ran out.
+	Machine: Types.MachineRun?,
 }
 
 local Template: Data = {
-	DataVersion = 4,
+	DataVersion = 5,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
