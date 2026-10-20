@@ -42,6 +42,9 @@ local function setUpPlot(base: Instance, part: Instance)
 		local companyId = part:GetAttribute("CompanyId")
 		local company = if typeof(companyId) == "string" then Companies.byId[companyId] else nil
 		prompt.ObjectText = if company then company.name else ""
+		-- Guard pets on the floor make the hold longer.
+		local holdSeconds = part:GetAttribute("HoldSeconds")
+		prompt.HoldDuration = if typeof(holdSeconds) == "number" then holdSeconds else StealConfig.HoldSeconds
 		prompt.Enabled = company ~= nil
 			and typeof(owner) == "number"
 			and owner ~= player.UserId

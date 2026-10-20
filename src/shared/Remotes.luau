@@ -85,4 +85,20 @@ return {
 
 	-- Client to server: (weaponId: string) hold a weapon you own.
 	EquipWeapon = event("EquipWeapon"),
+
+	-- Client to server: () spin for a pet at the pet shop. The server rolls it.
+	SpinPet = event("SpinPet"),
+
+	-- Server to client: (petId: string) the pet a spin gave, for the reveal.
+	PetSpun = event("PetSpun"),
+
+	-- Client to server: (instanceId: string, slotKey: string) put a pet in a
+	-- pet slot on your base.
+	PlacePet = event("PlacePet"),
+
+	-- Client to server: (slotKey: string) take the pet in a slot back.
+	TakeBackPet = event("TakeBackPet"),
+
+	-- Client to server: (instanceId: string) let a pet go for good.
+	DeletePet = event("DeletePet"),
 }

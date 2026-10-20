@@ -35,16 +35,20 @@ export type Data = {
 	-- their hands. Kept through rebirth.
 	OwnedWeapons: { string },
 	EquippedWeapon: string,
+	-- Every pet the player owns, placed or not (Config/Pets.InventoryCap at
+	-- most). Kept through rebirth.
+	Pets: { Types.PetInstance },
 }
 
 local Template: Data = {
-	DataVersion = 6,
+	DataVersion = 7,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
 	UnlockedPlots = { BaseConfig.StartingPlots },
 	OwnedWeapons = { Weapons.Starter },
 	EquippedWeapon = Weapons.Starter,
+	Pets = {},
 }
 
 return Template

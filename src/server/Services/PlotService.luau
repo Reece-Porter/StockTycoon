@@ -3,21 +3,29 @@
 -- company standing on its plot and greys out plots the owner hasn't unlocked
 -- (Data.UnlockedPlots, raised by UpgradeService).
 --
--- Plot state reaches clients through attributes on the plot parts: PlotKey and
--- Unlocked, plus CompanyId and InstanceId while a company is placed. The models shown on
--- plots live in Workspace.PlacedCompanies with the same details as attributes.
+-- Plot state reaches clients through attributes on the plot parts: PlotKey,
+-- Unlocked and HoldSeconds (how long a thief must hold to steal from it, with
+-- the floor's guard pets), plus CompanyId and InstanceId while a company is
+-- placed. The models shown on plots live in Workspace.PlacedCompanies with the
+-- same details as attributes, including Income: its income per second with
+-- the floor's pets and every other multiplier.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
+local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
+local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local BaseService = require(script.Parent.BaseService)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
+local IncomeService = require(script.Parent.IncomeService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
+local LockedLook = require(script.Parent.Parent.Lib.LockedLook)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local MAX_PLOT_KEY_LENGTH = 32
@@ -49,9 +57,15 @@ local function clearPlot(plot: BaseService.Plot)
 	plot.part:SetAttribute("InstanceId", nil)
 end
 
-local function showOnPlot(base: BaseService.Base, plot: BaseService.Plot, company: Types.CompanyInstance)
+local function showOnPlot(
+	base: BaseService.Base,
+	plot: BaseService.Plot,
+	company: Types.CompanyInstance,
+	income: number
+)
 	local current = displays[plot.part]
 	if current and current:GetAttribute("InstanceId") == company.instanceId then
+		current:SetAttribute("Income", income)
 		return
 	end
 	clearPlot(plot)
@@ -67,7 +81,7 @@ local function showOnPlot(base: BaseService.Base, plot: BaseService.Plot, compan
 	model:SetAttribute("InstanceId", company.instanceId)
 	model:SetAttribute("CompanyId", company.companyId)
 	model:SetAttribute("Tier", company.tier)
-	model:SetAttribute("Income", company.baseIncome * company.valuationMultiplier)
+	model:SetAttribute("Income", income)
 	model:SetAttribute("OwnerUserId", company.ownerUserId)
 	model:SetAttribute("BaseName", base.name)
 	model:SetAttribute("PlotKey", plot.key)
@@ -78,21 +92,6 @@ local function showOnPlot(base: BaseService.Base, plot: BaseService.Plot, compan
 	part:SetAttribute("InstanceId", company.instanceId)
 end
 
-local function setLocked(part: BasePart, locked: boolean)
-	if locked then
-		if part:GetAttribute("OriginalTransparency") == nil then
-			part:SetAttribute("OriginalTransparency", part.Transparency)
-		end
-		part.Transparency = BaseConfig.LockedPlotTransparency
-	else
-		local original = part:GetAttribute("OriginalTransparency")
-		if typeof(original) == "number" then
-			part.Transparency = original
-		end
-		part:SetAttribute("OriginalTransparency", nil)
-	end
-end
-
 -- Brings a player's plots in line with their save.
 local function sync(player: Player)
 	local base = BaseService:GetBase(player)
@@ -100,16 +99,18 @@ local function sync(player: Player)
 	if base == nil or data == nil then
 		return
 	end
+	local multipliers = IncomeService:GetMultipliers(player)
 	for _, plot in base.plots do
 		local unlocked = isUnlocked(plot, data)
-		setLocked(plot.part, not unlocked)
+		LockedLook.set(plot.part, not unlocked)
 		plot.part:SetAttribute("PlotKey", plot.key)
 		plot.part:SetAttribute("Unlocked", unlocked)
+		plot.part:SetAttribute("HoldSeconds", StealConfig.HoldSeconds + PetMath.guardSeconds(data.Pets, plot.floor))
 
 		-- A company being stolen is in the thief's hands, not on the plot.
 		local company = data.Placed[plot.key]
 		if company and not CarryService:IsPlotBeingStolen(player, plot.key) then
-			showOnPlot(base, plot, company)
+			showOnPlot(base, plot, company, IncomeMath.company(company, plot.floor, multipliers))
 		else
 			clearPlot(plot)
 		end
@@ -119,8 +120,9 @@ end
 local function resetBase(base: BaseService.Base)
 	for _, plot in base.plots do
 		clearPlot(plot)
-		setLocked(plot.part, false)
+		LockedLook.set(plot.part, false)
 		plot.part:SetAttribute("Unlocked", nil)
+		plot.part:SetAttribute("HoldSeconds", nil)
 	end
 end
 

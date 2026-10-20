@@ -32,4 +32,9 @@ return {
 		data.OwnedWeapons = { "Newspaper" }
 		data.EquippedWeapon = "Newspaper"
 	end,
+
+	-- Version 7 adds Pets: every pet the player owns. Nobody had any before.
+	[6] = function(data)
+		data.Pets = {}
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

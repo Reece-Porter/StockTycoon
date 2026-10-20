@@ -26,4 +26,12 @@ export type MachineRun = {
 	startedAt: number,
 }
 
+-- One pet a player owns. slotKey (e.g. "Floor2/Slot1") is where it is
+-- placed; nil means it is in their pet inventory.
+export type PetInstance = {
+	instanceId: string,
+	petId: string,
+	slotKey: string?,
+}
+
 return {}

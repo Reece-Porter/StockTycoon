@@ -31,6 +31,7 @@ local RunService = game:GetService("RunService")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Format = require(ReplicatedStorage.Shared.Format)
+local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local Types = require(ReplicatedStorage.Shared.Types)
@@ -186,7 +187,7 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 	local plot = base.plotsByKey[plotKey]
 	local ownerData = DataService:GetData(owner)
 	local company = if plot and ownerData then ownerData.Placed[plot.key] else nil
-	if plot == nil or company == nil or CarryService:IsPlotBeingStolen(owner, plot.key) then
+	if plot == nil or ownerData == nil or company == nil or CarryService:IsPlotBeingStolen(owner, plot.key) then
 		return "There's nothing there to take."
 	end
 
@@ -195,7 +196,9 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 			and attempt.plotKey == plotKey
 		then now() - attempt.startedAt
 		else 0
-	if heldFor < StealConfig.HoldSeconds - StealConfig.HoldTolerance then
+	-- Guard pets on the plot's floor make the hold longer.
+	local holdSeconds = StealConfig.HoldSeconds + PetMath.guardSeconds(ownerData.Pets, plot.floor)
+	if heldFor < holdSeconds - StealConfig.HoldTolerance then
 		return "Hold the button to take it."
 	end
 	if isLocked(base) then

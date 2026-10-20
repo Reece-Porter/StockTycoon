@@ -4,8 +4,8 @@
 --
 -- Bases are built by hand in Studio. Each Base<number> is a Model with a Spawn
 -- part, a Conveyor model containing Start and End parts, plots at
--- Floors.Floor<n>.Plots.Plot<m>, a Machine containing a Pad part, and a
--- LockButton part. A base missing Spawn or the conveyor is
+-- Floors.Floor<n>.Plots.Plot<m>, pet slots at Floors.Floor<n>.PetSlots.Slot<m>,
+-- a Machine containing a Pad part, and a LockButton part. A base missing Spawn or the conveyor is
 -- skipped, and missing plots are reported, with a warning naming what's
 -- missing; nothing is ever patched up.
 
@@ -13,6 +13,14 @@ local Players = game:GetService("Players")
 
 export type Plot = {
 	-- e.g. "Floor1/Plot3"; how placed companies are saved.
+	key: string,
+	floor: number,
+	index: number,
+	part: BasePart,
+}
+
+export type PetSlot = {
+	-- e.g. "Floor2/Slot1"; how placed pets are saved.
 	key: string,
 	floor: number,
 	index: number,
@@ -27,6 +35,8 @@ export type Base = {
 	conveyorEnd: BasePart,
 	plots: { Plot },
 	plotsByKey: { [string]: Plot },
+	petSlots: { PetSlot },
+	petSlotsByKey: { [string]: PetSlot },
 	-- Where a company sits in the Valuation Machine; nil if it isn't built.
 	machinePad: BasePart?,
 	-- The button the owner presses to lock the base; nil if it isn't built.
@@ -119,6 +129,41 @@ local function findPlots(model: Model, path: string): { Plot }
 	return plots
 end
 
+-- Pet slots on every floor that has plots. A floor without a PetSlots folder
+-- is reported but still works for companies.
+local function findPetSlots(model: Model, path: string): { PetSlot }
+	local slots: { PetSlot } = {}
+	local floorsFolder = model:FindFirstChild("Floors")
+	if floorsFolder == nil then
+		return slots
+	end
+	for _, floor in floorsFolder:GetChildren() do
+		local floorNumber = numbered(floor, "Floor")
+		if floorNumber and floor:FindFirstChild("Plots") then
+			local folder = floor:FindFirstChild("PetSlots")
+			if folder == nil then
+				table.insert(problems, `{path}.Floors.{floor.Name}.PetSlots is missing`)
+			else
+				for _, child in folder:GetChildren() do
+					local index = numbered(child, "Slot")
+					if index and child:IsA("BasePart") then
+						table.insert(slots, {
+							key = `Floor{floorNumber}/Slot{index}`,
+							floor = floorNumber,
+							index = index,
+							part = child,
+						})
+					end
+				end
+			end
+		end
+	end
+	table.sort(slots, function(a, b)
+		return if a.floor == b.floor then a.index < b.index else a.floor < b.floor
+	end)
+	return slots
+end
+
 local function loadBases()
 	local map = workspace:FindFirstChild("Map")
 	local folder = map and map:FindFirstChild("Bases")
@@ -162,6 +207,11 @@ local function loadBases()
 			for _, plot in plots do
 				plotsByKey[plot.key] = plot
 			end
+			local petSlots = findPetSlots(model, path)
+			local petSlotsByKey = {}
+			for _, slot in petSlots do
+				petSlotsByKey[slot.key] = slot
+			end
 			local machine = model:FindFirstChild("Machine")
 			local machinePad = if machine then findPart(machine, "Pad", `{path}.Machine`) else nil
 			if machine == nil then
@@ -179,6 +229,8 @@ local function loadBases()
 				conveyorEnd = conveyorEnd,
 				plots = plots,
 				plotsByKey = plotsByKey,
+				petSlots = petSlots,
+				petSlotsByKey = petSlotsByKey,
 				machinePad = machinePad,
 				lockButton = lockButton,
 				boxCFrame = boxCFrame,

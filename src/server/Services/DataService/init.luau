@@ -13,6 +13,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local PetsConfig = require(ReplicatedStorage.Shared.Config.Pets)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local Migrations = require(script.Migrations)
@@ -412,6 +413,56 @@ function DataService:SetEquippedWeapon(player: Player, weaponId: string): boolea
 		return false
 	end
 	profile.Data.EquippedWeapon = weaponId
+	dataChanged(player)
+	return true
+end
+
+-- Adds a pet. Fails if the player already has Config/Pets.InventoryCap.
+function DataService:AddPet(player: Player, pet: Types.PetInstance): boolean
+	local profile = profiles[player]
+	if profile == nil or #profile.Data.Pets >= PetsConfig.InventoryCap then
+		return false
+	end
+	table.insert(profile.Data.Pets, pet)
+	dataChanged(player)
+	return true
+end
+
+function DataService:RemovePet(player: Player, instanceId: string): Types.PetInstance?
+	local profile = profiles[player]
+	if profile == nil then
+		return nil
+	end
+	for index, pet in profile.Data.Pets do
+		if pet.instanceId == instanceId then
+			table.remove(profile.Data.Pets, index)
+			dataChanged(player)
+			return pet
+		end
+	end
+	return nil
+end
+
+-- Puts a pet in a slot, or back in the inventory with nil. Fails if the pet
+-- isn't the player's or another pet is already in that slot. PetService
+-- decides which slots are allowed.
+function DataService:SetPetSlot(player: Player, instanceId: string, slotKey: string?): boolean
+	local profile = profiles[player]
+	if profile == nil then
+		return false
+	end
+	local found: Types.PetInstance? = nil
+	for _, pet in profile.Data.Pets do
+		if pet.instanceId == instanceId then
+			found = pet
+		elseif slotKey and pet.slotKey == slotKey then
+			return false
+		end
+	end
+	if found == nil then
+		return false
+	end
+	found.slotKey = slotKey
 	dataChanged(player)
 	return true
 end
