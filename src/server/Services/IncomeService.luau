@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local IncomeMath = require(ReplicatedStorage.Shared.IncomeMath)
+local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 
@@ -22,10 +23,12 @@ local rates: { [Player]: number } = {}
 
 local IncomeService = {}
 
--- Pet, rebirth, boost and game pass multipliers arrive in later slices; until
--- then they are all 1.
-local function multipliersFor(_player: Player): IncomeMath.Multipliers
-	return IncomeMath.noMultipliers()
+-- Floor pets count now. Rebirth, boost and game pass multipliers arrive in
+-- later slices; until then they are 1.
+local function multipliersFor(data: DataService.Data): IncomeMath.Multipliers
+	local multipliers = IncomeMath.noMultipliers()
+	multipliers.floorPet = PetMath.incomeMultipliers(data.Pets)
+	return multipliers
 end
 
 local function updateRate(player: Player)
@@ -40,7 +43,7 @@ local function updateRate(player: Player)
 			placed[plotKey] = company
 		end
 	end
-	local rate = IncomeMath.total(placed, multipliersFor(player))
+	local rate = IncomeMath.total(placed, multipliersFor(data))
 	rates[player] = rate
 	player:SetAttribute("IncomePerSecond", rate)
 end
@@ -48,6 +51,13 @@ end
 -- Works the player's income out again, e.g. when a steal starts or ends.
 function IncomeService:Refresh(player: Player)
 	updateRate(player)
+end
+
+-- Everything multiplying the player's income, e.g. for showing one company's
+-- income on its plot.
+function IncomeService:GetMultipliers(player: Player): IncomeMath.Multipliers
+	local data = DataService:GetData(player)
+	return if data then multipliersFor(data) else IncomeMath.noMultipliers()
 end
 
 function IncomeService:GetIncomePerSecond(player: Player): number

@@ -19,10 +19,13 @@ local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
+local PetService = require(script.Parent.PetService)
+local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
 local StealService = require(script.Parent.StealService)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
@@ -76,6 +79,28 @@ local function findWeapon(text: string?): Weapons.Weapon?
 		local name = string.lower((string.gsub(weapon.name, "[%s%-]", "")))
 		if string.lower(weapon.id) == wanted or name == wanted then
 			return weapon
+		end
+	end
+	return nil
+end
+
+-- Matches a pet by id or name ("coffeecat", "Coffee Cat"), or a rarity
+-- ("mythic"), in which case one of that rarity's pets is picked at random.
+local function findPet(text: string?): Pets.Pet?
+	if text == nil then
+		return nil
+	end
+	local wanted = string.lower((string.gsub(text, "[%s%-]", "")))
+	for _, pet in Pets.list do
+		local name = string.lower((string.gsub(pet.name, "[%s%-]", "")))
+		if string.lower(pet.id) == wanted or name == wanted then
+			return pet
+		end
+	end
+	for _, rarity in Pets.rarities do
+		if string.lower(rarity.id) == wanted then
+			local choices = Pets.byRarity[rarity.id]
+			return choices[math.random(#choices)]
 		end
 	end
 	return nil
@@ -277,6 +302,38 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/givepet",
+		usage = "/givepet <pet or rarity> [player]",
+		run = function(player, args)
+			local pet = findPet(args[1])
+			if pet == nil then
+				return "Usage: /givepet <pet or rarity> [player], e.g. /givepet coffeecat or /givepet mythic"
+			end
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
+			end
+			if not PetShopService:Give(target, pet.id) then
+				return `Couldn't give it: {target.Name}'s data hasn't loaded or their pets are full.`
+			end
+			local rarity = Pets.rarityById[pet.rarity]
+			return `Gave {if target == player then "you" else target.Name} a {rarity.name} {pet.name}.`
+		end,
+	},
+	{
+		alias = "/testspins",
+		usage = "/testspins [rolls]",
+		run = function(player, args)
+			local rolls = if args[1] then parseAmount(args[1]) else DEFAULT_ODDS_ROLLS
+			if rolls == nil or rolls < 1 or rolls > MAX_ODDS_ROLLS then
+				return `Usage: /testspins [rolls], up to {MAX_ODDS_ROLLS} rolls`
+			end
+			local report = PetShopService:TestOdds(rolls)
+			AdminService:SetDebugValue(player, "SpinTest", report)
+			return report
+		end,
+	},
+	{
 		alias = "/resetdata",
 		usage = "/resetdata",
 		run = function(player)
@@ -337,7 +394,9 @@ local function onPlayerAdded(player: Player)
 
 	local problems = table.clone(BaseService:GetProblems())
 	table.move(ConveyorService:GetProblems(), 1, #ConveyorService:GetProblems(), #problems + 1, problems)
-	table.move(WeaponShopService:GetProblems(), 1, #WeaponShopService:GetProblems(), #problems + 1, problems)
+	for _, list in { WeaponShopService:GetProblems(), PetService:GetProblems(), PetShopService:GetProblems() } do
+		table.move(list, 1, #list, #problems + 1, problems)
+	end
 	if #problems > 0 then
 		AdminService:SetDebugValue(player, "MapProblems", table.concat(problems, "\n"))
 	end
@@ -378,6 +437,8 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Storage", `{#data.Storage}/{BaseConfig.StorageCapacity}`)
 	AdminService:SetDebugValue(player, "Placed", placed)
 	AdminService:SetDebugValue(player, "Carrying", carryingName)
+	AdminService:SetDebugValue(player, "Pets", `{#data.Pets}/{Pets.InventoryCap}`)
+	AdminService:SetDebugValue(player, "FloorPets", PetService:DescribeFloors(player))
 end
 
 function AdminService:Init()

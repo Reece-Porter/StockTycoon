@@ -5,7 +5,8 @@
 -- Unlocked, CompanyId) and checks every request again.
 --
 -- Every placed company, on any base, gets a label with its name, tier and
--- income per second.
+-- income per second, which follows the server's Income attribute (it changes
+-- when pets are placed on that floor).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -119,7 +120,13 @@ local function labelPlaced(model: Instance)
 	local tierId = model:GetAttribute("Tier")
 	local income = model:GetAttribute("Income")
 	if typeof(companyId) == "string" and typeof(tierId) == "string" and typeof(income) == "number" then
-		CompanyLabel.attach(model, companyId, tierId, Format.income(income))
+		local detail = CompanyLabel.detail(CompanyLabel.attach(model, companyId, tierId, Format.income(income)))
+		model:GetAttributeChangedSignal("Income"):Connect(function()
+			local newIncome = model:GetAttribute("Income")
+			if detail and typeof(newIncome) == "number" then
+				detail.Text = Format.income(newIncome)
+			end
+		end)
 	end
 end
 

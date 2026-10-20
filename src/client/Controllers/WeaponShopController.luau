@@ -14,9 +14,10 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 
--- Under the Upgrade button, which is under Storage on the left edge.
+-- Under the Upgrade button, which is under Storage on the left edge, sharing
+-- the row with the Pets button.
 local BUTTON_POSITION = UDim2.new(0, 12, 0.5, 96)
-local BUTTON_SIZE = UDim2.fromOffset(160, 48)
+local BUTTON_SIZE = UDim2.fromOffset(76, 48)
 local ROW_HEIGHT = 76
 local PANEL_MAX_SIZE = Vector2.new(400, 480)
 local BACKGROUND = Color3.fromRGB(20, 20, 25)
@@ -150,6 +151,7 @@ function WeaponShopController:Start()
 	openButton.BackgroundTransparency = 0.2
 	openButton.Position = BUTTON_POSITION
 	openButton.Size = BUTTON_SIZE
+	openButton.TextSize = 16
 	openButton.Parent = gui
 
 	local panel = Instance.new("Frame")

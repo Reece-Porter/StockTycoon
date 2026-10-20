@@ -31,6 +31,19 @@ local function addText(parent: Instance, order: number, text: string, size: numb
 	label.Parent = parent
 end
 
+-- The detail line (third line) of a label made by attach, to update it.
+function CompanyLabel.detail(gui: BillboardGui?): TextLabel?
+	if gui == nil then
+		return nil
+	end
+	for _, child in gui:GetChildren() do
+		if child:IsA("TextLabel") and child.LayoutOrder == 3 then
+			return child
+		end
+	end
+	return nil
+end
+
 function CompanyLabel.attach(model: Model, companyId: string, tierId: string, detail: string): BillboardGui?
 	local company = Companies.byId[companyId]
 	local tier = Tiers.byId[tierId]

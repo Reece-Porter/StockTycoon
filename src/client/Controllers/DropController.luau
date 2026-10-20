@@ -38,19 +38,6 @@ local function update(drop: Drop)
 	drop.prompt.Enabled = player:GetAttribute("CarryingCompanyId") == nil
 end
 
--- The label's third line is its detail text.
-local function detailLabel(gui: BillboardGui?): TextLabel?
-	if gui == nil then
-		return nil
-	end
-	for _, child in gui:GetChildren() do
-		if child:IsA("TextLabel") and child.LayoutOrder == 3 then
-			return child
-		end
-	end
-	return nil
-end
-
 local function setUp(child: Instance)
 	if not child:IsA("Model") or drops[child] then
 		return
@@ -79,7 +66,7 @@ local function setUp(child: Instance)
 	local drop: Drop = {
 		model = model,
 		prompt = prompt,
-		detail = detailLabel(CompanyLabel.attach(model, companyId, tier, "")),
+		detail = CompanyLabel.detail(CompanyLabel.attach(model, companyId, tier, "")),
 	}
 	drops[model] = drop
 	model.Destroying:Connect(function()
