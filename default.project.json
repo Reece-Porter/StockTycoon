@@ -1,5 +1,6 @@
 {
 	"name": "StockTycoon",
+	"servePlaceIds": [88809294007206],
 	"tree": {
 		"$className": "DataModel",
 		"ReplicatedStorage": {
