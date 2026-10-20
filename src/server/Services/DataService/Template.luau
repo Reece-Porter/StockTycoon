@@ -61,10 +61,12 @@ export type Data = {
 	-- Developer product purchases already given (Roblox purchase ids, the
 	-- newest Config/Monetisation.ReceiptsKept), so none is given twice.
 	Receipts: { string },
+	-- Upgrade station levels by Config/Perks id (0 if never bought).
+	Perks: { [string]: number },
 }
 
 local Template: Data = {
-	DataVersion = 12,
+	DataVersion = 13,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -85,6 +87,7 @@ local Template: Data = {
 	Index = {
 		Discovered = {},
 		Claimed = {},
+		Variants = {},
 	},
 	LastSeen = 0,
 	TutorialStep = Onboarding.Steps.Buy,
@@ -92,6 +95,7 @@ local Template: Data = {
 	RedeemedCodes = {},
 	Analytics = { Funnel = {}, PlaySeconds = 0, RebirthPlaySeconds = 0 },
 	Receipts = {},
+	Perks = {},
 }
 
 return Template

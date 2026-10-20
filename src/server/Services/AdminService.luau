@@ -17,9 +17,12 @@ local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
+local Perks = require(ReplicatedStorage.Shared.Config.Perks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local VariantMath = require(ReplicatedStorage.Shared.VariantMath)
+local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
@@ -32,6 +35,7 @@ local DataService = require(script.Parent.DataService)
 local IndexService = require(script.Parent.IndexService)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MonetisationService = require(script.Parent.MonetisationService)
+local PerkService = require(script.Parent.PerkService)
 local PetService = require(script.Parent.PetService)
 local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
@@ -116,6 +120,24 @@ local function findPet(text: string?): Pets.Pet?
 end
 
 -- A player in this server whose name starts with the text, ignoring case.
+local function findVariant(text: string?): Variants.Variant?
+	local wanted = string.lower(text or "")
+	for _, variant in Variants.list do
+		if string.lower(variant.id) == wanted then
+			return variant
+		end
+	end
+	return nil
+end
+
+local function variantNames(): string
+	local names = {}
+	for _, variant in Variants.list do
+		table.insert(names, string.lower(variant.id))
+	end
+	return table.concat(names, ", ")
+end
+
 local function findPass(text: string?): Monetisation.Pass?
 	local wanted = string.lower(text or "")
 	for _, pass in Monetisation.Passes do
@@ -220,21 +242,64 @@ local commands: { Command } = {
 	},
 	{
 		alias = "/spawn",
-		usage = "/spawn <tier> [shared]",
+		usage = "/spawn <tier> [shared] [variant]",
 		run = function(player, args)
 			local tier = findTier(args[1])
 			if tier == nil then
-				return `Usage: /spawn <tier> [shared], where tier is one of: {tierNames()}`
+				return `Usage: /spawn <tier> [shared] [variant], where tier is one of: {tierNames()}`
 			end
-			local shared = isShared(args[2])
+			local shared, variantId = false, nil
+			for index = 2, #args do
+				local variant = findVariant(args[index])
+				if isShared(args[index]) then
+					shared = true
+				elseif string.lower(args[index]) == "regular" then
+					variantId = "regular"
+				elseif variant then
+					variantId = variant.id
+				else
+					return `Usage: /spawn <tier> [shared] [variant], where variant is regular or one of: {variantNames()}`
+				end
+			end
 			local base = if shared then nil else BaseService:GetBase(player)
 			if not shared and base == nil then
 				return "You don't have a base."
 			end
-			if ConveyorService:SpawnNow(base, tier.id) == nil then
+			local item = ConveyorService:SpawnNow(base, tier.id, variantId)
+			if item == nil then
 				return "Couldn't spawn it. Check the console for a missing model or conveyor."
 			end
-			return `Spawned a {tier.name} on {if shared then "the shared" else "your"} conveyor.`
+			local what = if item.variant then `{item.variant} {tier.name}` else tier.name
+			return `Spawned a {what} on {if shared then "the shared" else "your"} conveyor.`
+		end,
+	},
+	{
+		alias = "/testvariants",
+		usage = "/testvariants [rolls]",
+		run = function(player, args)
+			local rolls = if args[1] then parseAmount(args[1]) else DEFAULT_ODDS_ROLLS
+			if rolls == nil or rolls < 1 or rolls > MAX_ODDS_ROLLS then
+				return `Usage: /testvariants [rolls], up to {MAX_ODDS_ROLLS} rolls`
+			end
+			-- With the player's own Variant Chance upgrade, as on their conveyor.
+			local chance = ConveyorService:GetVariantChance(player)
+			local counts: { [string]: number } = {}
+			local random = Random.new()
+			for _ = 1, rolls do
+				local variant = VariantMath.roll(random:NextNumber(), chance)
+				if variant then
+					counts[variant] = (counts[variant] or 0) + 1
+				end
+			end
+			local lines = { `{rolls} spawns, variant chance x{chance} (got / expected):` }
+			for _, variant in Variants.list do
+				local got = (counts[variant.id] or 0) / rolls * 100
+				local expected = VariantMath.chance(variant, chance) * 100
+				table.insert(lines, string.format("%s %.3f%% / %.3f%%", variant.name, got, expected))
+			end
+			local report = table.concat(lines, "\n")
+			AdminService:SetDebugValue(player, "VariantTest", report)
+			return report
 		end,
 	},
 	{
@@ -434,6 +499,30 @@ local commands: { Command } = {
 		end,
 	},
 	{
+		alias = "/setupgrade",
+		usage = "/setupgrade <upgrade> <level> [player]",
+		run = function(player, args)
+			local wanted = string.lower(args[1] or "")
+			local names = {}
+			local found: Perks.Perk? = nil
+			for _, perk in Perks.list do
+				table.insert(names, string.lower(perk.id))
+				if string.lower(perk.id) == wanted then
+					found = perk
+				end
+			end
+			local level = parseAmount(args[2])
+			local target = if args[3] then findPlayer(args[3]) else player
+			if found == nil or level == nil or target == nil then
+				return `Usage: /setupgrade <{table.concat(names, "|")}> <level> [player]`
+			end
+			if not PerkService:SetLevel(target, found.id, level) then
+				return `{found.name} goes from 0 to {found.maxLevel}, and {target.Name}'s data has to be loaded.`
+			end
+			return `{found.name} is level {level} for {if target == player then "you" else target.Name}.`
+		end,
+	},
+	{
 		alias = "/givepass",
 		usage = "/givepass <pass> [player]",
 		run = function(player, args)
@@ -554,6 +643,7 @@ local function onPlayerAdded(player: Player)
 			PetService:GetProblems(),
 			PetShopService:GetProblems(),
 			LeaderboardService:GetProblems(),
+			PerkService:GetProblems(),
 		}
 	do
 		table.move(list, 1, #list, #problems + 1, problems)
@@ -609,6 +699,11 @@ local function onDataChanged(player: Player)
 	end
 	local passText = if #owned > 0 then table.concat(owned, ", ") else "none"
 	AdminService:SetDebugValue(player, "Passes", `{passText}; {#data.Receipts} purchases given`)
+	local levels = {}
+	for _, perk in Perks.list do
+		table.insert(levels, `{perk.id} {data.Perks[perk.id] or 0}`)
+	end
+	AdminService:SetDebugValue(player, "Upgrades", table.concat(levels, ", "))
 	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
 	local nextCost = RebirthMath.cashRequired(data.Rebirths)
 	AdminService:SetDebugValue(player, "Rebirths", `{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash)`)

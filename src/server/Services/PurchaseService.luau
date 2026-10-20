@@ -35,6 +35,7 @@ local function newCompanyInstance(player: Player, item: ConveyorService.Item): T
 		valuationMultiplier = 1,
 		hasBeenValued = false,
 		ownerUserId = player.UserId,
+		variant = item.variant,
 	}
 end
 

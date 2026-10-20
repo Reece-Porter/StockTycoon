@@ -14,6 +14,7 @@ local IndexConfig = require(ReplicatedStorage.Shared.Config.Index)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 
 -- Beside the Rewards button, at the bottom of the stack on the left edge.
 local BUTTON_POSITION = UDim2.new(0, 96, 0.5, 104)
@@ -213,6 +214,39 @@ function IndexController:Start()
 			end)
 		end
 
+		-- Every variant, with what it earns and how rare it is. Ones not found
+		-- yet are hidden.
+		local variantsFound = readList("IndexVariants")
+		heading(list, nextOrder(), `Variants  ({#variantsFound}/{#Variants.list})`)
+		local variantGrid = Instance.new("Frame")
+		variantGrid.LayoutOrder = nextOrder()
+		variantGrid.Size = UDim2.new(1, -6, 0, 0)
+		variantGrid.AutomaticSize = Enum.AutomaticSize.Y
+		variantGrid.BackgroundTransparency = 1
+		variantGrid.Parent = list
+		local variantLayout = Instance.new("UIGridLayout")
+		variantLayout.CellSize = UDim2.new(0.5, -4, 0, 44)
+		variantLayout.CellPadding = UDim2.fromOffset(6, 6)
+		variantLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		variantLayout.Parent = variantGrid
+		for position, variant in Variants.list do
+			local isFound = table.find(variantsFound, variant.id) ~= nil
+			local cell = Instance.new("TextLabel")
+			cell.LayoutOrder = position
+			cell.BackgroundColor3 = if isFound then variant.colour else UNKNOWN
+			cell.BackgroundTransparency = if isFound then 0.35 else 0
+			cell.Font = Enum.Font.BuilderSansBold
+			cell.TextSize = 14
+			cell.TextColor3 = if isFound then Color3.new(1, 1, 1) else Color3.fromRGB(150, 150, 160)
+			cell.TextStrokeTransparency = if isFound then 0.5 else 1
+			cell.TextWrapped = true
+			cell.Text = if isFound
+				then `{variant.name}\n{variant.multiplier}x, 1 in {variant.oneIn}`
+				else `???\n{variant.multiplier}x, 1 in {variant.oneIn}`
+			corner(cell, 6)
+			cell.Parent = variantGrid
+		end
+
 		-- Every company, by tier. Ones not found yet are hidden.
 		for _, tier in Tiers.list do
 			local tierCompanies: { Companies.Company } = {}
@@ -264,6 +298,7 @@ function IndexController:Start()
 	end)
 	player:GetAttributeChangedSignal("IndexDiscovered"):Connect(render)
 	player:GetAttributeChangedSignal("IndexClaimed"):Connect(render)
+	player:GetAttributeChangedSignal("IndexVariants"):Connect(render)
 	render()
 	gui.Parent = player:WaitForChild("PlayerGui")
 end

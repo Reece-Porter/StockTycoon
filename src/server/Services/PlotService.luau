@@ -71,7 +71,7 @@ local function showOnPlot(
 	end
 	clearPlot(plot)
 
-	local model = CompanyModels.clone(company.companyId, true)
+	local model = CompanyModels.clone(company.companyId, true, company.variant)
 	if model == nil then
 		return
 	end

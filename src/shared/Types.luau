@@ -13,6 +13,8 @@ export type CompanyInstance = {
 	valuationMultiplier: number,
 	hasBeenValued: boolean,
 	ownerUserId: number,
+	-- Config/Variants id, or nil for a regular company. Kept for good.
+	variant: string?,
 }
 
 -- A company in the Valuation Machine. The parameters come from
@@ -55,6 +57,8 @@ export type RewardsState = {
 export type IndexState = {
 	Discovered: { [string]: boolean },
 	Claimed: { number },
+	-- Variants (Config/Variants ids) the player has ever owned.
+	Variants: { [string]: boolean },
 }
 
 -- What's been reported to Roblox analytics.

@@ -65,7 +65,7 @@ end
 -- Shows the company standing on the machine's pad while it is being valued.
 local function showOnPad(player: Player, pad: BasePart, company: Types.CompanyInstance)
 	clearDisplay(player)
-	local model = CompanyModels.clone(company.companyId, true)
+	local model = CompanyModels.clone(company.companyId, true, company.variant)
 	if model == nil then
 		return
 	end

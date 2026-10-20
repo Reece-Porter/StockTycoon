@@ -28,6 +28,7 @@ local CarryConfig = require(ReplicatedStorage.Shared.Config.Carry)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local VariantMath = require(ReplicatedStorage.Shared.VariantMath)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
@@ -69,7 +70,7 @@ end
 -- Shrinks the company to fit, stands it on top of the character's head and
 -- welds it to the character so it moves with them.
 local function attach(character: Model, root: BasePart, company: Types.CompanyInstance): Model?
-	local model = CompanyModels.clone(company.companyId, false)
+	local model = CompanyModels.clone(company.companyId, false, company.variant)
 	if model == nil then
 		return nil
 	end
@@ -126,7 +127,8 @@ local function publishStorage(player: Player)
 			instanceId = company.instanceId,
 			companyId = company.companyId,
 			tier = company.tier,
-			income = company.baseIncome * company.valuationMultiplier,
+			variant = company.variant,
+			income = company.baseIncome * VariantMath.multiplier(company.variant) * company.valuationMultiplier,
 		})
 	end
 	player:SetAttribute("StorageList", HttpService:JSONEncode(list))

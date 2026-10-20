@@ -93,4 +93,12 @@ return {
 	[11] = function(data)
 		data.Receipts = {}
 	end,
+
+	-- Version 13 adds Perks (upgrade station levels) and Index.Variants
+	-- (variants found). Companies from before have no variant, which means
+	-- regular.
+	[12] = function(data)
+		data.Perks = {}
+		data.Index.Variants = {}
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }
