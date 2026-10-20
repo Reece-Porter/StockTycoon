@@ -27,6 +27,8 @@ local CHECK_SECONDS = 1
 -- os.clock() when each player's save loaded, and when their current step began.
 local joinedAt: { [Player]: number } = {}
 local stepStartedAt: { [Player]: number } = {}
+-- The step each player was last shown.
+local publishedStep: { [Player]: number } = {}
 local skipLimiter = RateLimiter.new(1, 2)
 
 local TutorialService = {}
@@ -108,6 +110,7 @@ local function publish(player: Player)
 	if data == nil or joined == nil or player.Parent ~= Players then
 		return
 	end
+	publishedStep[player] = data.TutorialStep
 	player:SetAttribute("TutorialStep", data.TutorialStep)
 	-- The middle conveyor hint waits until they've played a little.
 	local showIn = if data.TutorialStep == Steps.Middle
@@ -117,8 +120,10 @@ local function publish(player: Player)
 end
 
 local function setStep(player: Player, step: number)
-	DataService:SetTutorialStep(player, step)
+	-- Before saving it: saving runs check again, which must see the new step's
+	-- start time.
 	stepStartedAt[player] = os.clock()
+	DataService:SetTutorialStep(player, step)
 	publish(player)
 end
 
@@ -130,6 +135,12 @@ local function check(player: Player)
 		return
 	end
 	local step = data.TutorialStep
+	-- The step changed some other way (an admin's /resetdata), so show it
+	-- from now.
+	if publishedStep[player] ~= step then
+		stepStartedAt[player] = os.clock()
+		publish(player)
+	end
 	if step >= Steps.Done then
 		return
 	end
@@ -168,6 +179,7 @@ function TutorialService:Start()
 	Players.PlayerRemoving:Connect(function(player)
 		joinedAt[player] = nil
 		stepStartedAt[player] = nil
+		publishedStep[player] = nil
 	end)
 
 	Remotes.SkipTutorial.OnServerEvent:Connect(function(player: Player)
