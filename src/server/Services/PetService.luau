@@ -6,7 +6,11 @@
 -- checked here: the slot is theirs, open and free, the pet is theirs and not
 -- placed, and they are standing close by. Pets can't be stolen.
 --
--- Each floor has Config/Pets.SlotsPerFloor slots open; others are greyed out.
+-- Each floor has Config/Pets.SlotsPerFloor slots open, and the Extra Pet Slot
+-- game pass opens Config/Monetisation.ExtraPetSlots more; others are greyed
+-- out. Slots the pass would open get a NeedsPass attribute. If a player turns
+-- out not to have the pass (say it was refunded), a pet in one of its slots
+-- goes back to their pets.
 --
 -- Players get a PetList attribute (JSON: instanceId, petId, slotKey) for the
 -- pets window. Slot parts get SlotKey, Unlocked, PetId and PetInstanceId
@@ -20,6 +24,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
+local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
@@ -27,6 +32,7 @@ local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
 local LockedLook = require(script.Parent.Parent.Lib.LockedLook)
+local Passes = require(script.Parent.Parent.Lib.Passes)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local MAX_KEY_LENGTH = 64
@@ -77,8 +83,19 @@ local function clonePet(pet: Pets.Pet): Model?
 	return model
 end
 
-local function isOpen(slot: BaseService.PetSlot, data: DataService.Data): boolean
-	return data.UnlockedPlots[slot.floor] ~= nil and slot.index <= Pets.SlotsPerFloor
+local function slotsOpen(player: Player): number
+	return Pets.SlotsPerFloor + (if Passes.owns(player, "ExtraPetSlot") then Monetisation.ExtraPetSlots else 0)
+end
+
+local function isOpen(player: Player, slot: BaseService.PetSlot, data: DataService.Data): boolean
+	return data.UnlockedPlots[slot.floor] ~= nil and slot.index <= slotsOpen(player)
+end
+
+-- A slot on an opened floor that only the Extra Pet Slot pass opens.
+local function isPassSlot(slot: BaseService.PetSlot, data: DataService.Data): boolean
+	return data.UnlockedPlots[slot.floor] ~= nil
+		and slot.index > Pets.SlotsPerFloor
+		and slot.index <= Pets.SlotsPerFloor + Monetisation.ExtraPetSlots
 end
 
 local function petInSlot(data: DataService.Data, slotKey: string): Types.PetInstance?
@@ -152,12 +169,20 @@ local function sync(player: Player)
 		return
 	end
 	for _, slot in base.petSlots do
-		local open = isOpen(slot, data)
+		local open = isOpen(player, slot, data)
 		LockedLook.set(slot.part, not open)
 		slot.part:SetAttribute("SlotKey", slot.key)
 		slot.part:SetAttribute("Unlocked", open)
+		slot.part:SetAttribute("NeedsPass", if not open and isPassSlot(slot, data) then true else nil)
 		local pet = petInSlot(data, slot.key)
-		if pet then
+		if pet and not open and isPassSlot(slot, data) and Passes.isChecked(player) then
+			-- Saving this runs sync again, which clears the slot.
+			DataService:SetPetSlot(player, pet.instanceId, nil)
+			Remotes.Notify:FireClient(
+				player,
+				`Your {petName(pet)} is back in your pets: that slot needs the Extra Pet Slot pass.`
+			)
+		elseif pet then
 			showInSlot(base, slot, pet)
 		else
 			clearSlot(slot)
@@ -170,6 +195,7 @@ local function resetBase(base: BaseService.Base)
 		clearSlot(slot)
 		LockedLook.set(slot.part, false)
 		slot.part:SetAttribute("Unlocked", nil)
+		slot.part:SetAttribute("NeedsPass", nil)
 	end
 end
 
@@ -192,8 +218,10 @@ local function place(player: Player, instanceId: string, slotKey: string): strin
 	if slot == nil or data == nil then
 		return "That pet slot isn't on your base."
 	end
-	if not isOpen(slot, data) then
-		return "That pet slot is locked."
+	if not isOpen(player, slot, data) then
+		return if isPassSlot(slot, data)
+			then "That pet slot needs the Extra Pet Slot pass (Store)."
+			else "That pet slot is locked."
 	end
 	if petInSlot(data, slot.key) then
 		return "That slot already has a pet."
@@ -245,6 +273,12 @@ local function delete(player: Player, instanceId: string): string
 end
 
 -- Problems found with the hand-built pet models, for the debug panel.
+-- Brings the player's pet slots in line again, e.g. when they get or lose
+-- the Extra Pet Slot pass.
+function PetService:Refresh(player: Player)
+	sync(player)
+end
+
 function PetService:GetProblems(): { string }
 	return problems
 end

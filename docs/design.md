@@ -30,7 +30,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 
 ## Conveyors (starting assumption)
 - Personal conveyor spawns one company every 6 seconds; shared every 5.7 seconds. (Personal halved from 3 after playtesting: the belts were too busy. Shared went from 2 to 4, then 30% fewer when its belt was made 4 times longer.)
-- Companies move at a set speed: 2 studs per second on personal belts (about 20 seconds along a 40-stud belt), 2.4 on the shared belt (about 80 seconds along its 192 studs). They despawn at the End if unbought.
+- Companies move at a set speed: 1.6 studs per second on personal belts (about 20 seconds along a 32-stud belt), 2.4 on the shared belt (about 2 minutes 10 seconds along its 316 studs, which run the length of the map). They despawn at the End if unbought.
 - Buying uses a ProximityPrompt on the company.
 - Shared conveyor tier announcements: Conglomerate and Monopoly spawns trigger a server-wide message.
 
@@ -155,6 +155,12 @@ Boost rules
 - Developer products: Cash packs, an extra base lock activation.
 - Nothing purchasable may affect the Valuation Machine.
 - No weapons, damage boosts or guard boosts for Robux at launch. Decide later how pay-to-win the game should feel.
+- Built as (`Config/Monetisation.luau`, `Services/MonetisationService`, the Store button):
+  - 2x Income doubles all income, offline earnings included. VIP gives a gold [VIP] tag in chat and gold trim on the owner's base. Extra Pet Slot opens each floor's second pet slot; if the pass is gone (say, refunded), a pet in that slot goes back to the player's pets.
+  - Cash packs give 15 minutes, 1 hour or 4 hours of the player's income (without reward boosts), at least $5K, $25K or $100K, so they stay worth buying as income grows.
+  - Lock Base Now locks the player's base from wherever they are for the usual 60 seconds, or adds 60 seconds to a lock already on. Base locks are otherwise free and renewable at the lock button, so this sells convenience, not protection players can't get.
+  - Developer products are given exactly once per purchase: the purchase id is saved with what it gave before Roblox is told it's done (save version 12 keeps the last 100).
+  - Prices are set on the Creator Dashboard, not in code. Each pass and product needs its id in `Config/Monetisation.luau`; until then it shows as not on sale.
 
 ## Onboarding (starting assumption)
 - New player spawns at their base with enough Cash for one Startup.
@@ -166,7 +172,8 @@ Boost rules
 
 ## Server and leaderboards (starting assumption)
 - 8 players per server, one base each. Set Max Players to 8 in the place's settings.
-- The map (`studio/BuildMap.luau`): four bases on each side of a street with the shared conveyor down the middle, all facing it, 12 studs apart so a player pushed out of a locked base never lands in the next one. Base1 to Base4 are the middle four and fill first. The shops are halfway along the street and the leaderboards stand across one end.
+- The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The shops face each other across the conveyor halfway along, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
+- Each base (36 wide, 86 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine, the lock button and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), pet slots at the back, and stairs zigzagging up behind the hall.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
@@ -219,6 +226,6 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 13. **Playtime and daily rewards, and the Index**: Check: milestones unlock at the right times using server time, rejoining keeps progress, daily reset happens at 00:00 UTC, streak resets after a missed day, boosts extend rather than stack, owning a new company adds it to the Index, Index prizes unlock at the right counts and can only be claimed once.
 14. **Offline earnings, onboarding, leaderboards, codes**: Check: rejoining after time away pays 25% of income for that time (up to 4 hours) and shows the popup, a new player is guided from first purchase to locking their base and the shared conveyor, leaderboards fill in and update, each code works once per player and not after it expires.
 15. **Analytics**: Check: funnel and economy events appear in the Creator Dashboard from a test session.
-16. **Monetisation**.
+16. **Monetisation**: Check: each pass's perk turns on when it's bought in game and when an owner joins, each product is given once per purchase (also after a rejoin), and nothing for sale touches the Valuation Machine.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.

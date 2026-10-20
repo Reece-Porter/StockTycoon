@@ -88,4 +88,9 @@ return {
 	[10] = function(data)
 		data.Analytics = { Funnel = { 1, 2, 3, 4, 5, 6 }, PlaySeconds = 0, RebirthPlaySeconds = 0 }
 	end,
+
+	-- Version 12 adds Receipts: developer product purchases already given.
+	[11] = function(data)
+		data.Receipts = {}
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

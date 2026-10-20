@@ -17,8 +17,12 @@ local OfflineMath = require(ReplicatedStorage.Shared.OfflineMath)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local IncomeService = require(script.Parent.IncomeService)
+local Passes = require(script.Parent.Parent.Lib.Passes)
 
 local TOUCH_SECONDS = 60
+-- How long to wait for the player's game passes (2x Income counts) before
+-- working out what they earned anyway.
+local PASS_WAIT_SECONDS = 10
 
 -- Players whose offline earnings have been worked out this session. Only
 -- these have LastSeen moved on, so it can't be overwritten before it's read.
@@ -37,6 +41,10 @@ local function settle(player: Player)
 	settled[player] = true
 	if lastSeen <= 0 then
 		return
+	end
+	local deadline = os.clock() + PASS_WAIT_SECONDS
+	while not Passes.isChecked(player) and os.clock() < deadline and player.Parent == Players do
+		task.wait(0.5)
 	end
 	-- Income as it is now, without a reward boost (boosts only run in game).
 	local away = now - lastSeen

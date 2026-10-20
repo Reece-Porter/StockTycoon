@@ -31,31 +31,53 @@ local PLOT = Color3.fromRGB(150, 170, 200)
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
 
--- Eight bases, four either side of the middle conveyor, all facing it. Each
--- is 60 studs square, with BASE_GAP between neighbours so a player pushed out
--- of a locked base (Config/Steal.LockPushMargin) lands clear of the next one.
--- The middle four come first, so they fill first; Base1 faces Base2.
-local BASE_SIZE = 60
-local BASE_GAP = 12
-local BASE_STEP = BASE_SIZE + BASE_GAP
+-- Eight bases, four either side of a street with the middle conveyor down
+-- the centre, all facing it. Each base is BASE_WIDTH along the street and
+-- BASE_DEPTH back from it, with BASE_GAP between neighbours, so stealing
+-- means a real trip. The middle four come first, so they fill first; Base1
+-- faces Base2.
+local BASE_WIDTH = 36
+local BASE_DEPTH = 86
+local BASE_GAP = 44
+-- From the middle of the street to the front of the bases.
+local STREET_HALF = 40
+local BASE_X = STREET_HALF + BASE_DEPTH / 2
+local BASE_STEP = BASE_WIDTH + BASE_GAP
 local BASE_SPOTS = {
-	{ x = -60, z = -BASE_STEP / 2 },
-	{ x = 60, z = -BASE_STEP / 2 },
-	{ x = -60, z = BASE_STEP / 2 },
-	{ x = 60, z = BASE_STEP / 2 },
-	{ x = -60, z = -BASE_STEP * 1.5 },
-	{ x = 60, z = -BASE_STEP * 1.5 },
-	{ x = -60, z = BASE_STEP * 1.5 },
-	{ x = 60, z = BASE_STEP * 1.5 },
+	{ x = -BASE_X, z = -BASE_STEP / 2 },
+	{ x = BASE_X, z = -BASE_STEP / 2 },
+	{ x = -BASE_X, z = BASE_STEP / 2 },
+	{ x = BASE_X, z = BASE_STEP / 2 },
+	{ x = -BASE_X, z = -BASE_STEP * 1.5 },
+	{ x = BASE_X, z = -BASE_STEP * 1.5 },
+	{ x = -BASE_X, z = BASE_STEP * 1.5 },
+	{ x = BASE_X, z = BASE_STEP * 1.5 },
 }
--- From the middle of the map to the far edge of the end bases.
-local ROW_HALF = BASE_STEP * 1.5 + BASE_SIZE / 2
--- The leaderboards stand across the end of the street between the bases.
-local BOARDS_Z = -(ROW_HALF + 10)
+-- Inside a base, in its own frame: x runs from the back (-BASE_DEPTH / 2) to
+-- the front by the street (+BASE_DEPTH / 2), and z across it. The front yard
+-- has the conveyor, the Valuation Machine, the lock button and the spawn. In
+-- the hall behind it a walkway runs straight back down the middle of every
+-- floor, with five plots either side. The stairs zigzag up behind the hall in
+-- two strips, meeting landings at either side.
+local HALL_FRONT = 21
+local HALL_BACK = -31
+local WALKWAY = 8
+local PLOT_Z = 9 -- plots either side of the walkway
+local STAIRS_X = { -34, -40 } -- floors 2 and 4 go up one strip, floor 3 the other
+local LANDING_Z = 10.5 -- where every staircase starts and ends
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
-local RUN = 21 -- length of every staircase
-local BELT_LENGTH = 192 -- the middle conveyor
+local RUN = 2 * LANDING_Z -- length of every staircase
+-- The area players can be in, and the hills around it.
+local PLAY_HALF_X = BASE_X + BASE_DEPTH / 2 + 14
+local PLAY_HALF_Z = BASE_STEP * 1.5 + BASE_WIDTH / 2 + 22
+local HILLS = 140 -- how far beyond the edge hills can reach
+-- The middle conveyor runs the length of the map, a little way into a
+-- tunnel in the hills at each end.
+local TUNNEL = 16
+local BELT_LENGTH = 2 * (PLAY_HALF_Z + TUNNEL)
+-- The shops face each other across the conveyor, halfway along the street.
+local SHOP_Z = 0
 
 local function newPart(
 	parent: Instance,
@@ -153,9 +175,9 @@ local groundY = if baseplate and baseplate:IsA("BasePart")
 local map = folder(Workspace, "Map")
 
 -- 1. The ground: grass instead of the default grey grid, with a paved street
--- down the middle between the two rows of bases, under the middle conveyor,
--- the shops and the leaderboards. It sits a tenth of a stud above the grass so
--- the two never flicker.
+-- down the middle between the two rows of bases, under the middle conveyor
+-- and the shops. It sits a tenth of a stud above the grass so the two never
+-- flicker.
 if baseplate and baseplate:IsA("BasePart") then
 	baseplate.Material = Enum.Material.Grass
 	baseplate.Color = Color3.fromRGB(96, 156, 74)
@@ -169,7 +191,7 @@ end
 local plaza = place(
 	map,
 	"Plaza",
-	Vector3.new(60, 1, 2 * math.max(BELT_LENGTH / 2 + 4, -BOARDS_Z + 4)),
+	Vector3.new(2 * STREET_HALF, 1, 2 * PLAY_HALF_Z),
 	CFrame.new(0, groundY - 0.4, 0),
 	Color3.fromRGB(196, 190, 178),
 	Enum.Material.Pavement
@@ -179,9 +201,8 @@ plaza.Material = Enum.Material.Pavement
 
 local bases = folder(map, "Bases")
 
--- 2. The bases. Each is laid out the same way in its own frame, where x
--- points towards the middle of the map: the conveyor on the near side, the
--- floors of plots on the far side, stairs in between.
+-- 2. The bases, each laid out the same way in its own frame (see the
+-- constants at the top).
 for index, spot in BASE_SPOTS do
 	local base = model(bases, "Base" .. index)
 	local center = Vector3.new(spot.x, groundY + 0.5, spot.z)
@@ -191,132 +212,159 @@ for index, spot in BASE_SPOTS do
 		return frame * CFrame.new(lx, ly, lz)
 	end
 	local accent = ACCENTS[(index - 1) % #ACCENTS + 1]
+	local carpet = accent:Lerp(Color3.new(0, 0, 0), 0.3)
 	local groundTop = groundY + 1
 	local tops = { groundTop, groundTop + RISE, groundTop + 2 * RISE, groundTop + 3 * RISE }
+	local halfWidth, halfDepth = BASE_WIDTH / 2, BASE_DEPTH / 2
 
-	local floorPart = place(base, "Floor", Vector3.new(60, 1, 60), at(0, groundY + 0.5, 0), GROUND)
+	local floorPart = place(base, "Floor", Vector3.new(BASE_DEPTH, 1, BASE_WIDTH), at(0, groundY + 0.5, 0), GROUND)
 	floorPart.Color = GROUND
 	floorPart.Material = Enum.Material.SmoothPlastic
-	place(base, "Spawn", Vector3.new(6, 0.2, 6), at(0, groundTop + 0.1, 0), Color3.fromRGB(80, 200, 120))
+
+	-- The front yard.
+	place(base, "Spawn", Vector3.new(6, 0.2, 6), at(27, groundTop + 0.1, 0), Color3.fromRGB(80, 200, 120))
 	local conveyor = model(base, "Conveyor")
-	place(conveyor, "Belt", Vector3.new(6, 1, 40), at(20, groundTop + 0.5, 0), Color3.fromRGB(60, 60, 60))
-	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), at(20, groundTop + 1.5, -20), Color3.fromRGB(0, 255, 0)))
-	hide(place(conveyor, "End", Vector3.new(1, 1, 1), at(20, groundTop + 1.5, 20), Color3.fromRGB(255, 0, 0)))
+	place(conveyor, "Belt", Vector3.new(6, 1, 32), at(37, groundTop + 0.5, 0), Color3.fromRGB(60, 60, 60))
+	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), at(37, groundTop + 1.5, -16), Color3.fromRGB(0, 255, 0)))
+	hide(place(conveyor, "End", Vector3.new(1, 1, 1), at(37, groundTop + 1.5, 16), Color3.fromRGB(255, 0, 0)))
 	local machine = model(base, "Machine")
 	local padColour = Color3.fromRGB(150, 80, 255)
-	place(machine, "Pad", Vector3.new(6, 1, 6), at(6, groundTop + 0.5, -22), padColour, Enum.Material.Neon)
-	place(machine, "PillarLeft", Vector3.new(1, 8, 1), at(2.5, groundTop + 4, -22), DARK)
-	place(machine, "PillarRight", Vector3.new(1, 8, 1), at(9.5, groundTop + 4, -22), DARK)
-	place(machine, "Top", Vector3.new(8, 1, 1), at(6, groundTop + 8.5, -22), DARK)
+	place(machine, "Pad", Vector3.new(6, 1, 6), at(27, groundTop + 0.5, -11), padColour, Enum.Material.Neon)
+	place(machine, "PillarLeft", Vector3.new(1, 8, 1), at(23.5, groundTop + 4, -11), DARK)
+	place(machine, "PillarRight", Vector3.new(1, 8, 1), at(30.5, groundTop + 4, -11), DARK)
+	place(machine, "Top", Vector3.new(8, 1, 1), at(27, groundTop + 8.5, -11), DARK)
 	local lockColour = Color3.fromRGB(220, 50, 50)
-	place(base, "LockButton", Vector3.new(3, 1.2, 3), at(6, groundTop + 0.6, 12), lockColour, Enum.Material.Neon)
+	place(base, "LockButton", Vector3.new(3, 1.2, 3), at(27, groundTop + 0.6, 11), lockColour, Enum.Material.Neon)
 
+	-- The hall: plots in pairs either side of the walkway from the front back
+	-- (so they unlock front to back), each turned to face the walkway, then
+	-- the pet slots behind them.
 	local floors = folder(base, "Floors")
 	for n = 1, 4 do
 		local floor = folder(floors, "Floor" .. n)
 		local top = tops[n]
 		if n > 1 then
-			local platform = place(floor, "Platform", Vector3.new(26, 1, 60), at(-17, top - 0.5, 0), PLATFORM)
+			local hallSize = Vector3.new(HALL_FRONT - HALL_BACK, 1, BASE_WIDTH)
+			local platform =
+				place(floor, "Platform", hallSize, at((HALL_FRONT + HALL_BACK) / 2, top - 0.5, 0), PLATFORM)
 			platform.Color = PLATFORM
 			platform.Material = Enum.Material.SmoothPlastic
 		end
 		local plots = folder(floor, "Plots")
 		for i = 1, 10 do
-			local plotX = -22 + ((i - 1) % 2) * 9
-			local plotZ = -18 + math.floor((i - 1) / 2) * 9
-			place(plots, "Plot" .. i, Vector3.new(7, 0.4, 7), at(plotX, top + 0.2, plotZ), PLOT)
+			local side = if (i - 1) % 2 == 0 then -1 else 1
+			local plotX = HALL_FRONT - 4.5 - math.floor((i - 1) / 2) * 9
+			local facing = if side < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.new()
+			place(plots, "Plot" .. i, Vector3.new(7, 0.4, 7), at(plotX, top + 0.2, side * PLOT_Z) * facing, PLOT)
 		end
 		local slots = folder(floor, "PetSlots")
 		for slot = 1, 2 do
 			local slotColour = Color3.fromRGB(190, 150, 255)
-			place(slots, "Slot" .. slot, Vector3.new(3, 0.4, 3), at(-6.5, top + 0.2, -18 + (slot - 1) * 9), slotColour)
+			local slotZ = (if slot == 1 then -1 else 1) * PLOT_Z
+			place(slots, "Slot" .. slot, Vector3.new(3, 0.4, 3), at(HALL_BACK + 4, top + 0.2, slotZ), slotColour)
 		end
 	end
 	if base:IsA("Model") then
 		base.WorldPivot = at(0, groundTop, 0)
 	end
 	if conveyor:IsA("Model") then
-		conveyor.WorldPivot = at(20, groundTop + 0.5, 0)
+		conveyor.WorldPivot = at(37, groundTop + 0.5, 0)
 	end
 	if machine:IsA("Model") then
-		machine.WorldPivot = at(6, groundTop + 0.5, -22)
+		machine.WorldPivot = at(27, groundTop + 0.5, -11)
 	end
 
-	-- A coloured border, and supports along the outside edge of the floors.
+	-- The walkway on every floor (from the street on the ground floor), a
+	-- coloured border, and supports along the sides up to the top floor.
 	local trim = freshModel(base, "Tidy")
+	for n = 1, 4 do
+		local front = if n == 1 then halfDepth else HALL_FRONT
+		local walkwaySize = Vector3.new(front - HALL_BACK, 0.1, WALKWAY)
+		local walkway = newPart(trim, "Walkway", walkwaySize, at((front + HALL_BACK) / 2, tops[n] + 0.05, 0), carpet)
+		walkway.Material = Enum.Material.Fabric
+		walkway.CanCollide = false
+	end
 	for _, side in { -1, 1 } do
-		newPart(trim, "Border", Vector3.new(60, 0.1, 1), at(0, groundTop + 0.05, side * 29.5), accent).CanCollide =
-			false
-		newPart(trim, "Border", Vector3.new(1, 0.1, 58), at(side * 29.5, groundTop + 0.05, 0), accent).CanCollide =
+		local alongSize = Vector3.new(BASE_DEPTH, 0.1, 1)
+		newPart(trim, "Border", alongSize, at(0, groundTop + 0.05, side * (halfWidth - 0.5)), accent).CanCollide = false
+		local acrossSize = Vector3.new(1, 0.1, BASE_WIDTH - 2)
+		newPart(trim, "Border", acrossSize, at(side * (halfDepth - 0.5), groundTop + 0.05, 0), accent).CanCollide =
 			false
 	end
-	for _, z in { -29.5, 0, 29.5 } do
-		local height = tops[4] - groundTop
-		newPart(trim, "Support", Vector3.new(1, height, 1), at(-29.5, groundTop + height / 2, z), accent)
+	local supportHeight = tops[4] - groundTop
+	for _, x in { HALL_FRONT - 0.5, (HALL_FRONT + HALL_BACK) / 2, HALL_BACK + 0.5, -halfDepth + 0.5 } do
+		for _, side in { -1, 1 } do
+			local where = at(x, groundTop + supportHeight / 2, side * (halfWidth - 0.5))
+			newPart(trim, "Support", Vector3.new(1, supportHeight, 1), where, accent)
+		end
 	end
 
-	-- Stairs up to each floor, in the strip between the floors and the open
-	-- part of the base. They alternate ends, so each staircase starts next to
-	-- the floor below and finishes next to the floor it serves.
+	-- Stairs up to each floor behind the hall. Floors 2 and 4 go up one
+	-- strip towards +z and floor 3 comes back up the other, each from a
+	-- landing to a landing that meets the back of the floor it serves.
+	local landingX = (HALL_BACK - halfDepth) / 2
+	local landingWidth = HALL_BACK + halfDepth
+	local landingLength = halfWidth - LANDING_Z
 	for n = 2, 4 do
 		local floor = folder(floors, "Floor" .. n)
 		local low, high = tops[n - 1], tops[n]
 		local access = freshModel(floor, "Access")
 		local dir = if n % 2 == 0 then 1 else -1
+		local stairX = STAIRS_X[if n % 2 == 0 then 1 else 2]
 		local rise = high - low
 		local steps = math.max(1, math.floor(rise + 0.5))
 		local stepRise, tread = rise / steps, RUN / steps
-		local bottomZ = 4 * dir
+		local bottomZ = -LANDING_Z * dir
 		for k = 1, steps do
 			local stepTop = low + k * stepRise
 			local z = bottomZ + dir * (k - 0.5) * tread
 			if n == 2 then
 				local height = stepTop - groundTop
-				newPart(access, "Step", Vector3.new(6, height, tread), at(-1, groundTop + height / 2, z), STEP)
+				newPart(access, "Step", Vector3.new(6, height, tread), at(stairX, groundTop + height / 2, z), STEP)
 			else
-				newPart(access, "Step", Vector3.new(6, 1, tread), at(-1, stepTop - 0.5, z), STEP)
+				newPart(access, "Step", Vector3.new(6, 1, tread), at(stairX, stepTop - 0.5, z), STEP)
 			end
 		end
-		-- Landings: at the bottom (upper floors only) and the top. A bottom
-		-- landing runs from just past the middle of the base to the first
-		-- step, with its end rail past the doorway onto the floor.
-		if n > 2 then
-			newPart(access, "BottomLanding", Vector3.new(6, 1, 4.5), at(-1, low - 0.5, 1.75 * dir), PLATFORM)
-			local side = at(1.75, low + RAIL_HEIGHT / 2, 1.75 * dir)
-			newPart(access, "LandingRail", Vector3.new(0.5, RAIL_HEIGHT, 4.5), side, accent, 0.35)
-			local finish = at(-1, low + RAIL_HEIGHT / 2, -0.25 * dir)
-			newPart(access, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), finish, accent, 0.35)
-		end
-		local topStart = bottomZ + dir * RUN
-		local topLength = 30 - math.abs(topStart)
-		local topZ = topStart + dir * topLength / 2
+		-- The landing at the top, across both strips, with rails round its
+		-- outside. From the top floor's landing there are no stairs on, so
+		-- the other strip is railed off too.
+		local landingZ = dir * (LANDING_Z + halfWidth) / 2
 		if n == 2 then
 			local height = high - groundTop
-			newPart(access, "TopLanding", Vector3.new(6, height, topLength), at(-1, groundTop + height / 2, topZ), STEP)
+			local size = Vector3.new(landingWidth, height, landingLength)
+			newPart(access, "TopLanding", size, at(landingX, groundTop + height / 2, landingZ), STEP)
 		else
-			newPart(access, "TopLanding", Vector3.new(6, 1, topLength), at(-1, high - 0.5, topZ), PLATFORM)
+			local size = Vector3.new(landingWidth, 1, landingLength)
+			newPart(access, "TopLanding", size, at(landingX, high - 0.5, landingZ), PLATFORM)
 		end
-		local topSide = at(1.75, high + RAIL_HEIGHT / 2, topZ)
-		newPart(access, "LandingRail", Vector3.new(0.5, RAIL_HEIGHT, topLength), topSide, accent, 0.35)
-		local topEnd = at(-1, high + RAIL_HEIGHT / 2, 29.75 * dir)
-		newPart(access, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), topEnd, accent, 0.35)
-		-- Sloping handrails on both sides, standing on the line of the step
-		-- edges and stopping short of each end (more at the bottom, where
-		-- they lean) so they never reach into a landing. Stairs off the ground
-		-- get an underside.
+		local railY = high + RAIL_HEIGHT / 2
+		local outside = at(landingX, railY, dir * (halfWidth - 0.25))
+		newPart(access, "LandingRail", Vector3.new(landingWidth, RAIL_HEIGHT, 0.5), outside, accent, 0.35)
+		local back = at(-halfDepth + 0.25, railY, landingZ)
+		newPart(access, "LandingRail", Vector3.new(0.5, RAIL_HEIGHT, landingLength), back, accent, 0.35)
+		if n == 4 then
+			local across = at(STAIRS_X[2], railY, dir * (LANDING_Z + 0.25))
+			newPart(access, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, accent, 0.35)
+		end
+		-- Sloping handrails on both sides the full length of the stairs,
+		-- standing on the line of the step edges, so they meet the landings
+		-- with no gap. Stairs off the ground get an underside.
 		local length = math.sqrt(RUN * RUN + rise * rise)
 		local tilt = -dir * math.atan2(rise, RUN)
-		local slope = at(0, (low + high) / 2, bottomZ + dir * RUN / 2) * CFrame.Angles(tilt, 0, 0)
-		for _, railX in { -3.75, 1.75 } do
-			local cframe = slope * CFrame.new(railX, RAIL_HEIGHT / 2, 0.75 * dir)
-			newPart(access, "Handrail", Vector3.new(0.5, RAIL_HEIGHT, length - 3.5), cframe, accent, 0.35)
+		local slope = at(stairX, (low + high) / 2, bottomZ + dir * RUN / 2) * CFrame.Angles(tilt, 0, 0)
+		for _, railX in { -2.75, 2.75 } do
+			local cframe = slope * CFrame.new(railX, RAIL_HEIGHT / 2, 0)
+			newPart(access, "Handrail", Vector3.new(0.5, RAIL_HEIGHT, length), cframe, accent, 0.35)
 		end
 		if n > 2 then
-			newPart(access, "Underside", Vector3.new(6, 0.6, length - 1), slope * CFrame.new(-1, -1.3, 0), STEP)
+			newPart(access, "Underside", Vector3.new(6, 0.6, length - 1), slope * CFrame.new(0, -1.3, 0), STEP)
 		end
 	end
 
-	-- Railings round the upper floors, with openings onto the stairs.
+	-- Railings round the upper floors, open at the back onto the landing
+	-- each floor's stairs arrive at.
+	local hallLength = HALL_FRONT - HALL_BACK
+	local hallMiddle = (HALL_FRONT + HALL_BACK) / 2
 	for n = 2, 4 do
 		local floor = folder(floors, "Floor" .. n)
 		local railings = freshModel(floor, "Railings")
@@ -324,38 +372,22 @@ for index, spot in BASE_SPOTS do
 		local function rail(size: Vector3, railX: number, z: number)
 			newPart(railings, "Rail", size, at(railX, y, z), accent, 0.35)
 		end
-		rail(Vector3.new(0.5, RAIL_HEIGHT, 60), -29.75, 0)
-		rail(Vector3.new(26, RAIL_HEIGHT, 0.5), -17, 29.75)
-		rail(Vector3.new(26, RAIL_HEIGHT, 0.5), -17, -29.75)
-		-- On the inside edge: openings where the stairs up to this floor
-		-- arrive, and where the stairs to the next floor start.
-		local arrive = if n % 2 == 0 then 1 else -1
-		local openings = { { math.min(25 * arrive, 30 * arrive), math.max(25 * arrive, 30 * arrive) } }
-		if n < 4 then
-			local nextDir = if (n + 1) % 2 == 0 then 1 else -1
-			table.insert(openings, { math.min(0, 4 * nextDir), math.max(0, 4 * nextDir) })
+		for _, side in { -1, 1 } do
+			rail(Vector3.new(hallLength, RAIL_HEIGHT, 0.5), hallMiddle, side * (halfWidth - 0.25))
 		end
-		table.sort(openings, function(a, b)
-			return a[1] < b[1]
-		end)
-		local from = -30
-		for _, opening in openings do
-			if opening[1] > from then
-				rail(Vector3.new(0.5, RAIL_HEIGHT, opening[1] - from), -4.25, (from + opening[1]) / 2)
-			end
-			from = opening[2]
-		end
-		if from < 30 then
-			rail(Vector3.new(0.5, RAIL_HEIGHT, 30 - from), -4.25, (from + 30) / 2)
-		end
+		rail(Vector3.new(0.5, RAIL_HEIGHT, BASE_WIDTH), HALL_FRONT - 0.25, 0)
+		local dir = if n % 2 == 0 then 1 else -1
+		local backLength = halfWidth + LANDING_Z
+		rail(Vector3.new(0.5, RAIL_HEIGHT, backLength), HALL_BACK + 0.25, -dir * (halfWidth - backLength / 2))
 	end
 end
 
--- 3. The middle conveyor between the bases, resting on the ground.
+-- 3. The middle conveyor down the street, resting on the ground. It runs
+-- into the hills at both ends; companies appear and disappear at the tunnels.
 local shared = model(map, "SharedConveyor")
 local beltColour = Color3.fromRGB(200, 160, 40)
 place(shared, "Belt", Vector3.new(8, 2, BELT_LENGTH), CFrame.new(0, groundY + 1, 0), beltColour)
-local beltEnd = BELT_LENGTH / 2 - 2
+local beltEnd = PLAY_HALF_Z - 2
 hide(place(shared, "Start", Vector3.new(1, 1, 1), CFrame.new(0, groundY + 2.5, -beltEnd), Color3.fromRGB(0, 255, 0)))
 hide(place(shared, "End", Vector3.new(1, 1, 1), CFrame.new(0, groundY + 2.5, beltEnd), Color3.fromRGB(255, 0, 0)))
 local edge = Color3.fromRGB(90, 70, 30)
@@ -372,8 +404,9 @@ for _, item in Workspace:GetDescendants() do
 	end
 end
 
--- 5. The shops, either side of the middle conveyor. An existing shop is moved
--- into place; a missing one is built there.
+-- 5. The shops, facing each other across the middle conveyor halfway along
+-- the street. An existing shop is moved into place; a missing one is built
+-- there.
 type ShopStyle = {
 	x: number,
 	counter: Color3,
@@ -386,7 +419,7 @@ type ShopStyle = {
 }
 local shopStyles: { [string]: ShopStyle } = {
 	WeaponShop = {
-		x = -18,
+		x = -20,
 		counter = Color3.fromRGB(150, 95, 55),
 		prompt = GOLD,
 		promptMaterial = Enum.Material.Metal,
@@ -396,7 +429,7 @@ local shopStyles: { [string]: ShopStyle } = {
 		signColour = Color3.fromRGB(255, 220, 90),
 	},
 	PetShop = {
-		x = 18,
+		x = 20,
 		counter = Color3.fromRGB(240, 235, 225),
 		prompt = Color3.fromRGB(190, 150, 255),
 		promptMaterial = Enum.Material.Neon,
@@ -411,7 +444,7 @@ for name, style in shopStyles do
 	local shop = shops:FindFirstChild(name)
 	local shopFloor = shop and shop:FindFirstChild("Floor")
 	if shop and shopFloor and shopFloor:IsA("BasePart") then
-		local shift = Vector3.new(style.x, 0, 40) - shopFloor.CFrame.Position * Vector3.new(1, 0, 1)
+		local shift = Vector3.new(style.x, 0, SHOP_Z) - shopFloor.CFrame.Position * Vector3.new(1, 0, 1)
 		for _, part in shop:GetDescendants() do
 			if part:IsA("BasePart") then
 				part.CFrame = part.CFrame + shift
@@ -423,7 +456,7 @@ for name, style in shopStyles do
 		end
 		local newShop = Instance.new("Model")
 		newShop.Name = name
-		local cx, cz, y = style.x, 40, groundY
+		local cx, cz, y = style.x, SHOP_Z, groundY
 		local function block(blockName: string, size: Vector3, bx: number, bottom: number, bz: number, colour: Color3)
 			return newPart(newShop, blockName, size, CFrame.new(bx, bottom + size.Y / 2, bz), colour)
 		end
@@ -452,31 +485,121 @@ for name, style in shopStyles do
 	end
 end
 
--- 6. The leaderboards, in a row across the end of the street between the
--- bases, facing up it. The game writes the lists on each board's front face.
+-- 6. The leaderboards, two either side of the street in the gaps between the
+-- middle bases, facing across it. The game writes the lists on each board's
+-- front face.
 local leaderboards = folder(map, "Leaderboards")
 local stands = freshModel(leaderboards, "Stands")
+local BOARD_X = STREET_HALF + 8
 local boardSpots = {
-	{ name = "IncomeBoard", x = -24 },
-	{ name = "RebirthsBoard", x = -12 },
-	{ name = "StealsBoard", x = 12 },
-	{ name = "KnockoutsBoard", x = 24 },
+	{ name = "IncomeBoard", x = -BOARD_X, z = -7 },
+	{ name = "RebirthsBoard", x = -BOARD_X, z = 7 },
+	{ name = "StealsBoard", x = BOARD_X, z = -7 },
+	{ name = "KnockoutsBoard", x = BOARD_X, z = 7 },
 }
 for _, spot in boardSpots do
-	-- Turned so the front face points at the middle of the map.
-	local facing = CFrame.new(spot.x, groundY + 8, BOARDS_Z) * CFrame.Angles(0, math.pi, 0)
-	place(leaderboards, spot.name, Vector3.new(10, 12, 1), facing, Color3.fromRGB(20, 22, 30))
-	newPart(stands, spot.name .. "Back", Vector3.new(11, 13, 0.6), facing * CFrame.new(0, 0.5, 0.8), GOLD)
-	newPart(
-		stands,
-		spot.name .. "Plinth",
-		Vector3.new(11, 2, 2.2),
-		CFrame.new(spot.x, groundY + 1, BOARDS_Z - 0.3),
-		DARK
+	-- Turned so the front face points across the street.
+	local facing = CFrame.new(spot.x, 0, spot.z) * CFrame.Angles(0, (if spot.x < 0 then -1 else 1) * math.pi / 2, 0)
+	place(
+		leaderboards,
+		spot.name,
+		Vector3.new(10, 12, 1),
+		facing * CFrame.new(0, groundY + 8, 0),
+		Color3.fromRGB(20, 22, 30)
 	)
+	newPart(stands, spot.name .. "Back", Vector3.new(11, 13, 0.6), facing * CFrame.new(0, groundY + 8.5, 0.8), GOLD)
+	newPart(stands, spot.name .. "Plinth", Vector3.new(11, 2, 2.2), facing * CFrame.new(0, groundY + 1, 0.3), DARK)
 end
 
--- 7. Models the game copies: the Default company, the weapon Tools and the
+-- 7. Hills all round the edge of the map, with invisible walls along the
+-- edge so nobody can leave. The band of land the hills stand on is cleared
+-- first, so running this again never piles more terrain on. The hills are
+-- the same every time.
+local border = freshModel(map, "Border")
+local WALL_HEIGHT = 120
+for _, wall in
+	{
+		{ size = Vector3.new(2, WALL_HEIGHT, 2 * PLAY_HALF_Z + 4), x = PLAY_HALF_X + 1, z = 0 },
+		{ size = Vector3.new(2, WALL_HEIGHT, 2 * PLAY_HALF_Z + 4), x = -PLAY_HALF_X - 1, z = 0 },
+		{ size = Vector3.new(2 * PLAY_HALF_X + 4, WALL_HEIGHT, 2), x = 0, z = PLAY_HALF_Z + 1 },
+		{ size = Vector3.new(2 * PLAY_HALF_X + 4, WALL_HEIGHT, 2), x = 0, z = -PLAY_HALF_Z - 1 },
+	}
+do
+	local part = newPart(border, "Wall", wall.size, CFrame.new(wall.x, groundY + WALL_HEIGHT / 2, wall.z), DARK, 1)
+	part.CanQuery = false
+	part.CanTouch = false
+end
+-- A stone arch where the conveyor meets the hills at each end, with a dark
+-- back wall inside the tunnel.
+local STONE = Color3.fromRGB(120, 115, 110)
+for _, side in { -1, 1 } do
+	local mouthZ = side * (PLAY_HALF_Z + 1)
+	for _, postX in { -9, 9 } do
+		newPart(border, "ArchPost", Vector3.new(2, 12, 2), CFrame.new(postX, groundY + 6, mouthZ), STONE)
+	end
+	newPart(border, "ArchTop", Vector3.new(20, 2, 2), CFrame.new(0, groundY + 13, mouthZ), STONE)
+	local backZ = side * (PLAY_HALF_Z + TUNNEL + 0.5)
+	newPart(border, "TunnelBack", Vector3.new(16, 12, 1), CFrame.new(0, groundY + 6, backZ), Color3.fromRGB(15, 15, 18))
+end
+
+local terrain = Workspace:FindFirstChildOfClass("Terrain")
+if terrain then
+	local bottom, height = groundY - 4, 90
+	local outerX, outerZ = PLAY_HALF_X + HILLS, PLAY_HALF_Z + HILLS
+	-- The band round the edge: the two ends (corners included), then the sides.
+	local bands = {
+		{ x = 0, z = (PLAY_HALF_Z + outerZ) / 2, sizeX = 2 * outerX, sizeZ = HILLS },
+		{ x = 0, z = -(PLAY_HALF_Z + outerZ) / 2, sizeX = 2 * outerX, sizeZ = HILLS },
+		{ x = (PLAY_HALF_X + outerX) / 2, z = 0, sizeX = HILLS, sizeZ = 2 * PLAY_HALF_Z },
+		{ x = -(PLAY_HALF_X + outerX) / 2, z = 0, sizeX = HILLS, sizeZ = 2 * PLAY_HALF_Z },
+	}
+	for _, band in bands do
+		local cframe = CFrame.new(band.x, bottom + height / 2, band.z)
+		terrain:FillBlock(cframe, Vector3.new(band.sizeX, height, band.sizeZ), Enum.Material.Air)
+	end
+	-- A low grassy bank from the edge outwards.
+	for _, band in bands do
+		terrain:FillBlock(
+			CFrame.new(band.x, groundY, band.z),
+			Vector3.new(band.sizeX, 4, band.sizeZ),
+			Enum.Material.Grass
+		)
+	end
+	-- A row of grassy hills along the edge, some topped with rock, and a row of
+	-- bigger ones behind. No hill's foot reaches more than a few studs past
+	-- the edge.
+	local random = Random.new(2026)
+	local function hill(x: number, z: number, outward: Vector3, smallest: number, largest: number, away: number)
+		local radius = random:NextNumber(smallest, largest)
+		local reach = away + random:NextNumber(-4, 8)
+		local centre = Vector3.new(x, groundY - radius * 0.35, z) + outward * (radius + reach)
+		terrain:FillBall(centre, radius, Enum.Material.Grass)
+		if random:NextNumber() < 0.4 then
+			local rockRadius = radius * random:NextNumber(0.3, 0.5)
+			local offset = Vector3.new(random:NextNumber(-4, 4), radius * 0.55, random:NextNumber(-4, 4))
+			terrain:FillBall(centre + offset, rockRadius, Enum.Material.Rock)
+		end
+	end
+	local SPACING = 16
+	for _, side in { -1, 1 } do
+		for x = -outerX, outerX, SPACING do
+			hill(x, side * PLAY_HALF_Z, Vector3.new(0, 0, side), 16, 30, 0)
+			hill(x, side * PLAY_HALF_Z, Vector3.new(0, 0, side), 24, 40, 30)
+		end
+		for z = -PLAY_HALF_Z, PLAY_HALF_Z, SPACING do
+			hill(side * PLAY_HALF_X, z, Vector3.new(side, 0, 0), 16, 30, 0)
+			hill(side * PLAY_HALF_X, z, Vector3.new(side, 0, 0), 24, 40, 30)
+		end
+	end
+	-- The tunnels the conveyor runs through, cut last.
+	for _, side in { -1, 1 } do
+		local from, to = PLAY_HALF_Z - 4, PLAY_HALF_Z + TUNNEL + 4
+		local cframe = CFrame.new(0, groundY + 6, side * (from + to) / 2)
+		terrain:FillBlock(cframe, Vector3.new(16, 12, to - from), Enum.Material.Air)
+	end
+end
+
+-- 8. Models the game copies: the Default company, the weapon Tools and the
 -- Default pet. Any that already exist (including ones built by hand) are
 -- left alone.
 local assets = folder(ReplicatedStorage, "Assets")

@@ -58,10 +58,13 @@ export type Data = {
 	RedeemedCodes: { string },
 	-- What's been reported to Roblox analytics. Kept through rebirth.
 	Analytics: Types.AnalyticsState,
+	-- Developer product purchases already given (Roblox purchase ids, the
+	-- newest Config/Monetisation.ReceiptsKept), so none is given twice.
+	Receipts: { string },
 }
 
 local Template: Data = {
-	DataVersion = 11,
+	DataVersion = 12,
 	Cash = Economy.StartingCash,
 	Storage = {},
 	Placed = {},
@@ -88,6 +91,7 @@ local Template: Data = {
 	Stats = { Steals = 0, Knockouts = 0 },
 	RedeemedCodes = {},
 	Analytics = { Funnel = {}, PlaySeconds = 0, RebirthPlaySeconds = 0 },
+	Receipts = {},
 }
 
 return Template

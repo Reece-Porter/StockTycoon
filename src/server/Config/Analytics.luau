@@ -6,7 +6,7 @@
 -- Where Cash comes from and goes, with the Roblox transaction type each is
 -- reported as. The name itself is reported as the item, so the dashboard can
 -- split them.
-export type Source = "Income" | "Offline" | "Playtime" | "Daily" | "Index" | "Code"
+export type Source = "Income" | "Offline" | "Playtime" | "Daily" | "Index" | "Code" | "CashPack"
 export type Sink = "Company" | "Upgrade" | "Weapon" | "PetSpin"
 export type FunnelStep = "Joined" | "BoughtCompany" | "PlacedCompany" | "UsedMachine" | "SharedPurchase" | "FirstSteal"
 -- Custom events. MachineResult's value is the multiplier, labelled Taken,
@@ -22,6 +22,7 @@ local sources: { [Source]: string } = {
 	Daily = "TimedReward",
 	Index = "Gameplay",
 	Code = "Gameplay",
+	CashPack = "IAP",
 }
 local sinks: { [Sink]: string } = {
 	Company = "Shop",
