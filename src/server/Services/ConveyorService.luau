@@ -2,7 +2,8 @@
 -- Runs the conveyors ("lanes"): each owned base's personal conveyor, and the
 -- shared conveyor in the middle of the map (Workspace.Map.SharedConveyor,
 -- built by hand with Start and End parts like a base's Conveyor). Each lane
--- spawns companies with its own odds and timing from Config/Conveyor and
+-- spawns companies with its own odds and timing from Config/Conveyor (personal
+-- odds improve with the owner's rebirths, RebirthMath) and
 -- removes any nobody bought once they reach the End. Conglomerate and Monopoly
 -- spawns on the shared conveyor are announced to the whole server.
 --
@@ -20,10 +21,12 @@ local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local CompanyStats = require(ReplicatedStorage.Shared.CompanyStats)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local ConveyorPath = require(ReplicatedStorage.Shared.ConveyorPath)
+local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local BaseService = require(script.Parent.BaseService)
+local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
 
 export type Lane = {
@@ -90,13 +93,20 @@ local function announce(item: Item)
 	Remotes.Notify:FireAllClients(`A {tier.name} just hit the shared conveyor: {company.name}!`)
 end
 
+-- A personal lane's odds after its owner's rebirths; the shared lane's as set.
+local function weightsFor(lane: Lane): { ConveyorConfig.WeightEntry }
+	local owner = lane.base and lane.base.owner
+	local data = if owner then DataService:GetData(owner) else nil
+	return if data then RebirthMath.personalWeights(lane.weights, data.Rebirths) else lane.weights
+end
+
 local function spawnItem(lane: Lane, tierId: string?): Item?
 	local ownerUserId = laneOwnerId(lane)
 	if ownerUserId == nil then
 		return nil
 	end
 
-	local tier = tierId or SpawnRoll.pickTier(lane.weights, random:NextNumber())
+	local tier = tierId or SpawnRoll.pickTier(weightsFor(lane), random:NextNumber())
 	local choices = Companies.byTier[tier]
 	if choices == nil or #choices == 0 then
 		return nil
@@ -202,6 +212,13 @@ function ConveyorService:RemoveItem(itemId: string)
 end
 
 -- Problems found with the hand-built shared conveyor, for the debug panel.
+-- The odds on this player's personal conveyor, after their rebirths.
+function ConveyorService:GetPersonalWeights(player: Player): { ConveyorConfig.WeightEntry }
+	local data = DataService:GetData(player)
+	local weights = ConveyorConfig.Personal.Weights
+	return if data then RebirthMath.personalWeights(weights, data.Rebirths) else weights
+end
+
 function ConveyorService:GetProblems(): { string }
 	return problems
 end

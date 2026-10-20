@@ -19,6 +19,11 @@ return {
 	-- New players can't be stolen from for this long after first joining.
 	NewPlayerProtectionSeconds = 300,
 
+	-- Players with this many rebirths or more can't steal from players who
+	-- have never rebirthed, so veterans can't farm beginners. The exact rule
+	-- is still to be confirmed (docs/design.md).
+	VeteranRebirths = 3,
+
 	-- How long a base lock lasts. Owners press the button again to renew it.
 	LockSeconds = 60,
 	-- How close (in studs) the owner must be to the lock button.

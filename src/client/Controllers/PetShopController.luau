@@ -1,7 +1,8 @@
 --!strict
 -- The pet shop screen, opened from the prompt at the pet shop
--- (Workspace.Map.Shops.PetShop.ShopPrompt). It shows the spin cost, a Spin
--- button, and the chance of every pet before anyone spins. The server rolls
+-- (Workspace.Map.Shops.PetShop.ShopPrompt). It shows the spin cost (which
+-- rises with rebirths), a Spin button, and the chance of every pet before
+-- anyone spins. The server rolls
 -- the spin and sends the pet back with PetSpun; this only shows it.
 
 local Players = game:GetService("Players")
@@ -120,7 +121,14 @@ function PetShopController:Start()
 	close.Size = UDim2.fromOffset(44, 44)
 	close.Parent = panel
 
-	local spin = button(`Spin for a pet  ·  {Format.cash(Pets.SpinCost)}`, SPIN)
+	local spin = button("", SPIN)
+	local function showCost()
+		local rebirths = player:GetAttribute("Rebirths")
+		local cost = PetMath.spinCost(if typeof(rebirths) == "number" then rebirths else 0)
+		spin.Text = `Spin for a pet  ·  {Format.cash(cost)}`
+	end
+	player:GetAttributeChangedSignal("Rebirths"):Connect(showCost)
+	showCost()
 	spin.Position = UDim2.fromOffset(12, 60)
 	spin.Size = UDim2.new(1, -24, 0, 52)
 	spin.TextSize = 20

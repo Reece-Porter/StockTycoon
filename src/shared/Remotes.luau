@@ -101,4 +101,7 @@ return {
 
 	-- Client to server: (instanceId: string) let a pet go for good.
 	DeletePet = event("DeletePet"),
+
+	-- Client to server: () rebirth. The server checks every requirement.
+	Rebirth = event("Rebirth"),
 }

@@ -2,7 +2,8 @@
 -- "Steal" prompts on companies placed on other players' bases. Holding the
 -- prompt tells the server when the hold started and when it finished; the
 -- server times it and decides. The prompt is hidden while the base is locked,
--- its owner is protected as a new player, or this player's hands are full.
+-- its owner is protected as a new player, this player's hands are full, or this
+-- player has too many rebirths to steal from an owner who has none.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +22,18 @@ local StealController = {}
 
 local function isFuture(value: unknown): boolean
 	return typeof(value) == "number" and value > workspace:GetServerTimeNow()
+end
+
+local function rebirthsOf(someone: Player?): number
+	local value = someone and someone:GetAttribute("Rebirths")
+	return if typeof(value) == "number" then value else 0
+end
+
+-- Players with Config/Steal.VeteranRebirths or more can't steal from players
+-- who have never rebirthed.
+local function isVeteranBlocked(ownerUserId: number): boolean
+	local owner = Players:GetPlayerByUserId(ownerUserId)
+	return rebirthsOf(player) >= StealConfig.VeteranRebirths and rebirthsOf(owner) == 0
 end
 
 local function setUpPlot(base: Instance, part: Instance)
@@ -48,6 +61,7 @@ local function setUpPlot(base: Instance, part: Instance)
 		prompt.Enabled = company ~= nil
 			and typeof(owner) == "number"
 			and owner ~= player.UserId
+			and not isVeteranBlocked(owner)
 			and player:GetAttribute("CarryingCompanyId") == nil
 			and not isFuture(base:GetAttribute("LockedUntil"))
 			and not isFuture(base:GetAttribute("ProtectedUntil"))

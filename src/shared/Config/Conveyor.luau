@@ -12,8 +12,8 @@ return {
 	-- Each base's own conveyor; only the owner can buy from it.
 	Personal = {
 		SpawnSeconds = 6,
-		-- Out of 100. Rebirths will shift some weight to higher tiers; that
-		-- rule gets agreed in the rebirth slice.
+		-- Out of 100, with no rebirths. Each rebirth makes the tiers above
+		-- Startup more likely (Config/Rebirth).
 		Weights = {
 			{ tier = "Startup", weight = 70 },
 			{ tier = "ScaleUp", weight = 22 },

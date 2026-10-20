@@ -18,7 +18,9 @@
 -- Owners lock their base from its LockButton for Config/Steal.LockSeconds.
 -- While locked nobody else can steal from it, and anyone else inside is moved
 -- out; when it runs out the owner presses the button again. New players can't
--- be stolen from for their first Config/Steal.NewPlayerProtectionSeconds.
+-- be stolen from for their first Config/Steal.NewPlayerProtectionSeconds, and
+-- players with Config/Steal.VeteranRebirths or more can't steal from players
+-- who have never rebirthed.
 --
 -- Companies in the Valuation Machine are on no plot, so they can't be taken.
 --
@@ -204,9 +206,9 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 	if isLocked(base) then
 		return `{owner.Name}'s base is locked.`
 	end
-	local protection = protectionLeft(owner)
-	if protection > 0 then
-		return `{owner.Name} is new here and protected for {Format.duration(protection)}.`
+	local blocked = StealService:GetBlockReason(thief, owner)
+	if blocked then
+		return blocked
 	end
 	if BaseService:GetBase(thief) == nil then
 		return "You need a base to take it to."
@@ -362,6 +364,21 @@ end
 
 function StealService:GetProtectionLeft(player: Player): number
 	return protectionLeft(player)
+end
+
+-- Why this thief may not take anything of this owner's, wherever it is (on a
+-- plot or dropped on the ground), or nil if they may.
+function StealService:GetBlockReason(thief: Player, owner: Player): string?
+	local protection = protectionLeft(owner)
+	if protection > 0 then
+		return `{owner.Name} is new here and protected for {Format.duration(protection)}.`
+	end
+	local thiefData = DataService:GetData(thief)
+	local ownerData = DataService:GetData(owner)
+	if thiefData and ownerData and thiefData.Rebirths >= StealConfig.VeteranRebirths and ownerData.Rebirths == 0 then
+		return `{owner.Name} hasn't rebirthed yet. With {StealConfig.VeteranRebirths}+ rebirths you can't steal from them.`
+	end
+	return nil
 end
 
 local function validName(value: unknown): boolean

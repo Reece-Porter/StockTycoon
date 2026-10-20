@@ -20,6 +20,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
+local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
@@ -130,11 +131,12 @@ local function tierNames(): string
 end
 
 -- Rolls a conveyor's tier the given number of times, using the same function
--- as real spawns, and compares the results with Config/Conveyor.
-local function oddsReport(shared: boolean, rolls: number): string
+-- as real spawns, and compares the results with Config/Conveyor (the personal
+-- odds after this player's rebirths).
+local function oddsReport(player: Player, shared: boolean, rolls: number): string
 	local weights: { ConveyorConfig.WeightEntry } = if shared
 		then ConveyorConfig.Shared.Weights
-		else ConveyorConfig.Personal.Weights
+		else ConveyorService:GetPersonalWeights(player)
 	local random = Random.new()
 	local counts: { [string]: number } = {}
 	for _ = 1, rolls do
@@ -147,7 +149,7 @@ local function oddsReport(shared: boolean, rolls: number): string
 		total += entry.weight
 	end
 
-	local conveyor = if shared then "Shared" else "Personal"
+	local conveyor = if shared then "Shared" else "Personal (with your rebirths)"
 	local lines = { `{conveyor} conveyor, {rolls} rolls (got / expected):` }
 	for _, entry in weights do
 		local got = (counts[entry.tier] or 0) / rolls * 100
@@ -224,7 +226,7 @@ local commands: { Command } = {
 			if rolls < 1 or rolls > MAX_ODDS_ROLLS then
 				return `Usage: /testodds [shared] [rolls], up to {MAX_ODDS_ROLLS} rolls`
 			end
-			local report = oddsReport(shared, rolls)
+			local report = oddsReport(player, shared, rolls)
 			AdminService:SetDebugValue(player, "OddsTest", report)
 			return report
 		end,
@@ -299,6 +301,26 @@ local commands: { Command } = {
 				return `{target.Name}'s data hasn't loaded yet.`
 			end
 			return `Gave {if target == player then "you" else target.Name} the {weapon.name}.`
+		end,
+	},
+	{
+		alias = "/setrebirths",
+		usage = "/setrebirths <count> [player]",
+		run = function(player, args)
+			local count = parseAmount(args[1])
+			if count == nil then
+				return "Usage: /setrebirths <count> [player]"
+			end
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
+			end
+			if not DataService:SetRebirths(target, count) then
+				return `{target.Name}'s data hasn't loaded yet.`
+			end
+			local whose = if target == player then "your" else `{target.Name}'s`
+			local multiplier = RebirthMath.incomeMultiplier(count)
+			return `Set {whose} rebirths to {count} (income x{multiplier}).`
 		end,
 	},
 	{
@@ -438,6 +460,9 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Placed", placed)
 	AdminService:SetDebugValue(player, "Carrying", carryingName)
 	AdminService:SetDebugValue(player, "Pets", `{#data.Pets}/{Pets.InventoryCap}`)
+	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
+	local nextCost = RebirthMath.cashRequired(data.Rebirths)
+	AdminService:SetDebugValue(player, "Rebirths", `{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash)`)
 	AdminService:SetDebugValue(player, "FloorPets", PetService:DescribeFloors(player))
 end
 

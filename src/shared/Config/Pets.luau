@@ -94,9 +94,10 @@ return {
 	byId = byId,
 	byRarity = byRarity,
 
-	-- Cash per spin. It will rise with rebirths; that rule gets agreed in the
-	-- rebirth slice.
+	-- Cash per spin with no rebirths. Each rebirth adds SpinCostPerRebirth of
+	-- it (0.5 = +50%), in step with the rebirth income multiplier.
 	SpinCost = 10_000,
+	SpinCostPerRebirth = 0.5,
 	-- Most pets a player can own, placed or not. Extra pets can be deleted.
 	InventoryCap = 50,
 	-- Pet slots open on every opened floor. Slot2 is for later (bought, or a

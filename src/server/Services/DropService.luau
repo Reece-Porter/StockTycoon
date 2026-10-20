@@ -21,7 +21,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatConfig = require(ReplicatedStorage.Shared.Config.Combat)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
-local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
 local BaseService = require(script.Parent.BaseService)
@@ -202,9 +201,9 @@ local function pickUp(player: Player, instanceId: string): string
 	if BaseService:GetBase(player) == nil then
 		return "You need a base to take it to."
 	end
-	local protection = StealService:GetProtectionLeft(owner)
-	if protection > 0 then
-		return `{owner.Name} is new here and protected for {Format.duration(protection)}.`
+	local blocked = StealService:GetBlockReason(player, owner)
+	if blocked then
+		return blocked
 	end
 
 	remove(instanceId)

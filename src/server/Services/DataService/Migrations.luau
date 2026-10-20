@@ -37,4 +37,9 @@ return {
 	[6] = function(data)
 		data.Pets = {}
 	end,
+
+	-- Version 8 adds Rebirths. Nobody had rebirthed before.
+	[7] = function(data)
+		data.Rebirths = 0
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

@@ -1,7 +1,7 @@
 --!strict
 -- The pet shop: spins at Workspace.Map.Shops.PetShop's ShopPrompt part
--- (docs/design.md, "Pet shop"). A spin costs Config/Pets.SpinCost in Cash and
--- nothing else: there are no Robux spins. The server rolls every spin itself
+-- (docs/design.md, "Pet shop"). A spin costs Cash only (PetMath.spinCost,
+-- rising with rebirths): there are no Robux spins. The server rolls every spin itself
 -- with PetMath, adds the pet to the player's inventory and tells their client
 -- which pet it was with PetSpun, for the reveal. The client only asks to spin.
 
@@ -56,13 +56,14 @@ local function spin(player: Player): string?
 	if #data.Pets >= Pets.InventoryCap then
 		return `You have {Pets.InventoryCap} pets, the most you can keep. Let some go first.`
 	end
-	if not DataService:SpendCash(player, Pets.SpinCost) then
-		return `A spin costs {Format.cash(Pets.SpinCost)}.`
+	local cost = PetMath.spinCost(data.Rebirths)
+	if not DataService:SpendCash(player, cost) then
+		return `A spin costs {Format.cash(cost)}.`
 	end
 
 	local pet = PetMath.spin(random:NextNumber(), random:NextNumber())
 	if not addPet(player, pet) then
-		DataService:AddCash(player, Pets.SpinCost)
+		DataService:AddCash(player, cost)
 		return `You have {Pets.InventoryCap} pets, the most you can keep. Let some go first.`
 	end
 	Remotes.PetSpun:FireClient(player, pet.id)
