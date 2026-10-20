@@ -41,6 +41,17 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack).
 
+## Building the map
+
+The map and the models the game copies are made by one Studio script, [`studio/BuildMap.luau`](studio/BuildMap.luau). It puts every part in its exact place, so it fixes the map whatever state it is in, and it is safe to run again.
+
+1. Stop the game if it is playing (changes made while playing are thrown away).
+2. Clear the Command Bar completely (Cmd+A or Ctrl+A, then Delete).
+3. Paste the whole of `studio/BuildMap.luau` and press Run. The Output says `Map built`.
+4. Save the place.
+
+When the map needs to change, this file changes. Never paste older map scripts alongside it.
+
 ## Where code syncs
 
 | Folder           | In Studio                                   |
@@ -50,4 +61,4 @@ Admins also get a **Debug** button at the top of the screen that shows live valu
 | `src/shared`     | `ReplicatedStorage.Shared`                  |
 | `ServerPackages` | `ServerScriptService.ServerPackages`        |
 
-Rojo only manages these folders. The map in `Workspace.Map` and models in `ReplicatedStorage.Assets` are built by hand in Studio, and Rojo leaves them alone.
+Rojo only manages these folders. The map in `Workspace.Map` and models in `ReplicatedStorage.Assets` live in the place itself (see "Building the map"), and Rojo leaves them alone.
