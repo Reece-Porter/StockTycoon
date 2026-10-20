@@ -172,7 +172,9 @@ function StorageController:Start()
 
 	local function render()
 		local entries = readStorage()
+		-- A stolen company can only go on a plot, so it can't be stored.
 		local carrying = player:GetAttribute("CarryingCompanyId") ~= nil
+			and player:GetAttribute("CarryingStolen") ~= true
 
 		openButton.Text = `Storage {#entries}/{BaseConfig.StorageCapacity}`
 		title.Text = `Storage ({#entries}/{BaseConfig.StorageCapacity})`
@@ -204,6 +206,7 @@ function StorageController:Start()
 
 	player:GetAttributeChangedSignal("StorageList"):Connect(render)
 	player:GetAttributeChangedSignal("CarryingCompanyId"):Connect(render)
+	player:GetAttributeChangedSignal("CarryingStolen"):Connect(render)
 	render()
 
 	gui.Parent = player:WaitForChild("PlayerGui")

@@ -27,6 +27,12 @@ function Format.number(value: number): string
 	return text .. SUFFIXES[index]
 end
 
+-- A length of time as minutes and seconds, e.g. 3:07.
+function Format.duration(seconds: number): string
+	local whole = math.max(0, math.ceil(seconds))
+	return string.format("%d:%02d", whole // 60, whole % 60)
+end
+
 function Format.cash(value: number): string
 	return `${Format.number(value)}`
 end

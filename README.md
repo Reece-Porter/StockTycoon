@@ -32,6 +32,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/spawn <tier> [shared]`      | Puts a company of that tier on your conveyor, or the shared one (e.g. `/spawn monopoly shared`)  |
 | `/testodds [shared] [rolls]`  | Simulates conveyor spawns and compares the odds with Config                                      |
 | `/racetest`                   | Every player tries to buy the same shared-conveyor company in the same instant; shows who got it |
+| `/protect [player] [seconds]` | Protects a player from stealing as if they were new (default 300 s; `0` removes it)              |
 | `/resetdata`                  | Wipes your save back to a new player's                                                           |
 
 Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on.

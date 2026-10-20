@@ -23,6 +23,8 @@ local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
 local PurchaseService = require(script.Parent.PurchaseService)
+local StealService = require(script.Parent.StealService)
+local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 
 -- Keeps typed amounts well inside the range a number stores exactly.
 local MAX_AMOUNT = 1e15
@@ -210,6 +212,29 @@ local commands: { Command } = {
 			local report = `Race for one Startup, {#players} buyers, {owners} owner(s):\n{table.concat(results, "\n")}`
 			AdminService:SetDebugValue(player, "RaceTest", report)
 			return report
+		end,
+	},
+	{
+		alias = "/protect",
+		usage = "/protect [player] [seconds]",
+		run = function(player, args)
+			local target, seconds = player, StealConfig.NewPlayerProtectionSeconds
+			for _, arg in args do
+				local number = parseAmount(arg)
+				if number then
+					seconds = number
+				else
+					local found = findPlayer(arg)
+					if found == nil then
+						return `No player called "{arg}" in this server.`
+					end
+					target = found
+				end
+			end
+			StealService:Protect(target, seconds)
+			return if seconds > 0
+				then `{target.Name} is protected from stealing for {seconds} seconds.`
+				else `{target.Name} is no longer protected.`
 		end,
 	},
 	{

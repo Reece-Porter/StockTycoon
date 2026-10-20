@@ -156,6 +156,9 @@ local function start(player: Player): string?
 	if data.Machine ~= nil then
 		return "Your machine is already running."
 	end
+	if CarryService:GetStolen(player) then
+		return "A stolen company has to go on a plot on your base first."
+	end
 	local carried = data.Carrying
 	if carried == nil then
 		return "Bring a company to the machine first."

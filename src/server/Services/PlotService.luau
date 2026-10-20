@@ -23,6 +23,7 @@ local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 local MAX_PLOT_KEY_LENGTH = 32
 
 local placedFolder: Folder
+local stolenPlaceHandler: ((thief: Player, plot: BaseService.Plot) -> string)? = nil
 local displays: { [BasePart]: Model } = {}
 local placeLimiter = RateLimiter.new(4, 6)
 local pickUpLimiter = RateLimiter.new(4, 6)
@@ -105,8 +106,9 @@ local function sync(player: Player)
 		plot.part:SetAttribute("PlotKey", plot.key)
 		plot.part:SetAttribute("Unlocked", unlocked)
 
+		-- A company being stolen is in the thief's hands, not on the plot.
 		local company = data.Placed[plot.key]
-		if company then
+		if company and not CarryService:IsPlotBeingStolen(player, plot.key) then
 			showOnPlot(base, plot, company)
 		else
 			clearPlot(plot)
@@ -155,6 +157,11 @@ local function place(player: Player, plotKey: string): string
 		return "Get closer to that plot."
 	end
 
+	-- Placing a stolen company on your own plot completes the steal.
+	if CarryService:GetStolen(player) then
+		return if stolenPlaceHandler then stolenPlaceHandler(player, plot) else "You can't place that here."
+	end
+
 	local company = CarryService:TakeCarried(player)
 	if company == nil then
 		return "You're not carrying anything."
@@ -175,6 +182,9 @@ local function pickUp(player: Player, plotKey: string): string
 	if CarryService:IsCarrying(player) then
 		return "Your hands are full. Place or store what you're carrying first."
 	end
+	if CarryService:IsPlotBeingStolen(player, plot.key) then
+		return "Someone is stealing that! Tag them to get it back."
+	end
 	if not isNear(player, plot.part) then
 		return "Get closer to that plot."
 	end
@@ -193,6 +203,17 @@ end
 
 local function validPlotKey(plotKey: unknown): boolean
 	return typeof(plotKey) == "string" and #plotKey <= MAX_PLOT_KEY_LENGTH
+end
+
+-- Brings a player's plots in line with their save and any steals going on.
+function PlotService:Refresh(player: Player)
+	sync(player)
+end
+
+-- Sets what happens when a thief places a stolen company on one of their own
+-- plots (the plot has been checked: theirs, unlocked, free and close by).
+function PlotService:OnPlaceStolen(handler: (thief: Player, plot: BaseService.Plot) -> string)
+	stolenPlaceHandler = handler
 end
 
 function PlotService:Init()
