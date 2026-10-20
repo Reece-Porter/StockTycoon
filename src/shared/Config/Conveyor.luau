@@ -11,7 +11,7 @@ return {
 
 	-- Each base's own conveyor; only the owner can buy from it.
 	Personal = {
-		SpawnSeconds = 3,
+		SpawnSeconds = 6,
 		-- Out of 100. Rebirths will shift some weight to higher tiers; that
 		-- rule gets agreed in the rebirth slice.
 		Weights = {
@@ -25,7 +25,7 @@ return {
 	-- The conveyor in the middle of the map; anyone can buy, first come first
 	-- served. Better odds, plus the two tiers found nowhere else.
 	Shared = {
-		SpawnSeconds = 2,
+		SpawnSeconds = 4,
 		-- Out of 100.
 		Weights = {
 			{ tier = "Startup", weight = 55 },
