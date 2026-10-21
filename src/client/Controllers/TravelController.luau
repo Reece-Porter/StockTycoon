@@ -1,5 +1,5 @@
 --!strict
--- The teleport buttons in the stack at the top of the screen, under Cash
+-- The teleport buttons at the top of the screen, first in the top stack
 -- (Config/Travel): Home, Upgrades and Weapons. The server checks each
 -- teleport (TravelService); the buttons grey out while the player is
 -- carrying a company or waiting for the next teleport.
@@ -54,7 +54,7 @@ function TravelController:Start()
 		end)
 		buttons[place] = button
 	end
-	Menu.addTop(row, 2)
+	Menu.addTop(row, 1)
 
 	while true do
 		local readyAt = player:GetAttribute("TravelReadyAt")

@@ -1,10 +1,13 @@
 --!strict
 -- The pieces always on screen, in one ScreenGui, and the windows they open:
---   Top: a stack down the middle of the top of the screen (Cash, the teleport
+--   Top: a stack down the middle of the top of the screen (the teleport
 --     buttons, the guide's banner). Notification toasts start just below it.
---   Left: a grid of square menu buttons, clear of the thumbstick: at the top
---     left in landscape, below the top stack in portrait.
---   Right: a column (Store, Codes), clear of the jump button.
+--   Left: a grid of square menu buttons, two across, clear of the
+--     thumbstick: at the top left in landscape, below the top stack in
+--     portrait.
+--   Right: a column (Rewards, Store, Codes), clear of the jump button.
+--   Bottom left: Cash and the boost chip. They only show things (nothing
+--     there takes touches), so the thumbstick still works under them.
 -- Only one window is open at a time: opening one closes the others.
 
 local Players = game:GetService("Players")
@@ -46,7 +49,7 @@ local DOT_SIZE = 18
 local SHINE_SECONDS = 0.9
 local SHINE_PAUSE = 2.5
 
-type Areas = { top: Frame, left: Frame, right: Frame }
+type Areas = { top: Frame, left: Frame, right: Frame, bottomLeft: Frame }
 
 local areas: Areas? = nil
 local windows: { Window.Window } = {}
@@ -93,13 +96,26 @@ local function getAreas(): Areas
 	local left = side("Left")
 	local right = side("Right")
 
-	-- Three across in landscape, at the top left so it stays well clear of
-	-- the thumbstick; two across in portrait (where the screen is narrow),
-	-- below the top stack. Notifications keep to the middle between them.
+	local bottomLeft = Instance.new("Frame")
+	bottomLeft.Name = "BottomLeft"
+	bottomLeft.AnchorPoint = Vector2.new(0, 1)
+	bottomLeft.Position = UDim2.new(0, margin, 1, -margin)
+	bottomLeft.AutomaticSize = Enum.AutomaticSize.XY
+	bottomLeft.BackgroundTransparency = 1
+	bottomLeft.Parent = gui
+	local bottomLayout = Make.list(bottomLeft, Enum.FillDirection.Vertical, Theme.Layout.TopGap)
+	bottomLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	bottomLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	-- Scaled from its anchor, so it grows out of the corner.
+	Layout.scaled(bottomLeft)
+
+	-- Two across, at the top left in landscape so it stays well clear of the
+	-- thumbstick, and below the top stack in portrait (where the screen is
+	-- narrow). Notifications keep to the middle between the side menus.
 	Layout.watch(function()
 		local portrait = Layout.portrait()
 		local leftGrid = left:FindFirstChildOfClass("UIGridLayout") :: UIGridLayout
-		leftGrid.FillDirectionMaxCells = if portrait then 2 else 3
+		leftGrid.FillDirectionMaxCells = 2
 		local rightGrid = right:FindFirstChildOfClass("UIGridLayout") :: UIGridLayout
 		rightGrid.FillDirectionMaxCells = 1
 		if portrait then
@@ -125,7 +141,7 @@ local function getAreas(): Areas
 	placeToasts()
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
-	local made: Areas = { top = top, left = left, right = right }
+	local made: Areas = { top = top, left = left, right = right, bottomLeft = bottomLeft }
 	areas = made
 	return made
 end
@@ -134,6 +150,14 @@ end
 function Menu.addTop(frame: GuiObject, order: number)
 	frame.LayoutOrder = order
 	frame.Parent = getAreas().top
+end
+
+-- Puts a frame in the bottom left corner, stacked upwards (lowest order at
+-- the top). Only for things that show, not buttons: it's under the
+-- thumbstick on a phone.
+function Menu.addBottomLeft(frame: GuiObject, order: number)
+	frame.LayoutOrder = order
+	frame.Parent = getAreas().bottomLeft
 end
 
 -- A square menu button on the left or right.

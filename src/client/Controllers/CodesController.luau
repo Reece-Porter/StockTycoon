@@ -73,7 +73,7 @@ function CodesController:Start()
 		text = "Codes",
 		icon = "Ticket",
 		colour = Theme.Menu.Codes,
-		order = 2,
+		order = 3,
 		side = "Right",
 	})
 	menuButton.Activated:Connect(function()

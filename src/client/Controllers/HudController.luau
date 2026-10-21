@@ -1,7 +1,9 @@
 --!strict
--- The Cash pill at the top of the screen: a cash icon, the player's Cash
--- (counting up to each new amount) and their income per second underneath,
--- with a chip beside it while a 2x income boost runs, its bar running down.
+-- The Cash pill in the bottom left corner of the screen: a cash icon, the
+-- player's Cash (counting up to each new amount) and their income per second
+-- underneath, with a chip above it while a 2x income boost runs, its bar
+-- running down. Stacked rather than side by side, so it stays narrow and
+-- clear of the tool bar in the middle.
 -- Reads leaderstats.Cash and the IncomePerSecond and BoostEndsAt attributes,
 -- all set by the server.
 
@@ -39,19 +41,19 @@ local function pill(colour: Color3, height: number): Frame
 end
 
 function HudController:Start()
-	local row = Instance.new("Frame")
-	row.Name = "CashRow"
-	row.AutomaticSize = Enum.AutomaticSize.XY
-	row.BackgroundTransparency = 1
-	local rowLayout = Make.list(row, Enum.FillDirection.Horizontal, Theme.Size.Gap)
-	rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	local stack = Instance.new("Frame")
+	stack.Name = "Hud"
+	stack.AutomaticSize = Enum.AutomaticSize.XY
+	stack.BackgroundTransparency = 1
+	local stackLayout = Make.list(stack, Enum.FillDirection.Vertical, Theme.Size.Gap)
+	stackLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 
-	-- Cash and income.
+	-- Cash and income, at the bottom.
 	local cashPill = pill(Theme.Colours.Card, PILL_HEIGHT)
 	cashPill.Name = "Cash"
-	cashPill.LayoutOrder = 1
+	cashPill.LayoutOrder = 2
 	Make.padding(cashPill, 0, 10).PaddingRight = UDim.new(0, 20)
-	cashPill.Parent = row
+	cashPill.Parent = stack
 	local icon = Icons.make("Cash", 40)
 	icon.LayoutOrder = 1
 	icon.Parent = cashPill
@@ -82,18 +84,18 @@ function HudController:Start()
 	incomeText.Size = UDim2.fromOffset(0, 18)
 	incomeText.AutomaticSize = Enum.AutomaticSize.X
 
-	-- The boost chip: 2x and the time left, with a bar that runs down along
-	-- its bottom edge.
+	-- The boost chip, above: 2x and the time left, with a bar that runs down
+	-- along its bottom edge.
 	local chip = Instance.new("Frame")
 	chip.Name = "Boost"
-	chip.LayoutOrder = 2
+	chip.LayoutOrder = 1
 	chip.Size = UDim2.fromOffset(0, CHIP_HEIGHT)
 	chip.AutomaticSize = Enum.AutomaticSize.X
 	chip.BackgroundColor3 = Theme.Colours.Gold
 	chip.Visible = false
 	Make.corner(chip)
 	Make.outline(chip, Theme.Colours.Ink, Theme.Stroke.Thick)
-	chip.Parent = row
+	chip.Parent = stack
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.Size = UDim2.fromScale(0, 1)
@@ -130,7 +132,7 @@ function HudController:Start()
 	Make.corner(fill)
 	fill.Parent = track
 
-	Menu.addTop(row, 1)
+	Menu.addBottomLeft(stack, 1)
 
 	-- The bar runs from the longest time left seen since the boost started.
 	local boostTotal = 0
