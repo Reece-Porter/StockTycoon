@@ -7,6 +7,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local VariantLayer = require(ReplicatedStorage.Shared.VariantLayer)
+
 local Models = {}
 
 local function find(folderName: string, id: string): Instance?
@@ -20,6 +22,19 @@ end
 
 function Models.company(companyId: string): Instance?
 	return find("Companies", companyId)
+end
+
+-- A company's model with a variant's look over it (VariantLayer), or its
+-- plain model without a variant. The variant's look goes on a copy, so the
+-- stored model is never changed.
+function Models.companyVariant(companyId: string, variantId: string?): Instance?
+	local model = Models.company(companyId)
+	if model == nil or variantId == nil or not model:IsA("Model") then
+		return model
+	end
+	local copy = model:Clone()
+	VariantLayer.apply(copy, variantId)
+	return copy
 end
 
 -- A weapon's Tool.

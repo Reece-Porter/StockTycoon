@@ -50,7 +50,7 @@ local function addCard(grid: ScrollingFrame, order: number, entry: Entry)
 		title = name,
 		stat = Format.income(entry.income),
 		badge = if entry.variant then Badge.variant(entry.variant) else Badge.tier(entry.tier),
-		model = Models.company(entry.companyId),
+		model = Models.companyVariant(entry.companyId, entry.variant),
 		icon = "Box",
 		footerHeight = FOOTER_HEIGHT,
 		layoutOrder = order,
