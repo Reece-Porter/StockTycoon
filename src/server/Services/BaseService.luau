@@ -7,7 +7,9 @@
 -- Floors.Floor<n>.Plots.Plot<m> with their cash pads at
 -- Floors.Floor<n>.CollectPads.Pad<m>, pet slots at
 -- Floors.Floor<n>.PetSlots.Slot<m>, a Machine containing a Pad part, and a
--- LockButton part. A base missing Spawn or the conveyor is skipped, and
+-- lock button on every floor at Floors.Floor<n>.LockButton (a map built
+-- before that has one LockButton on the base itself, which still works). A
+-- base missing Spawn or the conveyor is skipped, and
 -- missing plots or pads are reported, with a warning naming what's missing;
 -- nothing is ever patched up.
 --
@@ -17,7 +19,10 @@
 -- stairs would start) is only there while it's the highest open floor.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
+
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 
 export type Plot = {
 	-- e.g. "Floor1/Plot3"; how placed companies are saved.
@@ -49,8 +54,9 @@ export type Base = {
 	petSlotsByKey: { [string]: PetSlot },
 	-- Where a company sits in the Valuation Machine; nil if it isn't built.
 	machinePad: BasePart?,
-	-- The button the owner presses to lock the base; nil if it isn't built.
-	lockButton: BasePart?,
+	-- The buttons the owner can press to lock the base, lowest floor first.
+	-- A button on a floor that isn't shown isn't in the world.
+	lockButtons: { BasePart },
 	-- The base's bounding box (every floor), for checking whether someone is
 	-- on it.
 	boxCFrame: CFrame,
@@ -80,8 +86,12 @@ local hiddenFloors: Folder
 local assignedCallbacks: { (Player, Base) -> () } = {}
 local freedCallbacks: { (Player, Base) -> () } = {}
 local problems: { string } = {}
+local mapOutOfDate = false
 
 local BaseService = {}
+
+BaseService.MapOutOfDateMessage = "The map is out of date. In Studio, connect Rojo, run studio/BuildMap.luau "
+	.. "from the Command Bar, then save the place."
 
 local function findPart(parent: Instance, name: string, path: string): BasePart?
 	local found = parent:FindFirstChild(name)
@@ -209,12 +219,40 @@ local function findFloors(model: Model): (Instance?, { [number]: Instance }, { [
 	return floorsFolder, found, topOnly
 end
 
+-- Each floor's lock button, lowest floor first, then the one by the spawn on
+-- a map built before the buttons moved onto the floors.
+local function findLockButtons(model: Model, floors: { [number]: Instance }, path: string): { BasePart }
+	local buttons: { BasePart } = {}
+	local numbers = {}
+	for number in floors do
+		table.insert(numbers, number)
+	end
+	table.sort(numbers)
+	for _, number in numbers do
+		local button = floors[number]:FindFirstChild("LockButton")
+		if button and button:IsA("BasePart") then
+			table.insert(buttons, button)
+		end
+	end
+	local old = model:FindFirstChild("LockButton")
+	if old and old:IsA("BasePart") then
+		table.insert(buttons, old)
+	end
+	if #buttons == 0 then
+		table.insert(problems, `{path}.Floors.Floor1.LockButton is missing or isn't a part`)
+	end
+	return buttons
+end
+
 local function loadBases()
 	local map = workspace:FindFirstChild("Map")
 	local folder = map and map:FindFirstChild("Bases")
 	if folder == nil then
 		table.insert(problems, "Workspace.Map.Bases is missing")
 		return
+	end
+	if map and map:GetAttribute("MapVersion") ~= BaseConfig.MapVersion then
+		mapOutOfDate = true
 	end
 
 	local models = {}
@@ -263,10 +301,9 @@ local function loadBases()
 				table.insert(problems, `{path}.Machine is missing`)
 			end
 
-			local lockButton = findPart(model, "LockButton", path)
-
 			local boxCFrame, boxSize = model:GetBoundingBox()
 			local floorsFolder, floors, topOnly = findFloors(model)
+			local lockButtons = findLockButtons(model, floors, path)
 			table.insert(bases, {
 				model = model,
 				name = model.Name,
@@ -278,7 +315,7 @@ local function loadBases()
 				petSlots = petSlots,
 				petSlotsByKey = petSlotsByKey,
 				machinePad = machinePad,
-				lockButton = lockButton,
+				lockButtons = lockButtons,
 				boxCFrame = boxCFrame,
 				boxSize = boxSize,
 				owner = nil,
@@ -393,6 +430,12 @@ function BaseService:GetProblems(): { string }
 	return problems
 end
 
+-- Whether the map in the place was built by an older studio/BuildMap.luau
+-- than this code expects (or by none).
+function BaseService:IsMapOutOfDate(): boolean
+	return mapOutOfDate
+end
+
 -- Runs callback(player, base) whenever a player gets a base, including
 -- players who got one before this was called.
 function BaseService:OnBaseAssigned(callback: (Player, Base) -> ())
@@ -418,6 +461,9 @@ function BaseService:Init()
 	end
 	for _, problem in problems do
 		warn(`[BaseService] {problem}. Build it in Studio (see "Map naming" in docs/design.md).`)
+	end
+	if mapOutOfDate then
+		warn(`[BaseService] {BaseService.MapOutOfDateMessage}`)
 	end
 	if #bases == 0 then
 		warn("[BaseService] No usable bases, so players won't get a base or a conveyor.")

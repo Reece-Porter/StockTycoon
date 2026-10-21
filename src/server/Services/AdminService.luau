@@ -651,6 +651,10 @@ local function onPlayerAdded(player: Player)
 	if #problems > 0 then
 		AdminService:SetDebugValue(player, "MapProblems", table.concat(problems, "\n"))
 	end
+	if BaseService:IsMapOutOfDate() then
+		AdminService:SetDebugValue(player, "Map", BaseService.MapOutOfDateMessage)
+		Remotes.Notify:FireClient(player, BaseService.MapOutOfDateMessage, "Warning")
+	end
 end
 
 local function onDataLoaded(player: Player)

@@ -102,7 +102,7 @@ local function lockedBase(player: Player): boolean
 	if base == nil then
 		return false
 	end
-	return base.lockButton == nil or StealService:IsBaseLocked(player)
+	return #base.lockButtons == 0 or StealService:IsBaseLocked(player)
 end
 
 local function publish(player: Player)

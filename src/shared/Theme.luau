@@ -161,6 +161,57 @@ Theme.Base = {
 	SignPanel = hex("#FFFFFF"),
 }
 
+-- The middle street (studio/BuildMap.luau, docs/visual-pass.md Phase 6).
+Theme.Street = {
+	-- The shared conveyor: a red carpet between gold rails, with roller ends
+	-- and a row of small lights along each rail.
+	Carpet = hex("#A3203A"),
+	Rail = hex("#E1B93C"),
+	Roller = hex("#C9CED8"),
+	LightOff = hex("#8A6A2A"),
+	LightOn = hex("#FFE27A"),
+	-- Road, markings and kerbs.
+	Road = hex("#4A4E5A"),
+	Line = hex("#F4F1E8"),
+	Kerb = hex("#C9C4B8"),
+	-- Lamps, benches and planters.
+	LampPole = hex("#2B2D42"),
+	Bulb = hex("#FFE9B0"),
+	Wood = hex("#B07A4A"),
+	Metal = hex("#3A3D4D"),
+	Leaf = hex("#58AA52"),
+	Soil = hex("#60462F"),
+	Planter = hex("#D5DAE8"),
+	-- The stock-exchange gateways and the bull.
+	Marble = hex("#F1EEE6"),
+	MarbleShade = hex("#D9D3C6"),
+	Frieze = hex("#22325A"),
+	Gold = hex("#E1B93C"),
+	-- Storefronts: each shop's main colour, with a white stripe on the awning.
+	Shops = {
+		WeaponShop = hex("#FF8A3D"),
+		PetShop = hex("#2FBFA8"),
+		UpgradeStation = hex("#3CCB5A"),
+	},
+	ShopFloor = hex("#ECEEF4"),
+	ShopWall = hex("#2B2D42"),
+	Counter = hex("#B07A4A"),
+	CounterTop = hex("#F7F8FC"),
+	Awning = hex("#FFFFFF"),
+	-- Shopkeepers: skin tones and clothes.
+	Skin = { hex("#F1C27D"), hex("#8D5524"), hex("#C68642") },
+	Eye = hex("#1A1A24"),
+	Trousers = hex("#3A3D4D"),
+	-- Leaderboards: a dark board under a coloured header, in a frame with a
+	-- soft glow behind it; the top three ranks in gold, silver and bronze.
+	Board = hex("#141826"),
+	BoardRow = hex("#1E2336"),
+	BoardHeader = hex("#3D8BFF"),
+	BoardFrame = hex("#2B2D42"),
+	BoardGlow = hex("#3D8BFF"),
+	Ranks = { hex("#FFC83D"), hex("#C9D1DE"), hex("#D08A4E") },
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),

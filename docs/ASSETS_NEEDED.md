@@ -95,6 +95,20 @@ Nothing is required: every base is built from parts and built-in materials (the 
 | Belt texture | The chevron parts on each personal conveyor | 256 x 256 PNG, tiles along its length: a dark rubber belt (#3A3A4A) with two faint lighter chevrons pointing one way. Opaque. |
 | Carpet pattern | The carpet's diamond parts | 256 x 256 PNG, tiles both ways: a soft fabric look, white so the accent colour tints it, with a small diamond every half tile. Opaque. |
 | Machine screen frame | The plain screen and ticker panels | 512 x 256 PNG: a rounded monitor bezel with a small antenna, dark grey (#2B2D42), transparent in the middle and outside. |
+| Gauge face | The plain white gauge discs on the machine's pillars | 128 x 128 PNG: a round dial, white with a thin dark rim, tick marks round the top two thirds and a green-to-red arc. Transparent outside the circle. The needle stays a part. |
+
+## Street
+
+Nothing is required: the street, shops, gateways and boards are built from parts, built-in materials and text. These would make them better:
+
+| Asset | Replaces | Spec |
+| --- | --- | --- |
+| Carpet texture | The plain red Fabric on the shared conveyor | 256 x 256 PNG, tiles along its length: a deep red carpet (#A3203A) with a thin gold border stripe 16 px in from each long edge. Opaque. |
+| Road markings | The dash and zebra crossing parts | 512 x 512 PNG decals: a white dashed line on transparent, and a five-stripe zebra crossing on transparent. Slightly worn edges. |
+| Game logo | The gateway frieze text "STOCK TYCOON" and the gold medallion | 1024 x 256 PNG: the game's name in a chunky rounded style with a small rising arrow, gold (#E1B93C) with a dark navy outline, on transparent. Plus a 256 x 256 round version for the medallion. Original artwork only. |
+| Shop sign emblems | The part-built gavel, paw and arrow on each sign | Three 256 x 256 PNGs on transparent, white with a dark outline so they read on any colour: a gavel, a paw print, an up arrow. |
+| Shopkeeper faces | The eye and smile parts | Three 256 x 256 PNG face decals on transparent: big friendly cartoon eyes and a smile, one each for the weapon, pet and upgrade shopkeepers. |
+| Board header icons | The plain header strip on each leaderboard | Four 128 x 128 PNG icons on transparent, white: a coin stack (Cash per second), a circular arrow (rebirths), a sneaking hand grabbing a box (steals), a cartoon star burst (knockouts). |
 
 
 Small textures for company variant particles (`src/shared/Config/Variants.luau`). Each is a 64 x 64 PNG on a transparent background, white or light grey so the particle colours tint it, soft edges unless noted. Until each exists, the stand-in is Roblox's built-in sparkle, or a plain square for Pixel and Glitched.

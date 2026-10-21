@@ -27,8 +27,6 @@ local BANNER_MAX_WIDTH = 440
 local BANNER_HEIGHT = 64
 local STEP_SIZE = 44
 local SKIP_WIDTH = 72
--- Room for the sign over the lock button (LockController).
-local LOCK_SIGN_HEIGHT = 3
 
 local player = Players.LocalPlayer
 
@@ -144,9 +142,13 @@ local function machineTarget(): BasePart?
 	return if pad and pad:IsA("BasePart") then pad else nil
 end
 
+-- The ground floor's lock button (or, on a map built before the buttons
+-- moved onto the floors, the one by the spawn).
 local function lockTarget(): BasePart?
 	local base = myBase()
-	local button = base and base:FindFirstChild("LockButton")
+	local floors = base and base:FindFirstChild("Floors")
+	local floor = floors and floors:FindFirstChild("Floor1")
+	local button = floor and floor:FindFirstChild("LockButton") or base and base:FindFirstChild("LockButton")
 	return if button and button:IsA("BasePart") then button else nil
 end
 
@@ -317,10 +319,6 @@ function TutorialController:Start()
 		fromAttachment.WorldPosition = root.Position
 		toAttachment.WorldPosition = spot
 		local height = if point then 3 else current.Size.Y / 2 + 3
-		if current.Name == "LockButton" then
-			-- Above the lock button's own sign.
-			height += LOCK_SIGN_HEIGHT
-		end
 		marker.StudsOffsetWorldSpace = Vector3.new(0, height + math.sin(os.clock() * 4) * 0.6, 0)
 	end)
 

@@ -16,7 +16,8 @@
 -- (DropService). If it came out of its owner's storage rather than off a plot,
 -- the steal works the same way and it is back in their storage if it fails.
 --
--- Owners lock their base from its LockButton for Config/Steal.LockSeconds.
+-- Owners lock their base from a LockButton (one on each floor) for
+-- Config/Steal.LockSeconds.
 -- While locked nobody else can steal from it, and anyone else inside is moved
 -- out; when it runs out the owner presses the button again. New players can't
 -- be stolen from for their first Config/Steal.NewPlayerProtectionSeconds, and
@@ -324,15 +325,26 @@ local function lock(owner: Player): string
 	if base == nil then
 		return "You don't have a base."
 	end
-	local button = base.lockButton
-	if button == nil then
+	-- Any shown floor's button will do (a hidden floor's isn't in the world).
+	local buttons = {}
+	for _, button in base.lockButtons do
+		if button:IsDescendantOf(workspace) then
+			table.insert(buttons, button)
+		end
+	end
+	if #buttons == 0 then
 		return "Your base doesn't have a lock button yet."
 	end
 	if isLocked(base) then
 		return "Your base is already locked."
 	end
-	if not isWithin(owner, button, StealConfig.LockButtonDistance + StealConfig.LockButtonDistanceTolerance) then
-		return "Get closer to the lock button."
+	local reach = StealConfig.LockButtonDistance + StealConfig.LockButtonDistanceTolerance
+	local near = false
+	for _, button in buttons do
+		near = near or isWithin(owner, button, reach)
+	end
+	if not near then
+		return "Get closer to a lock button."
 	end
 	setLock(base, now() + StealConfig.LockSeconds)
 	return `Base locked for {StealConfig.LockSeconds} seconds.`
