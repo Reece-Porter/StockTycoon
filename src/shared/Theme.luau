@@ -192,9 +192,9 @@ Theme.Tween = {
 }
 
 -- Where the always-on-screen pieces go (Ui/Layout, Ui/Menu), in pixels before
--- scaling up for bigger screens. The menu grid sits on the left and the Store
--- column on the right, both clear of the thumbstick (bottom left) and jump
--- button (bottom right) on phones.
+-- scaling up for bigger screens. The menu grid sits on the left and the
+-- Rewards, Store and Codes column on the right, both clear of the thumbstick
+-- (bottom left) and jump button (bottom right) on phones.
 Theme.Layout = {
 	-- From the screen's edges (below Roblox's own top bar).
 	Margin = 10,
@@ -203,8 +203,9 @@ Theme.Layout = {
 	-- Square menu buttons.
 	MenuButton = 56,
 	MenuGap = 6,
-	-- In portrait the side menus start this far down, below the top stack.
-	PortraitSideTop = 190,
+	-- In portrait the side menus start this far down, below the top stack
+	-- (the teleports and the guide's banner).
+	PortraitSideTop = 130,
 }
 
 -- How see-through the dimmed background behind an open window is.

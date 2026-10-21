@@ -222,8 +222,8 @@ function RewardsController:Start()
 		text = "Rewards",
 		icon = "Gift",
 		colour = Theme.Menu.Rewards,
-		order = 7,
-		side = "Left",
+		order = 1,
+		side = "Right",
 	})
 	menuButton.Activated:Connect(function()
 		Menu.toggle(window)

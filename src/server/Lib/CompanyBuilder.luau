@@ -3,7 +3,11 @@
 -- CompanyModels (docs/visual-pass.md, Phase 3). One builder for every
 -- company, so they all have the same structure:
 --
---   <company id> (Model; PrimaryPart Plinth, pivot upright at its centre)
+--   <company id> (Model; PrimaryPart Root)
+--     Root: an invisible upright box filling the plinth. Roblox measures a
+--       model's bounding box along its PrimaryPart's axes, and the plinth is
+--       a cylinder turned on its side, so the PrimaryPart is this instead.
+--       The pivot is its centre, and prompts and labels attach to it.
 --     Plinth, and by tier: Step, Trim or a gold Edge, and Glow (a Neon ring
 --       with the model's one PointLight)
 --     Nameplate: a plaque on the plinth's front with the company's name
@@ -233,10 +237,18 @@ local function buildPlinth(model: Model, company: Companies.Company): number
 	local colour = Theme.Tiers[company.tier] or Theme.Colours.Locked
 	local diameter, height = spec.diameter, spec.height
 
+	local root = newPart(
+		model,
+		"Root",
+		Enum.PartType.Block,
+		Vector3.new(diameter, height, diameter),
+		CFrame.new(0, height / 2, 0),
+		colour
+	)
+	root.Transparency = 1
+	root.CastShadow = false
+	model.PrimaryPart = root
 	local plinth = ring(model, "Plinth", height, diameter, height / 2, colour)
-	-- The pivot stands upright, so PivotTo never tips the model over.
-	plinth.PivotOffset = UPRIGHT:Inverse()
-	model.PrimaryPart = plinth
 
 	-- The plain band of the plinth's side, between its rings.
 	local bandBottom, bandTop = 0, height

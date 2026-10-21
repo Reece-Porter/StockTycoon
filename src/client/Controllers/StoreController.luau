@@ -176,7 +176,7 @@ function StoreController:Start()
 		text = "Store",
 		icon = "Gem",
 		colour = Theme.Menu.Store,
-		order = 1,
+		order = 2,
 		side = "Right",
 		shine = true,
 	})

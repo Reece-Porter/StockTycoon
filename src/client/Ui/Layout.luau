@@ -31,16 +31,16 @@ function Layout.portrait(): boolean
 	return size.Y > size.X
 end
 
--- The width (before scaling) the middle of the screen has for the guide's
--- banner and notifications: between the side menus in landscape, where the
--- left menu sits at the top, and nearly the whole width in portrait, where
--- the side menus sit below them.
+-- The width (before scaling) the middle of the screen has for the teleports,
+-- the guide's banner and notifications: between the side menus in
+-- landscape, where the left menu (two across) sits at the top, and nearly
+-- the whole width in portrait, where the side menus sit below them.
 function Layout.centreWidth(): number
 	local width = Layout.viewport().X / Layout.scale()
 	if Layout.portrait() then
 		return width - 2 * Theme.Layout.Margin
 	end
-	local menu = 3 * Theme.Layout.MenuButton + 2 * Theme.Layout.MenuGap
+	local menu = 2 * Theme.Layout.MenuButton + Theme.Layout.MenuGap
 	return width - 2 * (menu + Theme.Layout.Margin + Theme.Layout.MenuGap)
 end
 
