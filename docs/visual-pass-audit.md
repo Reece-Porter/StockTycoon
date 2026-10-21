@@ -1,6 +1,11 @@
 # Visual pass: Phase 0 audit and Phase 1 plan
 
-The brief is in `docs/visual-pass.md`. This is the Phase 0 report it asks for. Nothing visual has changed yet; Phase 1 starts once it's approved.
+The brief is in `docs/visual-pass.md`. This is the Phase 0 report it asks for.
+
+## Progress
+
+- **Phase 0** approved on 21 October 2026, with the recommended answer to each decision below.
+- **Phase 1** done: `src/shared/Theme.luau`, `LightingService`, the UI kit in `src/client/Ui/Kit` (with a gallery in the admin debug panel), toasts for notifications, and `docs/ASSETS_NEEDED.md`. Screens other than notifications are rebuilt in Phase 2.
 
 ## How things are built now
 
