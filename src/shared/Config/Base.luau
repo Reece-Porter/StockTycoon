@@ -23,9 +23,6 @@ return {
 	PlotDistance = 10,
 	PlotDistanceTolerance = 6,
 
-	-- Transparency for plots (and their cash pads) the owner hasn't unlocked yet.
-	LockedPlotTransparency = 0.75,
-
 	-- Cash pads: a player counts as standing on a pad while their character
 	-- is within this many studs of its edges and no more than PadHeight above
 	-- it. Each collect takes at least MinCollect Cash, so standing on a pad

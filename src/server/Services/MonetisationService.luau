@@ -54,8 +54,10 @@ local function notify(player: Player, message: string)
 end
 
 -- Gold trim on a VIP's base, and the base's own colour otherwise: the ground
--- floor's in Tidy and each upper floor's in its Trim, shown or not.
+-- floor's in Tidy and each upper floor's in its Trim, shown or not. The Vip
+-- attribute tells clients to run a slow shine along it (BaseFxController).
 local function trimBase(base: BaseService.Base, vip: boolean)
+	base.model:SetAttribute("Vip", if vip then true else nil)
 	local models: { Instance } = {}
 	local function add(parent: Instance, name: string)
 		local trim = parent:FindFirstChild(name)

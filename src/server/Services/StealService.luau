@@ -56,7 +56,6 @@ type Attempt = { baseName: string, plotKey: string, startedAt: number }
 
 local attempts: { [Player]: Attempt } = {}
 local lockedUntil: { [BaseService.Base]: number } = {}
-local highlights: { [BaseService.Base]: Highlight } = {}
 local protectedUntil: { [Player]: number } = {}
 local lastLockNotice: { [Player]: number } = {}
 local beginLimiter = RateLimiter.new(4, 6)
@@ -157,23 +156,8 @@ local function setLock(base: BaseService.Base, untilTime: number?)
 	else
 		lockedUntil[base] = nil
 	end
+	-- Clients show it: a force field across the way in (LockController).
 	base.model:SetAttribute("LockedUntil", untilTime)
-
-	local highlight: Highlight? = highlights[base]
-	if untilTime and highlight == nil then
-		local newHighlight = Instance.new("Highlight")
-		newHighlight.Name = "LockHighlight"
-		newHighlight.FillColor = Color3.fromRGB(255, 70, 70)
-		newHighlight.FillTransparency = 0.85
-		newHighlight.OutlineColor = Color3.fromRGB(255, 70, 70)
-		newHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
-		newHighlight.Adornee = base.model
-		newHighlight.Parent = base.model
-		highlights[base] = newHighlight
-	elseif untilTime == nil and highlight then
-		highlights[base] = nil
-		highlight:Destroy()
-	end
 end
 
 -- Moves a character just outside a base, past whichever edge is nearest.

@@ -118,6 +118,49 @@ Theme.World = {
 	Open = hex("#F4F6FB"),
 }
 
+-- The player bases (studio/BuildMap.luau and the code that dresses them).
+-- Each base has one accent colour, by base number, used for its carpet,
+-- trim, frames, sign, plot glow and spawn ring; everything else is neutral.
+-- BuildMap also stores it on each base as an Accent attribute.
+Theme.Base = {
+	Accents = {
+		hex("#3D8BFF"),
+		hex("#FF8A3D"),
+		hex("#3CCB5A"),
+		hex("#A66CFF"),
+		hex("#FF4D5E"),
+		hex("#2FD3E0"),
+		hex("#FF5FB0"),
+		hex("#9BE22D"),
+	},
+	-- Floors and platforms, with darker grout lines and edges.
+	Floor = hex("#ECEEF4"),
+	Grout = hex("#D3D8E4"),
+	Edge = hex("#B9C0D0"),
+	-- Plots: a white display top on a darker lip, with a glow in the accent
+	-- colour once open; locked ones are dull stone.
+	Plot = hex("#F7F8FC"),
+	PlotLip = hex("#C5CBDA"),
+	Stone = hex("#8E9097"),
+	StoneDark = hex("#6E7178"),
+	-- Pet beds.
+	Pedestal = hex("#C5CBDA"),
+	Cushion = hex("#FFF8EE"),
+	-- Stairs, glass and rails.
+	Step = hex("#D5DAE8"),
+	Tread = hex("#F7F8FC"),
+	Glass = hex("#CFEFFF"),
+	Post = hex("#F7F8FC"),
+	-- The front yard.
+	Belt = hex("#3A3A4A"),
+	Roller = hex("#8D99AE"),
+	Housing = hex("#2B2D42"),
+	Machine = hex("#2B2D42"),
+	MachinePad = hex("#A66CFF"),
+	LockCap = hex("#FF4D5E"),
+	SignPanel = hex("#FFFFFF"),
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),
