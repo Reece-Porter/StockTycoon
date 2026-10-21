@@ -236,6 +236,23 @@ local function bar(parent: Instance, name: string, length: number, cframe: CFram
 	return decor(parent, name, size, cframe * CFrame.Angles(0, math.rad(90), 0), colour, nil, Enum.PartType.Cylinder)
 end
 
+-- A decorative stretched ball: a block with a sphere mesh, since a Ball
+-- part is always round.
+local function ellipsoid(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cframe: CFrame,
+	colour: Color3,
+	material: Enum.Material?
+): Part
+	local part = decor(parent, name, size, cframe, colour, material)
+	local round = Instance.new("SpecialMesh")
+	round.MeshType = Enum.MeshType.Sphere
+	round.Parent = part
+	return part
+end
+
 -- Takes off the looks hung on one of the game's parts (a plot, a pet slot,
 -- the spawn or the lock button) before they're made again, so running this
 -- twice changes nothing.
@@ -583,17 +600,8 @@ for index, spot in BASE_SPOTS do
 			clearDecor(slotPart)
 			column(slotPart, "Pedestal", 0.2, 2.6, where * CFrame.new(0, 0.1, 0), BASE.Pedestal)
 			column(slotPart, "Bed", 0.22, 3.2, where * CFrame.new(0, 0.31, 0), light, Enum.Material.Fabric)
-			local cushion = decor(
-				slotPart,
-				"Cushion",
-				Vector3.new(2.5, 0.2, 2.5),
-				where * CFrame.new(0, 0.4, 0),
-				BASE.Cushion,
-				Enum.Material.Fabric
-			)
-			local round = Instance.new("SpecialMesh")
-			round.MeshType = Enum.MeshType.Sphere
-			round.Parent = cushion
+			local cushionAt = where * CFrame.new(0, 0.4, 0)
+			ellipsoid(slotPart, "Cushion", Vector3.new(2.5, 0.2, 2.5), cushionAt, BASE.Cushion, Enum.Material.Fabric)
 		end
 	end
 	if base:IsA("Model") then
@@ -992,14 +1000,13 @@ do
 					Enum.Material.Grass
 				)
 				local bushSize = Vector3.new(2.6, 2.2, 2.6)
-				decor(
+				ellipsoid(
 					planter,
 					"Bush",
 					bushSize,
 					CFrame.new(x, streetTop + 2.2, z),
 					STREET.Leaf,
-					Enum.Material.Grass,
-					Enum.PartType.Ball
+					Enum.Material.Grass
 				)
 				local topSize = Vector3.new(1.6, 1.6, 1.6)
 				local topAt = CFrame.new(x - side * 0.3, streetTop + 3.2, z + 0.3)
@@ -1055,17 +1062,9 @@ do
 	decor(bull, "Plinth", Vector3.new(6, 1.6, 9), onBull(0, 0.8, 0), STREET.Marble, Enum.Material.Marble)
 	decor(bull, "PlinthTrim", Vector3.new(6.3, 0.3, 9.3), onBull(0, 1.45, 0), STREET.Gold, Enum.Material.Metal)
 	local gold, foil = STREET.Gold, Enum.Material.Foil
-	decor(bull, "Body", Vector3.new(3, 2.6, 5.4), onBull(0, 4.2, 0.3), gold, foil, Enum.PartType.Ball)
-	decor(bull, "Head", Vector3.new(2, 1.9, 2.2), onBull(0, 4.9, -2.9), gold, foil, Enum.PartType.Ball)
-	decor(
-		bull,
-		"Snout",
-		Vector3.new(1.4, 0.9, 0.8),
-		onBull(0, 4.4, -3.9),
-		Theme.shade(gold, 0.15),
-		foil,
-		Enum.PartType.Ball
-	)
+	ellipsoid(bull, "Body", Vector3.new(3, 2.6, 5.4), onBull(0, 4.2, 0.3), gold, foil)
+	ellipsoid(bull, "Head", Vector3.new(2, 1.9, 2.2), onBull(0, 4.9, -2.9), gold, foil)
+	ellipsoid(bull, "Snout", Vector3.new(1.4, 0.9, 0.8), onBull(0, 4.4, -3.9), Theme.shade(gold, 0.15), foil)
 	for _, side in { -1, 1 } do
 		local hornAt = onBull(side * 1.2, 5.8, -2.9) * CFrame.Angles(0, 0, side * math.rad(-30))
 		decor(bull, "Horn", Vector3.new(1.4, 0.35, 0.35), hornAt, STREET.Marble, nil, Enum.PartType.Cylinder)
@@ -1197,7 +1196,7 @@ for name, style in shopStyles do
 	gui.MaxDistance = 200
 	gui.Parent = sign
 	local text = Instance.new("TextLabel")
-	text.Position = UDim2.fromScale(0.24, 0.08)
+	text.Position = UDim2.fromScale(0.04, 0.08)
 	text.Size = UDim2.fromScale(0.72, 0.84)
 	text.BackgroundTransparency = 1
 	text.Font = Theme.Fonts.Display
@@ -1210,12 +1209,13 @@ for name, style in shopStyles do
 	outline.Thickness = 3
 	outline.Parent = text
 	trim("SignFrame", Vector3.new(11.4, 2.6, 0.3), CFrame.new(0, 10.7, -4.4), STREET.ShopWall)
+	-- Turned so the discs face the street; the rim sits just behind the disc.
 	local badgeAt = CFrame.new(-4.1, 10.7, -4.9) * CFrame.Angles(0, math.rad(90), 0)
 	trim("Emblem", Vector3.new(0.2, 2.6, 2.6), badgeAt, STREET.Awning, nil, Enum.PartType.Cylinder)
 	trim(
 		"EmblemRim",
 		Vector3.new(0.15, 2.9, 2.9),
-		badgeAt * CFrame.new(0.05, 0, 0),
+		badgeAt * CFrame.new(-0.05, 0, 0),
 		STREET.ShopWall,
 		nil,
 		Enum.PartType.Cylinder
@@ -1229,10 +1229,10 @@ for name, style in shopStyles do
 		trim("EmblemHead", Vector3.new(1.3, 0.55, 0.15), gavel * CFrame.new(0, 0.55, 0), main)
 	elseif name == "PetShop" then
 		-- A paw print.
-		trim("EmblemPad", Vector3.new(1, 0.8, 0.15), CFrame.new(-4.1, 10.45, front), main, nil, Enum.PartType.Ball)
+		ellipsoid(look, "EmblemPad", Vector3.new(1, 0.8, 0.15), frame * CFrame.new(-4.1, 10.45, front), main)
 		for toe = -1.5, 1.5 do
 			local toeAt = CFrame.new(-4.1 + toe * 0.42, 11.1 + (if math.abs(toe) < 1 then 0.12 else 0), front)
-			trim("EmblemToe", Vector3.new(0.38, 0.38, 0.15), toeAt, main, nil, Enum.PartType.Ball)
+			ellipsoid(look, "EmblemToe", Vector3.new(0.38, 0.38, 0.15), frame * toeAt, main)
 		end
 	else
 		-- An arrow pointing up.
@@ -1313,11 +1313,11 @@ for name, style in shopStyles do
 		piece("HatBrim", Vector3.new(1.4, 0.12, 0.8), 0, 5.55, keeperZ - 0.95, main)
 	elseif style.hat == "Ears" then
 		for _, side in { -1, 1 } do
-			piece("Hat", Vector3.new(0.5, 0.6, 0.3), side * 0.5, 5.85, keeperZ, skin, Enum.PartType.Ball)
+			ellipsoid(keeper, "Hat", Vector3.new(0.5, 0.6, 0.3), frame * CFrame.new(side * 0.5, 5.85, keeperZ), skin)
 		end
 		piece("HatBrim", Vector3.new(1.55, 0.15, 0.3), 0, 5.65, keeperZ, main)
 	else
-		piece("Hat", Vector3.new(1.65, 0.9, 1.65), 0, 5.75, keeperZ, Theme.Colours.Gold, Enum.PartType.Ball)
+		ellipsoid(keeper, "Hat", Vector3.new(1.65, 0.9, 1.65), frame * CFrame.new(0, 5.75, keeperZ), Theme.Colours.Gold)
 		local brimAt = CFrame.new(0, 5.45, keeperZ) * UPRIGHT
 		decor(
 			keeper,
@@ -1483,7 +1483,7 @@ for _, side in { -1, 1 } do
 		gateway,
 		"MedallionRim",
 		Vector3.new(0.2, 3.1, 3.1),
-		medallion * CFrame.new(0.06, 0, 0),
+		medallion * CFrame.new(-0.03, 0, 0),
 		STREET.MarbleShade,
 		nil,
 		Enum.PartType.Cylinder
@@ -1753,15 +1753,8 @@ do
 			for slot = 0, 2 do
 				local colour = eggColours[shelf * 3 + slot + 1]
 				local eggAt = petFrame * CFrame.new(-3.6 + slot * 3.6, y + 0.75, 2.9)
-				local egg = decor(goods, "Egg", Vector3.new(0.95, 1.25, 0.95), eggAt, colour)
-				local round = Instance.new("SpecialMesh")
-				round.MeshType = Enum.MeshType.Sphere
-				round.Parent = egg
-				local bandAt = eggAt * CFrame.new(0, 0.05, 0)
-				local band = decor(goods, "EggBand", Vector3.new(1, 0.22, 1), bandAt, Theme.Colours.Card)
-				local bandRound = Instance.new("SpecialMesh")
-				bandRound.MeshType = Enum.MeshType.Sphere
-				bandRound.Parent = band
+				ellipsoid(goods, "Egg", Vector3.new(0.95, 1.25, 0.95), eggAt, colour)
+				ellipsoid(goods, "EggBand", Vector3.new(1, 0.22, 1), eggAt * CFrame.new(0, 0.05, 0), Theme.Colours.Card)
 			end
 		end
 		local plush = pets:FindFirstChild("Default")
