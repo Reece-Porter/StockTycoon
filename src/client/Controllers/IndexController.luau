@@ -3,8 +3,8 @@
 -- window, in three tabs:
 --   Companies: every company by tier as a card, with a dark silhouette and
 --     "???" for ones not found yet.
---   Variants: every variant, what it earns and how rare it is, with "???"
---     for ones not found yet.
+--   Variants: every variant, what it earns and how rare it is, shown on a
+--     sample company once found, with "???" for ones not found yet.
 --   Prizes: the prizes for collecting so many different companies.
 -- The server sends IndexDiscovered, IndexClaimed and IndexVariants (JSON
 -- lists) and checks every claim. The cards are only built while the window
@@ -33,6 +33,8 @@ local CARD_SIZE = UDim2.fromOffset(120, 168)
 local ROW_HEIGHT = 72
 local ACTION_WIDTH = 116
 local UNKNOWN = "???"
+-- Found variants are shown on this company.
+local VARIANT_SAMPLE = Companies.list[1].id
 
 local player = Players.LocalPlayer
 
@@ -163,6 +165,7 @@ function IndexController:Start()
 				title = if isFound then variant.name else UNKNOWN,
 				stat = `{variant.multiplier}x, 1 in {variant.oneIn}`,
 				badge = if isFound then Badge.variant(variant.id) else nil,
+				model = if isFound then Models.companyVariant(VARIANT_SAMPLE, variant.id) else nil,
 				icon = "Gem",
 				size = CARD_SIZE,
 				layoutOrder = position,

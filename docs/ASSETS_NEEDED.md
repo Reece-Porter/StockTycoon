@@ -86,6 +86,17 @@ Each company's model has a floating badge (stand-in: the company's letters in a 
 
 Company models themselves need no assets: they're built from parts in code. A hand-made model (mesh or parts) for any company can be dropped into `ReplicatedStorage.Assets.Companies` with the company's id as its name, and it will be used instead; keep it within the same budget (30 parts, one light only on Conglomerate and Monopoly).
 
+## Particle textures
+
+Small textures for company variant particles (`src/shared/Config/Variants.luau`). Each is a 64 x 64 PNG on a transparent background, white or light grey so the particle colours tint it, soft edges unless noted. Until each exists, the stand-in is Roblox's built-in sparkle, or a plain square for Pixel and Glitched.
+
+| Texture | Used by | Design |
+| --- | --- | --- |
+| Pixel square | Pixel | A crisp square with a one-pixel lighter top-left edge, like a retro sprite pixel. Hard edges. |
+| Noise block | Glitched | Two or three small offset rectangles, like a broken screen. Hard edges. |
+| Twinkle | Shiny, Galaxy | A soft four-pointed star with a bright centre. |
+| Ember | Molten | A soft round glow, brightest in the middle. |
+
 ## Fonts
 
 None needed: the two fonts (FredokaOne and BuilderSans Bold) are built into Roblox.

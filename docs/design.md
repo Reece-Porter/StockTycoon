@@ -150,7 +150,14 @@ Boost rules
 ## Variants (starting assumption)
 - Any company can turn up as a variant on either conveyor. A variant earns a multiple of the company's normal income, and the more it earns, the rarer it is: Shiny 1.5x (1 in 20), Pixel 2x (1 in 50), Molten 3x (1 in 120), Galaxy 5x (1 in 300), Rainbow 7x (1 in 600), Glitched 10x (1 in 1,500). Values live in `Config/Variants.luau`.
 - A variant costs the same as a regular company: finding one is luck. It keeps its variant for good, through the Valuation Machine (which multiplies on top, separately) and stealing.
-- Each variant has its own particles, and Molten has flames; labels show the variant's name in its colour. The Index has a Variants section showing the ones a player has owned.
+- Each variant has its own look, laid over any company's model by one shared function (`src/shared/VariantLayer.luau`, settings in `Config/Variants.luau`) without changing the stored model. The plinth keeps its tier colour; the pun object changes, and the floating badge gets a ring in the variant's colour:
+  - Shiny: brighter, slightly reflective colours and a few slow white twinkles.
+  - Pixel: a small retro palette, round pieces made blocky, small square particles.
+  - Molten: dark rock with glowing orange Neon seams and a few rising embers.
+  - Galaxy: deep purple with a faint pink and blue nebula tint and twinkling stars.
+  - Rainbow: its small accent pieces turn smoothly round the colour wheel (on each player's device).
+  - Glitched: a slight red and cyan split, and now and then a flicker with a red and cyan ghost copy for a moment (on each player's device), with small square noise particles.
+- Variants add no lights, at most 10 particles a second, stay within a model's 30 parts (ghosts included), and their particles and motion stop beyond 60 studs. Labels show the variant's name in its colour; Storage cards show a variant company in its look. The Index has a Variants section showing the ones a player has owned, each on a sample company.
 - Galaxy and rarer variants on the shared conveyor are announced to the server. The Variant Chance upgrade makes variants more likely on the player's own conveyor only.
 
 ## Upgrade station (starting assumption)
