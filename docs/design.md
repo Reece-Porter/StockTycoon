@@ -48,6 +48,8 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - Upgrade cost rises with each plot and steeply with each floor. Exact curve in Config.
 - Each floor has 1 pet slot; a second pet slot per floor can be bought later.
 - Floors are reached by stairs or a lift pad; stealing works on every floor.
+- A new base is just the ground floor. Each upper floor (its platform, stairs, plots, pet slots, glass and trim) appears only once the owner opens it, and the whole base goes back to the ground floor on rebirth or when the owner leaves. Until the next floor is open, a rail closes off the landing where its stairs would start.
+- Plots stand near the side walls, either side of the walkway, each with a cash pad in front of it.
 - Companies can be sold back for 50% of purchase price, and moved between plots and floors freely.
 - Overflow storage holds up to 5 unplaced companies.
 
@@ -161,6 +163,12 @@ Boost rules
 - Each level costs the base cost times the growth to the power of levels owned: Walk Speed 300 x1.8, Damage 500 x1.8, Conveyor Luck 1,000 x2, Money Multiplier 2,000 x2.1, Variant Chance 2,500 x2.1.
 - Levels reset on rebirth (`ResetOnRebirth`), like base upgrades. Nothing at the station is sold for Robux or touches the Valuation Machine.
 
+## Cash pads (starting assumption)
+- A placed company's income doesn't go straight into Cash: it builds up on the cash pad in front of its plot, and the owner collects it by stepping on the pad. The amount waiting shows above each pad, and a "+Cash" pops up when it's collected.
+- Only the base's owner can collect from its pads. The server checks where the owner is standing (`Config/Base.luau`: PadReach, PadHeight), and collects at least MinCollect (1 Cash) at a time.
+- What's on the pads is saved, so leaving never loses it. It stays with the plot: picking up a company, or having it stolen, leaves its Cash on the pad for the owner. Rebirth empties the pads along with Cash.
+- Offline earnings, rewards, codes and Cash packs still go straight into Cash.
+
 ## Teleports (starting assumption)
 - Buttons at the top of the screen teleport to Home (your base), Upgrades (the upgrade station) and Weapons (the weapon shop, beside the pet shop).
 - Not while carrying a company, which must still be carried home on foot, and at most once every 5 seconds (`Config/Travel.luau`).
@@ -184,7 +192,7 @@ Boost rules
 
 ## Onboarding (starting assumption)
 - New player spawns at their base with enough Cash for one Startup.
-- On-screen arrow guides them: buy from the personal conveyor, carry it home, place it.
+- On-screen arrow guides them: buy from the personal conveyor, carry it home, place it, then collect its Cash from its pad.
 - After placing the first company, prompt them to try the Valuation Machine on their second one.
 - Then show them how to lock their base with its lock button.
 - After 2 minutes, point them at the shared conveyor.
@@ -222,10 +230,10 @@ Boost rules
 - Each base's `LockButton` is a part the owner uses to lock the base; the time left on a lock shows above it.
 - Each base's `Machine` (the Valuation Machine) contains a part named `Pad`: companies being valued stand on it, and players use the machine there.
 - Each base's `Conveyor` model holds the belt plus two parts named `Start` and `End`. Companies appear at `Start` and travel in a straight line to `End`, sitting on the bottom face of those parts, so place them on the belt surface. `Spawn` is a part the owner appears on.
-- `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots and floors are hidden or greyed out by code.
+- `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `CollectPads` (Pad1 to Pad10, the cash pad in front of each plot), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots are greyed out by code. Everything belonging to an upper floor is inside its folder (`Platform`, `Railings`, `Trim`, `Glass` and so on), because the game takes the whole folder out of the world until the floor is opened. Each upper floor's `TopOnly` model is only shown while it's the highest open floor.
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
 - `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
-- Each base's `Glass` model holds its glass walls; stealing is refused if any of it is between the thief and the plot.
+- Each base's `Glass` model holds the ground floor's glass walls, and each upper floor's `Glass` holds its own; stealing is refused if any glass is between the thief and the plot.
 - `Workspace.Map.Leaderboards` with four parts, `IncomeBoard`, `RebirthsBoard`, `StealsBoard` and `KnockoutsBoard`. The game writes each list on the part's front face.
 - Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. A model named `Default` is used for any company without its own model yet.
 - Weapon models in `ReplicatedStorage.Assets.Weapons`, pet models in `ReplicatedStorage.Assets.Pets`, named by id. Each weapon is a Tool with a `Handle` part; a Tool named `Default` is used for any weapon without its own yet. A pet model named `Default` is used for any pet without its own; its parts with a `RarityTint` attribute take the pet's rarity colour.
@@ -250,5 +258,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 16. **Monetisation**: Check: each pass's perk turns on when it's bought in game and when an owner joins, each product is given once per purchase (also after a rejoin), and nothing for sale touches the Valuation Machine.
 
 After the build order: variants, the upgrade station, teleports, glass walls and the stations at the street ends. Check: variants turn up at about their odds (`/testvariants`) and earn their multiple, each upgrade's effect applies and resets on rebirth, teleports refuse while carrying, and nobody can steal through the glass.
+
+Then cash pads and floors that appear as they're opened. Check: income only reaches Cash from the pads, only the owner can collect, the pads keep their Cash through a rejoin, a new base is just the ground floor, each floor appears when it's opened (and goes on rebirth), and the guide teaches collecting.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.

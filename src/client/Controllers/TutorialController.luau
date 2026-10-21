@@ -102,6 +102,33 @@ local function plotTarget(from: Vector3): BasePart?
 	return nearest(parts, from)
 end
 
+-- This player's cash pad with the most Cash waiting, or else the pad in front
+-- of one of their placed companies.
+local function padTarget(from: Vector3): BasePart?
+	local base = myBase()
+	local floors = base and base:FindFirstChild("Floors")
+	local best: BasePart? = nil
+	local bestCash = 0
+	local placedPads = {}
+	for _, floor in childrenOf(floors) do
+		local plots = floor:FindFirstChild("Plots")
+		local pads = floor:FindFirstChild("CollectPads")
+		for _, pad in childrenOf(pads) do
+			if pad:IsA("BasePart") then
+				local cash = pad:GetAttribute("Cash")
+				if typeof(cash) == "number" and cash > bestCash then
+					best, bestCash = pad, cash
+				end
+				local plot = plots and plots:FindFirstChild((string.gsub(pad.Name, "^Pad", "Plot")))
+				if plot and plot:GetAttribute("CompanyId") ~= nil then
+					table.insert(placedPads, pad)
+				end
+			end
+		end
+	end
+	return best or nearest(placedPads, from)
+end
+
 local function machineTarget(): BasePart?
 	local base = myBase()
 	local machine = base and base:FindFirstChild("Machine")
@@ -128,6 +155,8 @@ local function guide(step: number, from: Vector3): (string, BasePart?, Vector3?)
 			return hint, plotTarget(from), nil
 		end
 		return "Take your company out of Storage (left of the screen), then place it on a plot", nil, nil
+	elseif step == Steps.Collect then
+		return hint, padTarget(from), nil
 	elseif step == Steps.Machine then
 		if carrying and not valued then
 			return "Put it in the Valuation Machine: press Take when the number looks good", machineTarget(), nil

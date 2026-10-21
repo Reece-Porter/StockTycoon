@@ -724,8 +724,8 @@ function AdminService:Init()
 	end
 end
 
--- Rewards change every second without a data change, so their rows are
--- refreshed on a timer.
+-- Rewards and cash pads change every second without a data change, so their
+-- rows are refreshed on a timer.
 local function refreshRewardRows(player: Player)
 	local data = DataService:GetData(player)
 	if data == nil then
@@ -746,6 +746,11 @@ local function refreshRewardRows(player: Player)
 		"Daily",
 		`streak {daily.streak}, next Day {daily.nextDay}, {if daily.claimable then "ready" else "claimed today"}`
 	)
+	local onPads = 0
+	for _, amount in data.Uncollected do
+		onPads += amount
+	end
+	AdminService:SetDebugValue(player, "CashPads", `{Format.cash(onPads)} waiting`)
 	AdminService:SetDebugValue(player, "Boost", Format.duration(rewards.BoostSeconds))
 	AdminService:SetDebugValue(player, "SpinTokens", rewards.SpinTokens)
 	AdminService:SetDebugValue(

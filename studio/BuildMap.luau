@@ -31,6 +31,7 @@ local PLOT = Color3.fromRGB(150, 170, 200)
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
 local GLASS = Color3.fromRGB(185, 225, 245)
+local CASH = Color3.fromRGB(60, 203, 90)
 
 -- Eight bases, four either side of a street with the middle conveyor down
 -- the centre, all facing it. Each base is BASE_WIDTH along the street and
@@ -58,12 +59,15 @@ local BASE_SPOTS = {
 -- the front by the street (+BASE_DEPTH / 2), and z across it. The front yard
 -- has the conveyor, the Valuation Machine, the lock button and the spawn. In
 -- the hall behind it a walkway runs straight back down the middle of every
--- floor, with five plots either side. The stairs zigzag up behind the hall in
--- two strips, meeting landings at either side.
+-- floor, with five plots either side near the walls, each with a cash pad in
+-- front of it by the walkway. The stairs zigzag up behind the hall in two
+-- strips, meeting landings at either side.
 local HALL_FRONT = 21
 local HALL_BACK = -31
 local WALKWAY = 8
-local PLOT_Z = 9 -- plots either side of the walkway
+local PLOT_Z = 11.5 -- plots either side of the walkway, near the walls
+local PAD_Z = 6 -- cash pads, between the walkway and the plots
+local SLOT_Z = 9 -- pet slots at the back of the hall
 local STAIRS_X = { -34, -40 } -- floors 2 and 4 go up one strip, floor 3 the other
 local LANDING_Z = 10.5 -- where every staircase starts and ends
 local RISE = 12 -- height between floors
@@ -239,8 +243,10 @@ for index, spot in BASE_SPOTS do
 	place(base, "LockButton", Vector3.new(3, 1.2, 3), at(27, groundTop + 0.6, 11), lockColour, Enum.Material.Neon)
 
 	-- The hall: plots in pairs either side of the walkway from the front back
-	-- (so they unlock front to back), each turned to face the walkway, then
-	-- the pet slots behind them.
+	-- (so they unlock front to back), each turned to face the walkway with
+	-- its cash pad in front, then the pet slots behind them. Everything that
+	-- belongs to an upper floor is in its Floor folder, so the game can show
+	-- each floor only once the owner has opened it.
 	local floors = folder(base, "Floors")
 	for n = 1, 4 do
 		local floor = folder(floors, "Floor" .. n)
@@ -253,16 +259,18 @@ for index, spot in BASE_SPOTS do
 			platform.Material = Enum.Material.SmoothPlastic
 		end
 		local plots = folder(floor, "Plots")
+		local pads = folder(floor, "CollectPads")
 		for i = 1, 10 do
 			local side = if (i - 1) % 2 == 0 then -1 else 1
 			local plotX = HALL_FRONT - 4.5 - math.floor((i - 1) / 2) * 9
 			local facing = if side < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.new()
 			place(plots, "Plot" .. i, Vector3.new(7, 0.4, 7), at(plotX, top + 0.2, side * PLOT_Z) * facing, PLOT)
+			place(pads, "Pad" .. i, Vector3.new(5, 0.2, 3.5), at(plotX, top + 0.1, side * PAD_Z) * facing, CASH)
 		end
 		local slots = folder(floor, "PetSlots")
 		for slot = 1, 2 do
 			local slotColour = Color3.fromRGB(190, 150, 255)
-			local slotZ = (if slot == 1 then -1 else 1) * PLOT_Z
+			local slotZ = (if slot == 1 then -1 else 1) * SLOT_Z
 			place(slots, "Slot" .. slot, Vector3.new(3, 0.4, 3), at(HALL_BACK + 4, top + 0.2, slotZ), slotColour)
 		end
 	end
@@ -277,14 +285,25 @@ for index, spot in BASE_SPOTS do
 	end
 
 	-- The walkway on every floor (from the street on the ground floor), a
-	-- coloured border, and supports along the sides up to the top floor.
+	-- coloured border, and supports along the sides under each upper floor.
+	-- The ground floor's are in Tidy, each upper floor's in its own Trim.
 	local trim = freshModel(base, "Tidy")
 	for n = 1, 4 do
+		local parent = if n == 1 then trim else freshModel(folder(floors, "Floor" .. n), "Trim")
 		local front = if n == 1 then halfDepth else HALL_FRONT
 		local walkwaySize = Vector3.new(front - HALL_BACK, 0.1, WALKWAY)
-		local walkway = newPart(trim, "Walkway", walkwaySize, at((front + HALL_BACK) / 2, tops[n] + 0.05, 0), carpet)
+		local walkway = newPart(parent, "Walkway", walkwaySize, at((front + HALL_BACK) / 2, tops[n] + 0.05, 0), carpet)
 		walkway.Material = Enum.Material.Fabric
 		walkway.CanCollide = false
+		if n > 1 then
+			local supportHeight = tops[n] - tops[n - 1]
+			for _, x in { HALL_FRONT - 0.5, (HALL_FRONT + HALL_BACK) / 2, HALL_BACK + 0.5, -halfDepth + 0.5 } do
+				for _, side in { -1, 1 } do
+					local where = at(x, tops[n - 1] + supportHeight / 2, side * (halfWidth - 0.5))
+					newPart(parent, "Support", Vector3.new(1, supportHeight, 1), where, accent)
+				end
+			end
+		end
 	end
 	for _, side in { -1, 1 } do
 		local alongSize = Vector3.new(BASE_DEPTH, 0.1, 1)
@@ -293,33 +312,32 @@ for index, spot in BASE_SPOTS do
 		newPart(trim, "Border", acrossSize, at(side * (halfDepth - 0.5), groundTop + 0.05, 0), accent).CanCollide =
 			false
 	end
-	local supportHeight = tops[4] - groundTop
-	for _, x in { HALL_FRONT - 0.5, (HALL_FRONT + HALL_BACK) / 2, HALL_BACK + 0.5, -halfDepth + 0.5 } do
-		for _, side in { -1, 1 } do
-			local where = at(x, groundTop + supportHeight / 2, side * (halfWidth - 0.5))
-			newPart(trim, "Support", Vector3.new(1, supportHeight, 1), where, accent)
-		end
-	end
 
 	-- Glass walls along both sides and the back, from the front of the hall
-	-- to the back of the stairs and from the ground to the top floor's
-	-- railings, so the only way in is from the front.
-	local glassWalls = freshModel(base, "Glass")
-	local glassHeight = tops[4] + RAIL_HEIGHT - groundTop
-	local glassY = groundTop + glassHeight / 2
-	local function glass(size: Vector3, cframe: CFrame)
-		local pane = newPart(glassWalls, "Glass", size, cframe, GLASS, 0.6)
-		pane.Material = Enum.Material.Glass
-		pane.CastShadow = false
+	-- to the back of the stairs, so the only way in is from the front. Each
+	-- floor has its own band of glass up to the next floor (the top floor's
+	-- up to its railings): the ground floor's in Glass, each upper floor's in
+	-- its Floor folder.
+	for n = 1, 4 do
+		local glassParent = if n == 1 then base else folder(floors, "Floor" .. n)
+		local glassWalls = freshModel(glassParent, "Glass")
+		local glassTop = if n < 4 then tops[n + 1] else tops[4] + RAIL_HEIGHT
+		local glassHeight = glassTop - tops[n]
+		local glassY = tops[n] + glassHeight / 2
+		local function glass(size: Vector3, cframe: CFrame)
+			local pane = newPart(glassWalls, "Glass", size, cframe, GLASS, 0.6)
+			pane.Material = Enum.Material.Glass
+			pane.CastShadow = false
+		end
+		for _, side in { -1, 1 } do
+			local length = HALL_FRONT + halfDepth
+			glass(
+				Vector3.new(length, glassHeight, 0.5),
+				at((HALL_FRONT - halfDepth) / 2, glassY, side * (halfWidth - 0.25))
+			)
+		end
+		glass(Vector3.new(0.5, glassHeight, BASE_WIDTH - 1), at(-halfDepth + 0.25, glassY, 0))
 	end
-	for _, side in { -1, 1 } do
-		local length = HALL_FRONT + halfDepth
-		glass(
-			Vector3.new(length, glassHeight, 0.5),
-			at((HALL_FRONT - halfDepth) / 2, glassY, side * (halfWidth - 0.25))
-		)
-	end
-	glass(Vector3.new(0.5, glassHeight, BASE_WIDTH - 1), at(-halfDepth + 0.25, glassY, 0))
 
 	-- Stairs up to each floor behind the hall. Floors 2 and 4 go up one
 	-- strip towards +z and floor 3 comes back up the other, each from a
@@ -348,8 +366,9 @@ for index, spot in BASE_SPOTS do
 			end
 		end
 		-- The landing at the top, across both strips; the glass walls guard
-		-- its outside. From the top floor's landing there are no stairs on,
-		-- so the other strip is railed off.
+		-- its outside. Until the next floor is open there are no stairs on
+		-- from it, so the other strip is railed off (TopOnly, which the game
+		-- shows only on the highest open floor).
 		local landingZ = dir * (LANDING_Z + halfWidth) / 2
 		if n == 2 then
 			local height = high - groundTop
@@ -360,10 +379,9 @@ for index, spot in BASE_SPOTS do
 			newPart(access, "TopLanding", size, at(landingX, high - 0.5, landingZ), PLATFORM)
 		end
 		local railY = high + RAIL_HEIGHT / 2
-		if n == 4 then
-			local across = at(STAIRS_X[2], railY, dir * (LANDING_Z + 0.25))
-			newPart(access, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, accent, 0.35)
-		end
+		local topOnly = freshModel(floor, "TopOnly")
+		local across = at(STAIRS_X[if n % 2 == 0 then 2 else 1], railY, dir * (LANDING_Z + 0.25))
+		newPart(topOnly, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, accent, 0.35)
 		-- Sloping handrails on both sides the full length of the stairs,
 		-- standing on the line of the step edges, so they meet the landings
 		-- with no gap. Stairs off the ground get an underside.

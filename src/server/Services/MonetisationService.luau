@@ -53,20 +53,30 @@ local function notify(player: Player, message: string)
 	end
 end
 
--- Gold trim on a VIP's base, and the base's own colour otherwise.
+-- Gold trim on a VIP's base, and the base's own colour otherwise: the ground
+-- floor's in Tidy and each upper floor's in its Trim, shown or not.
 local function trimBase(base: BaseService.Base, vip: boolean)
-	local tidy = base.model:FindFirstChild("Tidy")
-	if tidy == nil then
-		return
+	local models: { Instance } = {}
+	local function add(parent: Instance, name: string)
+		local trim = parent:FindFirstChild(name)
+		if trim then
+			table.insert(models, trim)
+		end
 	end
-	for _, part in tidy:GetChildren() do
-		if part:IsA("BasePart") and (part.Name == "Border" or part.Name == "Support") then
-			local original = part:GetAttribute(TRIM_ATTRIBUTE)
-			if typeof(original) ~= "Color3" then
-				original = part.Color
-				part:SetAttribute(TRIM_ATTRIBUTE, original)
+	add(base.model, "Tidy")
+	for _, floor in base.floors do
+		add(floor, "Trim")
+	end
+	for _, trim in models do
+		for _, part in trim:GetChildren() do
+			if part:IsA("BasePart") and (part.Name == "Border" or part.Name == "Support") then
+				local original = part:GetAttribute(TRIM_ATTRIBUTE)
+				if typeof(original) ~= "Color3" then
+					original = part.Color
+					part:SetAttribute(TRIM_ATTRIBUTE, original)
+				end
+				part.Color = if vip then Monetisation.VipColour else original :: Color3
 			end
-			part.Color = if vip then Monetisation.VipColour else original :: Color3
 		end
 	end
 end

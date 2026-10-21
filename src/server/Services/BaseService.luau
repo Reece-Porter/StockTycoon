@@ -4,12 +4,20 @@
 --
 -- Bases are built by hand in Studio. Each Base<number> is a Model with a Spawn
 -- part, a Conveyor model containing Start and End parts, plots at
--- Floors.Floor<n>.Plots.Plot<m>, pet slots at Floors.Floor<n>.PetSlots.Slot<m>,
--- a Machine containing a Pad part, and a LockButton part. A base missing Spawn or the conveyor is
--- skipped, and missing plots are reported, with a warning naming what's
--- missing; nothing is ever patched up.
+-- Floors.Floor<n>.Plots.Plot<m> with their cash pads at
+-- Floors.Floor<n>.CollectPads.Pad<m>, pet slots at
+-- Floors.Floor<n>.PetSlots.Slot<m>, a Machine containing a Pad part, and a
+-- LockButton part. A base missing Spawn or the conveyor is skipped, and
+-- missing plots or pads are reported, with a warning naming what's missing;
+-- nothing is ever patched up.
+--
+-- Upper floors (Floor2 and up) are only in the world once the owner has
+-- opened them (ShowFloors); until then they wait in ServerStorage. Each
+-- floor's TopOnly model (the rail across the landing where the next floor's
+-- stairs would start) is only there while it's the highest open floor.
 
 local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
 
 export type Plot = {
 	-- e.g. "Floor1/Plot3"; how placed companies are saved.
@@ -17,6 +25,8 @@ export type Plot = {
 	floor: number,
 	index: number,
 	part: BasePart,
+	-- The cash pad in front of the plot; nil if it isn't built.
+	pad: BasePart?,
 }
 
 export type PetSlot = {
@@ -41,10 +51,18 @@ export type Base = {
 	machinePad: BasePart?,
 	-- The button the owner presses to lock the base; nil if it isn't built.
 	lockButton: BasePart?,
-	-- The base's bounding box, for checking whether someone is on it.
+	-- The base's bounding box (every floor), for checking whether someone is
+	-- on it.
 	boxCFrame: CFrame,
 	boxSize: Vector3,
 	owner: Player?,
+	-- The Floors folder, each floor in it by number (shown or not), and how
+	-- many floors are shown.
+	floorsFolder: Instance?,
+	floors: { [number]: Instance },
+	floorsShown: number,
+	-- Each floor's TopOnly model, by floor number.
+	topOnly: { [number]: Instance },
 }
 
 -- Height above the Spawn part's top surface to place a character.
@@ -57,6 +75,8 @@ local ON_BASE_HEADROOM = 25
 
 local bases: { Base } = {}
 local playerBases: { [Player]: Base } = {}
+-- Where floors that aren't shown wait.
+local hiddenFloors: Folder
 local assignedCallbacks: { (Player, Base) -> () } = {}
 local freedCallbacks: { (Player, Base) -> () } = {}
 local problems: { string } = {}
@@ -115,13 +135,19 @@ local function findPlots(model: Model, path: string): { Plot }
 			sortByNumber(parts, "Plot")
 
 			local floorNumber = numbered(floor, "Floor") :: number
+			local pads = floor:FindFirstChild("CollectPads")
+			if pads == nil then
+				table.insert(problems, `{path}.Floors.{floor.Name}.CollectPads is missing`)
+			end
 			for _, part in parts do
 				local index = numbered(part, "Plot") :: number
+				local pad = if pads then findPart(pads, `Pad{index}`, `{path}.Floors.{floor.Name}.CollectPads`) else nil
 				table.insert(plots, {
 					key = `Floor{floorNumber}/Plot{index}`,
 					floor = floorNumber,
 					index = index,
 					part = part :: BasePart,
+					pad = pad,
 				})
 			end
 		end
@@ -162,6 +188,25 @@ local function findPetSlots(model: Model, path: string): { PetSlot }
 		return if a.floor == b.floor then a.index < b.index else a.floor < b.floor
 	end)
 	return slots
+end
+
+-- The base's floor folders and their TopOnly models, by floor number.
+local function findFloors(model: Model): (Instance?, { [number]: Instance }, { [number]: Instance })
+	local found, topOnly = {}, {}
+	local floorsFolder = model:FindFirstChild("Floors")
+	if floorsFolder then
+		for _, child in floorsFolder:GetChildren() do
+			local number = numbered(child, "Floor")
+			if number then
+				found[number] = child
+				local rail = child:FindFirstChild("TopOnly")
+				if rail then
+					topOnly[number] = rail
+				end
+			end
+		end
+	end
+	return floorsFolder, found, topOnly
 end
 
 local function loadBases()
@@ -221,6 +266,7 @@ local function loadBases()
 			local lockButton = findPart(model, "LockButton", path)
 
 			local boxCFrame, boxSize = model:GetBoundingBox()
+			local floorsFolder, floors, topOnly = findFloors(model)
 			table.insert(bases, {
 				model = model,
 				name = model.Name,
@@ -236,6 +282,10 @@ local function loadBases()
 				boxCFrame = boxCFrame,
 				boxSize = boxSize,
 				owner = nil,
+				floorsFolder = floorsFolder,
+				floors = floors,
+				floorsShown = math.huge,
+				topOnly = topOnly,
 			})
 		end
 	end
@@ -318,6 +368,26 @@ function BaseService:IsOnBase(player: Player, base: Base): boolean
 		and offset.Y <= half.Y + ON_BASE_HEADROOM
 end
 
+-- Shows the base's first count floors and puts the rest away, with the
+-- TopOnly rail only on the highest one shown. Floor 1 is always shown.
+function BaseService:ShowFloors(base: Base, count: number)
+	count = math.max(1, count)
+	local folder = base.floorsFolder
+	if folder == nil or base.floorsShown == count then
+		return
+	end
+	base.floorsShown = count
+	for number, floor in base.floors do
+		if number > 1 then
+			floor.Parent = if number <= count then folder else hiddenFloors
+		end
+		local topOnly = base.topOnly[number]
+		if topOnly then
+			topOnly.Parent = if number == count then floor else hiddenFloors
+		end
+	end
+end
+
 -- Problems found with the hand-built map, for the debug panel.
 function BaseService:GetProblems(): { string }
 	return problems
@@ -338,7 +408,14 @@ function BaseService:OnBaseFreed(callback: (Player, Base) -> ())
 end
 
 function BaseService:Init()
+	hiddenFloors = Instance.new("Folder")
+	hiddenFloors.Name = "HiddenFloors"
+	hiddenFloors.Parent = ServerStorage
 	loadBases()
+	-- Nobody owns a base yet, so only the ground floors are out.
+	for _, base in bases do
+		BaseService:ShowFloors(base, 1)
+	end
 	for _, problem in problems do
 		warn(`[BaseService] {problem}. Build it in Studio (see "Map naming" in docs/design.md).`)
 	end
