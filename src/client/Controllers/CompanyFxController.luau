@@ -91,8 +91,8 @@ function CompanyFxController.step(now: number)
 	local bobSpeed = 2 * math.pi / CompanyLooks.IdleBobSeconds
 	for model, entry in tracked do
 		local parts = entry.parts
-		local plinth = model.PrimaryPart
-		if parts == nil or not entry.near or plinth == nil or not plinth.Anchored then
+		local root = model.PrimaryPart
+		if parts == nil or not entry.near or root == nil or not root.Anchored then
 			continue
 		end
 		local pivot = model:GetPivot()
