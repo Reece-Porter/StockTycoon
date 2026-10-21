@@ -1,23 +1,74 @@
 --!strict
 -- Finding and copying company models from ReplicatedStorage.Assets.Companies,
--- which are built by hand in Studio and named by company id. A company without
--- its own model yet uses the "Default" model; nothing is ever generated. A
--- variant's copy gets its effects (Config/Variants) and a Variant attribute.
+-- named by company id. When the server starts, prepare() builds a model for
+-- every company that doesn't have one there yet, from its look in
+-- Config/CompanyLooks (CompanyBuilder), so the clients get them too, for
+-- cards. A model built by hand in Studio with the company's id always wins
+-- and is left alone. The "Default" model is only used if a company somehow
+-- has neither. Every copy gets the "Company" tag (for CompanyFxController),
+-- and a variant's copy gets its effects (Config/Variants) and a Variant
+-- attribute.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
+local CompanyBuilder = require(script.Parent.CompanyBuilder)
 local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 
+-- On every copy in the world, so the client can find them.
+local TAG = "Company"
+
 local CompanyModels = {}
+
+local prepared = false
 
 local function folder(): Instance?
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
 	return assets and assets:FindFirstChild("Companies")
 end
 
--- The company's own model, or the Default model until it has one.
+local function childFolder(parent: Instance, name: string): Instance
+	local existing = parent:FindFirstChild(name)
+	if existing then
+		return existing
+	end
+	local created = Instance.new("Folder")
+	created.Name = name
+	created.Parent = parent
+	return created
+end
+
+-- Builds the models no company has yet, once. Says what it did, and which
+-- companies have no look of their own yet (they get a plain box).
+function CompanyModels.prepare()
+	if prepared then
+		return
+	end
+	prepared = true
+	local companies = childFolder(childFolder(ReplicatedStorage, "Assets"), "Companies")
+
+	local built, handMade, plain = 0, {}, {}
+	for _, company in Companies.list do
+		if companies:FindFirstChild(company.id) then
+			table.insert(handMade, company.id)
+		else
+			CompanyBuilder.build(company).Parent = companies
+			built += 1
+			if not CompanyBuilder.hasLook(company.id) then
+				table.insert(plain, company.id)
+			end
+		end
+	end
+	local kept = if #handMade > 0 then ` Kept the hand-made ones: {table.concat(handMade, ", ")}.` else ""
+	print(`[CompanyModels] Built {built} company models from Config/CompanyLooks.{kept}`)
+	if #plain > 0 then
+		warn(`[CompanyModels] No look in Config/CompanyLooks yet, so a plain box: {table.concat(plain, ", ")}`)
+	end
+end
+
+-- The company's own model, or the Default model if it somehow has none.
 function CompanyModels.find(companyId: string): Model?
+	CompanyModels.prepare()
 	local companies = folder()
 	if companies == nil then
 		return nil
@@ -82,7 +133,8 @@ local function decorate(model: Model, variantId: string)
 		fire.Heat = 4
 		fire.Parent = part
 	end
-	if variant.light then
+	-- One light per model at most.
+	if variant.light and model:FindFirstChildWhichIsA("PointLight", true) == nil then
 		local light = Instance.new("PointLight")
 		light.Color = variant.colour
 		light.Range = 8
@@ -114,6 +166,7 @@ function CompanyModels.clone(companyId: string, anchored: boolean, variantId: st
 	if variantId then
 		decorate(model, variantId)
 	end
+	model:AddTag(TAG)
 	return model
 end
 
@@ -127,33 +180,6 @@ end
 -- Stands the model on a point, keeping the given rotation.
 function CompanyModels.standOn(model: Model, point: Vector3, rotation: CFrame)
 	model:PivotTo(CFrame.new(point + Vector3.new(0, CompanyModels.pivotHeight(model), 0)) * rotation.Rotation)
-end
-
--- Says once, at startup, which models are missing, rather than inventing any.
-function CompanyModels.reportMissing()
-	local companies = folder()
-	if companies == nil then
-		warn("[CompanyModels] ReplicatedStorage.Assets.Companies is missing, so no companies can appear.")
-		return
-	end
-
-	local missing = {}
-	for _, company in Companies.list do
-		if companies:FindFirstChild(company.id) == nil then
-			table.insert(missing, company.id)
-		end
-	end
-	if #missing == 0 then
-		return
-	end
-
-	local list = table.concat(missing, ", ")
-	local default = companies:FindFirstChild("Default")
-	if default and default:IsA("Model") then
-		print(`[CompanyModels] {#missing} companies have no model yet and use Default: {list}`)
-	else
-		warn(`[CompanyModels] ReplicatedStorage.Assets.Companies.Default is missing, so these can't appear: {list}`)
-	end
 end
 
 return CompanyModels

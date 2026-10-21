@@ -297,7 +297,7 @@ function ConveyorService:Init()
 	for _, problem in problems do
 		warn(`[ConveyorService] {problem}. Build it in Studio (see "Map naming" in docs/design.md).`)
 	end
-	CompanyModels.reportMissing()
+	CompanyModels.prepare()
 end
 
 function ConveyorService:Start()
