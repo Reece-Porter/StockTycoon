@@ -89,6 +89,43 @@ Theme.RainbowGradient = ColorSequence.new({
 	ColorSequenceKeypoint.new(1, hex("#A66CFF")),
 })
 
+-- The light-to-dark sheen over buttons and closes (multiplied over their own
+-- colour, so white leaves it as it is).
+Theme.Shine = ColorSequence.new(hex("#FFFFFF"), hex("#D1D1D1"))
+
+-- Each menu button's colour.
+Theme.Menu = {
+	Storage = hex("#3D8BFF"),
+	Upgrades = hex("#3CCB5A"),
+	Weapons = hex("#FF4D5E"),
+	Pets = hex("#A66CFF"),
+	Index = hex("#2FD3E0"),
+	Rebirth = hex("#FFB020"),
+	Rewards = hex("#FF5FB0"),
+	Store = hex("#FFC83D"),
+	Codes = hex("#7B61FF"),
+}
+
+-- In-world bits drawn by the client.
+Theme.World = {
+	-- The guide's line and arrow.
+	Guide = hex("#FFC83D"),
+	-- Ranged weapon shots.
+	Projectile = hex("#C8CCD8"),
+	-- Lock signs: locked, new-player protection, open.
+	Locked = hex("#FF4D5E"),
+	Protected = hex("#3D8BFF"),
+	Open = hex("#F4F6FB"),
+}
+
+-- The Valuation Machine's chart.
+Theme.Chart = {
+	Rising = hex("#3CCB5A"),
+	Falling = hex("#FF4D5E"),
+	Grid = hex("#D5DAE8"),
+	Background = hex("#FFFFFF"),
+}
+
 -- The left edge of each kind of notification toast.
 Theme.Toasts = {
 	Info = Theme.Colours.Primary,
@@ -152,6 +189,22 @@ Theme.Tween = {
 	HoverScale = 1.04,
 	-- A window opens from this size up to full size.
 	OpenScale = 0.85,
+}
+
+-- Where the always-on-screen pieces go (Ui/Layout, Ui/Menu), in pixels before
+-- scaling up for bigger screens. The menu grid sits on the left and the Store
+-- column on the right, both clear of the thumbstick (bottom left) and jump
+-- button (bottom right) on phones.
+Theme.Layout = {
+	-- From the screen's edges (below Roblox's own top bar).
+	Margin = 10,
+	-- The stack down the middle of the top: Cash, teleports, the guide.
+	TopGap = 6,
+	-- Square menu buttons.
+	MenuButton = 56,
+	MenuGap = 6,
+	-- In portrait the side menus start this far down, below the top stack.
+	PortraitSideTop = 190,
 }
 
 -- How see-through the dimmed background behind an open window is.

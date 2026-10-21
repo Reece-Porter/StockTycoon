@@ -32,21 +32,20 @@ The first nine are drawn from UI shapes for now (`src/client/Ui/Kit/Icons.luau`)
 | Gem | Store and premium items | White on Gold #FFC83D |
 | Notification dot | "Something new" marker on menu buttons | Danger red #FF4D5E (fine to stay a shape) |
 
-These menu icons are needed for the Phase 2 screens. Until they exist, those buttons use the shape icons above or a labelled placeholder:
+The menu icons are also drawn from shapes for now (Box, Weapon, Paw, Book, Rebirth, Gift, Ticket and Bolt in `Icons.luau`):
 
 | Icon | Purpose | Suggested design |
 | --- | --- | --- |
-| Storage | Storage window | A cardboard box with the lid open |
-| Weapons | Weapon shop and weapons | A rolled-up newspaper |
-| Pets | Pets window and pet shop | A round paw print |
-| Index | Collection book | A closed book with a star on the cover |
-| Rebirth | Rebirth window | Two curved arrows in a circle |
-| Rewards | Playtime and daily rewards | A wrapped gift with a bow |
-| Codes | Codes window | A ticket stub |
+| Storage | Storage menu button and window | A cardboard box with the lid open |
+| Weapons | Weapons menu button and teleport | A rolled-up newspaper |
+| Pets | Pets menu button, pet shop and pet cards | A round paw print |
+| Index | Index menu button | A closed book with a star on the cover |
+| Rebirth | Rebirth menu button | Two curved arrows in a circle |
+| Rewards | Rewards menu button and reward rows | A wrapped gift with a bow |
+| Codes | Codes menu button | A ticket stub |
 | Boost | 2x income boost chip | A lightning bolt (Gold) |
-| Collect | Cash pads | A coin with an arrow into it (Cash green) |
-| Teleport: Upgrades | Teleport button | An up arrow on a pad |
-| Teleport: Weapons | Teleport button | Crossed newspaper and gavel |
+| Upgrades | Upgrades menu button and teleport | A chunky up arrow |
+| Collect | Cash pads (not used yet) | A coin with an arrow into it (Cash green) |
 
 ## Fonts
 

@@ -11,11 +11,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 
 local UPDATE_SECONDS = 0.25
-local LOCKED = Color3.fromRGB(255, 110, 110)
-local PROTECTED = Color3.fromRGB(120, 190, 255)
-local OPEN = Color3.fromRGB(210, 210, 210)
+local LOCKED = Theme.World.Locked
+local PROTECTED = Theme.World.Protected
+local OPEN = Theme.World.Open
 
 type Sign = { base: Instance, button: BasePart, label: TextLabel, prompt: ProximityPrompt }
 
@@ -67,9 +68,13 @@ local function setUpButton(base: Instance, button: Instance)
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.BuilderSansBold
-	label.TextSize = 20
-	label.TextStrokeTransparency = 0.4
+	label.Font = Theme.Fonts.Display
+	label.TextSize = Theme.TextSize.Button
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	stroke.Color = Theme.Colours.Ink
+	stroke.Thickness = Theme.Stroke.Normal
+	stroke.Parent = label
 	label.Parent = gui
 
 	local prompt = Instance.new("ProximityPrompt")

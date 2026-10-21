@@ -1,7 +1,8 @@
 --!strict
--- The new-player guide on screen (Config/Onboarding): a hint near the bottom
--- of the screen with a Skip button, and a glowing line from the player to
--- where they need to go, with a bouncing marker above it. The server decides
+-- The new-player guide on screen (Config/Onboarding): a banner card in the
+-- stack at the top of the screen with the step number, the hint and a Skip
+-- button, and a glowing line from the player to where they need to go, with a
+-- bouncing arrow above it. The server decides
 -- the step (TutorialStep, shown from TutorialShowAt); this picks the target and
 -- the words for what the player is doing right now.
 
@@ -11,14 +12,21 @@ local RunService = game:GetService("RunService")
 
 local Onboarding = require(ReplicatedStorage.Shared.Config.Onboarding)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local CompanyLabel = require(script.Parent.Parent.Ui.CompanyLabel)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Layout = require(script.Parent.Parent.Ui.Layout)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
 
 local Steps = Onboarding.Steps
 local TARGET_SECONDS = 0.25
-local LINE_COLOUR = Color3.fromRGB(255, 210, 70)
+local LINE_COLOUR = Theme.World.Guide
 local BANNER_MAX_WIDTH = 440
--- Clear of the tool bar along the bottom of the screen.
-local BANNER_BOTTOM_GAP = 96
+local BANNER_HEIGHT = 64
+local STEP_SIZE = 44
+local SKIP_WIDTH = 72
 -- Room for the sign over the lock button (LockController).
 local LOCK_SIGN_HEIGHT = 3
 
@@ -184,62 +192,61 @@ local function guide(step: number, from: Vector3): (string, BasePart?, Vector3?)
 end
 
 function TutorialController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Tutorial"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 45
-
+	-- The banner: a white card with a gold edge, the step number in a gold
+	-- circle, the hint and Skip.
 	local banner = Instance.new("Frame")
-	banner.Name = "Banner"
-	banner.AnchorPoint = Vector2.new(0.5, 1)
-	banner.Position = UDim2.new(0.5, 0, 1, -BANNER_BOTTOM_GAP)
-	banner.Size = UDim2.new(0.9, 0, 0, 64)
-	banner.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-	banner.BackgroundTransparency = 0.15
+	banner.Name = "Guide"
+	banner.Size = UDim2.fromOffset(BANNER_MAX_WIDTH, BANNER_HEIGHT)
+	banner.BackgroundColor3 = Theme.Colours.Card
 	banner.Visible = false
-	banner.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
-	corner.Parent = banner
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = LINE_COLOUR
-	stroke.Thickness = 2
-	stroke.Parent = banner
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(BANNER_MAX_WIDTH, 64)
-	sizeLimit.Parent = banner
+	Make.corner(banner, Theme.Corner.Medium)
+	Make.outline(banner, LINE_COLOUR, Theme.Stroke.Thick)
+	-- As wide as fits between the side menus, up to BANNER_MAX_WIDTH.
+	Layout.watch(function()
+		banner.Size = UDim2.fromOffset(math.min(BANNER_MAX_WIDTH, Layout.centreWidth()), BANNER_HEIGHT)
+	end)
 
-	local text = Instance.new("TextLabel")
-	text.Position = UDim2.fromOffset(12, 0)
-	text.Size = UDim2.new(1, -96, 1, 0)
-	text.BackgroundTransparency = 1
-	text.Font = Enum.Font.BuilderSansBold
-	text.TextSize = 16
-	text.TextColor3 = Color3.new(1, 1, 1)
-	text.TextXAlignment = Enum.TextXAlignment.Left
-	text.TextWrapped = true
-	text.RichText = true
-	text.Parent = banner
+	local stepCircle = Instance.new("Frame")
+	stepCircle.Name = "Step"
+	stepCircle.AnchorPoint = Vector2.new(0, 0.5)
+	stepCircle.Position = UDim2.new(0, 10, 0.5, 0)
+	stepCircle.Size = UDim2.fromOffset(STEP_SIZE, STEP_SIZE)
+	stepCircle.BackgroundColor3 = LINE_COLOUR
+	Make.corner(stepCircle)
+	Make.outline(stepCircle, Theme.Colours.Ink, Theme.Stroke.Normal)
+	stepCircle.Parent = banner
+	local stepText = Make.label(stepCircle, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextOnColour,
+		outline = true,
+	})
 
-	local skip = Instance.new("TextButton")
-	skip.AnchorPoint = Vector2.new(1, 0.5)
-	skip.Position = UDim2.new(1, -8, 0.5, 0)
-	skip.Size = UDim2.fromOffset(72, 44)
-	skip.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-	skip.Font = Enum.Font.BuilderSansBold
-	skip.TextSize = 15
-	skip.TextColor3 = Color3.new(1, 1, 1)
-	skip.Text = "Skip"
-	skip.Parent = banner
-	local skipCorner = Instance.new("UICorner")
-	skipCorner.CornerRadius = UDim.new(0, 8)
-	skipCorner.Parent = skip
+	local text = Make.label(banner, {
+		font = Theme.Fonts.Body,
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.Text,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	text.Position = UDim2.fromOffset(STEP_SIZE + 20, 0)
+	text.Size = UDim2.new(1, -(STEP_SIZE + SKIP_WIDTH + 36), 1, 0)
+
+	local skip = Button.new({
+		text = "Skip",
+		colour = Theme.Colours.Locked,
+		size = UDim2.fromOffset(SKIP_WIDTH, Theme.Size.Touch),
+		textSize = Theme.TextSize.Body,
+	})
+	skip.Instance.AnchorPoint = Vector2.new(1, 0.5)
+	skip.Instance.Position = UDim2.new(1, -8, 0.5, 0)
+	skip.Instance.Parent = banner
 	skip.Activated:Connect(function()
 		Remotes.SkipTutorial:FireServer()
 		banner.Visible = false
 	end)
 
-	gui.Parent = player:WaitForChild("PlayerGui")
+	Menu.addTop(banner, 3)
 
 	-- The line and marker: a beam between two attachments, and a marker above
 	-- the far end. Both are only on this player's screen. The attachments live
@@ -270,14 +277,11 @@ function TutorialController:Start()
 	marker.LightInfluence = 0
 	marker.Adornee = toAttachment
 	marker.Enabled = false
-	local arrow = Instance.new("TextLabel")
-	arrow.Size = UDim2.fromScale(1, 1)
-	arrow.BackgroundTransparency = 1
-	arrow.Font = Enum.Font.BuilderSansBold
-	arrow.TextScaled = true
-	arrow.TextColor3 = LINE_COLOUR
-	arrow.TextStrokeTransparency = 0.2
-	arrow.Text = "▼"
+	-- The arrow icon turned to point down.
+	local arrow = Icons.make("Arrow", 56, LINE_COLOUR)
+	arrow.AnchorPoint = Vector2.new(0.5, 0.5)
+	arrow.Position = UDim2.fromScale(0.5, 0.5)
+	arrow.Rotation = 180
 	arrow.Parent = marker
 	marker.Parent = player:WaitForChild("PlayerGui")
 
@@ -295,7 +299,8 @@ function TutorialController:Start()
 			hint, newTarget, newPoint = guide(step, root.Position)
 		end
 		banner.Visible = showing and hint ~= ""
-		text.Text = `<font color="#FFD246">{step}/{Steps.Done - 1}</font>  {hint}`
+		stepText.Text = `{step}/{Steps.Done - 1}`
+		text.Text = hint
 		target, point = newTarget, newPoint
 	end
 

@@ -1,9 +1,9 @@
 --!strict
--- The Store button (right side, above Rebirth) and its window: the game
--- passes, marked once owned, and the developer products, each with its Robux
--- price from Roblox (Config/Monetisation). Buying opens Roblox's own purchase
--- prompt; the server decides what the player gets (MonetisationService).
--- Anything without an id yet shows as not on sale.
+-- The Store menu button (gold with a slow shine, right side) and its window:
+-- the game passes, ticked once owned, and the developer products, each with
+-- its Robux price from Roblox (Config/Monetisation). Buying opens Roblox's own
+-- purchase prompt; the server decides what the player gets
+-- (MonetisationService). Anything without an id yet shows as not on sale.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -13,64 +13,31 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local RewardsConfig = require(ReplicatedStorage.Shared.Config.Rewards)
+local Theme = require(ReplicatedStorage.Shared.Theme)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
+local Row = require(script.Parent.Parent.Ui.Kit.Row)
+local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
 
--- Just above the Rebirth button.
-local BUTTON_POSITION = UDim2.new(1, -12, 0.5, -56)
-local BUTTON_SIZE = UDim2.fromOffset(120, 48)
-local PANEL_MAX_SIZE = Vector2.new(420, 560)
-local ROW_HEIGHT = 72
-local BACKGROUND = Color3.fromRGB(20, 20, 25)
-local BUTTON_COLOUR = Color3.fromRGB(45, 45, 55)
-local BUY = Color3.fromRGB(70, 150, 90)
-local OFF_SALE = Color3.fromRGB(70, 70, 80)
-local OWNED = Color3.fromRGB(60, 110, 70)
+local ROW_HEIGHT = 84
+local ACTION_WIDTH = 116
 local UPDATE_SECONDS = 1
 
 local player = Players.LocalPlayer
 
-type Row = {
+type Entry = {
 	id: number,
 	isPass: boolean,
 	passName: Monetisation.PassName?,
 	product: Monetisation.Product?,
-	detail: TextLabel,
-	action: TextButton,
-	title: string,
 	description: string,
+	row: Row.Row,
+	button: Button.Button,
 }
 
 local StoreController = {}
-
-local function corner(parent: Instance, radius: number?)
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, radius or 8)
-	uiCorner.Parent = parent
-end
-
-local function button(text: string, colour: Color3): TextButton
-	local newButton = Instance.new("TextButton")
-	newButton.BackgroundColor3 = colour
-	newButton.Font = Enum.Font.BuilderSansBold
-	newButton.TextSize = 18
-	newButton.TextColor3 = Color3.new(1, 1, 1)
-	newButton.Text = text
-	newButton.AutoButtonColor = true
-	corner(newButton)
-	return newButton
-end
-
-local function heading(parent: Instance, order: number, text: string)
-	local label = Instance.new("TextLabel")
-	label.LayoutOrder = order
-	label.Size = UDim2.new(1, 0, 0, 28)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.BuilderSansBold
-	label.TextSize = 18
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Text = text
-	label.Parent = parent
-end
 
 -- Robux prices, looked up once each. A failed lookup waits a while before
 -- it's tried again.
@@ -111,185 +78,118 @@ local function cashHint(grant: RewardsConfig.Grant?): string
 end
 
 function StoreController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Store"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 50
-
-	local openButton = button("Store", Color3.fromRGB(205, 150, 40))
-	openButton.Name = "Open"
-	openButton.AnchorPoint = Vector2.new(1, 0.5)
-	openButton.Position = BUTTON_POSITION
-	openButton.Size = BUTTON_SIZE
-	openButton.Parent = gui
-
-	local panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromScale(0.9, 0.85)
-	panel.BackgroundColor3 = BACKGROUND
-	panel.BackgroundTransparency = 0.1
-	panel.Visible = false
-	corner(panel)
-	panel.Parent = gui
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = PANEL_MAX_SIZE
-	sizeLimit.Parent = panel
-
-	local title = Instance.new("TextLabel")
-	title.Position = UDim2.fromOffset(16, 8)
-	title.Size = UDim2.new(1, -80, 0, 44)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.BuilderSansBold
-	title.TextSize = 22
-	title.TextColor3 = Color3.new(1, 1, 1)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Store"
-	title.Parent = panel
-
-	local close = button("X", BUTTON_COLOUR)
-	close.AnchorPoint = Vector2.new(1, 0)
-	close.Position = UDim2.new(1, -8, 0, 8)
-	close.Size = UDim2.fromOffset(44, 44)
-	close.Parent = panel
-
-	local list = Instance.new("ScrollingFrame")
-	list.Position = UDim2.fromOffset(12, 56)
-	list.Size = UDim2.new(1, -24, 1, -68)
-	list.BackgroundTransparency = 1
-	list.BorderSizePixel = 0
-	list.ScrollBarThickness = 6
-	list.CanvasSize = UDim2.new()
-	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	list.Parent = panel
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 6)
-	layout.Parent = list
+	local window = Menu.window({ title = "Store", colour = Theme.Menu.Store })
+	local list = Scroll.list(window.Body)
 
 	local order = 0
 	local function nextOrder(): number
 		order += 1
 		return order
 	end
-
-	local rows: { Row } = {}
-	local function addRow(entry: Row)
-		local row = Instance.new("Frame")
-		row.LayoutOrder = nextOrder()
-		row.Size = UDim2.new(1, -6, 0, ROW_HEIGHT)
-		row.BackgroundColor3 = BUTTON_COLOUR
-		corner(row)
-		row.Parent = list
-		entry.detail.Position = UDim2.fromOffset(10, 0)
-		entry.detail.Size = UDim2.new(1, -130, 1, 0)
-		entry.detail.Parent = row
-		entry.action.AnchorPoint = Vector2.new(1, 0.5)
-		entry.action.Position = UDim2.new(1, -8, 0.5, 0)
-		entry.action.Size = UDim2.fromOffset(108, 48)
-		entry.action.Parent = row
-		entry.action.Activated:Connect(function()
-			if entry.id == 0 then
+	local entries: { Entry } = {}
+	local function add(
+		id: number,
+		title: string,
+		description: string,
+		icon: Icons.IconName,
+		passName: Monetisation.PassName?,
+		product: Monetisation.Product?
+	)
+		local row = Row.new({
+			title = title,
+			icon = icon,
+			accent = if passName then Theme.Colours.Gold else Theme.Colours.Cash,
+			height = ROW_HEIGHT,
+			actionWidth = ACTION_WIDTH,
+			layoutOrder = nextOrder(),
+		})
+		row.Instance.Parent = list
+		local button = Button.new({
+			text = "",
+			colour = Theme.Colours.Cash,
+			size = UDim2.fromScale(1, 1),
+			textSize = Theme.TextSize.Body,
+		})
+		button.Instance.Parent = row.Action
+		local isPass = passName ~= nil
+		button.Activated:Connect(function()
+			if id == 0 then
 				return
 			end
-			if entry.isPass then
-				local passName = entry.passName
-				if passName and player:GetAttribute(`Pass{passName}`) ~= true then
-					MarketplaceService:PromptGamePassPurchase(player, entry.id)
+			if isPass then
+				if player:GetAttribute(`Pass{passName}`) ~= true then
+					MarketplaceService:PromptGamePassPurchase(player, id)
 				end
 			else
-				MarketplaceService:PromptProductPurchase(player, entry.id)
+				MarketplaceService:PromptProductPurchase(player, id)
 			end
 		end)
-		table.insert(rows, entry)
-	end
-	local function detailLabel(): TextLabel
-		local label = Instance.new("TextLabel")
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.BuilderSansMedium
-		label.TextSize = 14
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextWrapped = true
-		label.RichText = true
-		return label
+		table.insert(entries, {
+			id = id,
+			isPass = isPass,
+			passName = passName,
+			product = product,
+			description = description,
+			row = row,
+			button = button,
+		})
 	end
 
-	heading(list, nextOrder(), "Game passes")
+	Scroll.heading(list, "Game passes", nextOrder())
 	for _, pass in Monetisation.Passes do
-		addRow({
-			id = pass.id,
-			isPass = true,
-			passName = pass.name,
-			product = nil,
-			detail = detailLabel(),
-			action = button("", OFF_SALE),
-			title = pass.title,
-			description = pass.description,
-		})
+		add(pass.id, pass.title, pass.description, "Gem", pass.name, nil)
 	end
-	heading(list, nextOrder(), "Extras")
+	Scroll.heading(list, "Extras", nextOrder())
 	for _, product in Monetisation.Products do
-		addRow({
-			id = product.id,
-			isPass = false,
-			passName = nil,
-			product = product,
-			detail = detailLabel(),
-			action = button("", OFF_SALE),
-			title = product.title,
-			description = product.description,
-		})
+		add(product.id, product.title, product.description, if product.grant then "Cash" else "Padlock", nil, product)
 	end
-	local note = Instance.new("TextLabel")
+	local note = Make.label(list, {
+		text = "Nothing here changes the Valuation Machine. Pet spins are only ever bought with Cash.",
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+		wrapped = true,
+	})
 	note.LayoutOrder = nextOrder()
-	note.Size = UDim2.new(1, -6, 0, 40)
-	note.BackgroundTransparency = 1
-	note.Font = Enum.Font.BuilderSansMedium
-	note.TextSize = 13
-	note.TextColor3 = Color3.fromRGB(190, 190, 200)
-	note.TextWrapped = true
-	note.Text = "Nothing here changes the Valuation Machine. Pet spins are only ever bought with Cash."
-	note.Parent = list
+	note.Size = UDim2.new(1, 0, 0, 40)
 
 	local function refresh()
-		for _, row in rows do
-			local extra = if row.product then cashHint(row.product.grant) else ""
-			row.detail.Text = `<b>{row.title}</b>\n{row.description}{extra}`
-			local owned = row.passName ~= nil and player:GetAttribute(`Pass{row.passName}`) == true
+		for _, entry in entries do
+			local extra = if entry.product then cashHint(entry.product.grant) else ""
+			entry.row.setDetail(`{entry.description}{extra}`)
+			local owned = entry.passName ~= nil and player:GetAttribute(`Pass{entry.passName}`) == true
 			if owned then
-				row.action.Text = "Owned"
-				row.action.BackgroundColor3 = OWNED
-				row.action.AutoButtonColor = false
-			elseif row.id == 0 then
-				row.action.Text = "Not on sale yet"
-				row.action.TextSize = 14
-				row.action.BackgroundColor3 = OFF_SALE
-				row.action.AutoButtonColor = false
+				entry.button.setText("Owned")
+				entry.button.setEnabled(false)
+			elseif entry.id == 0 then
+				entry.button.setText("Not on sale")
+				entry.button.setEnabled(false)
 			else
-				local price = priceOf(row.id, row.isPass)
-				row.action.Text = if price then `R$ {Format.number(price)}` else "Buy"
-				row.action.BackgroundColor3 = BUY
-				row.action.AutoButtonColor = true
+				local price = priceOf(entry.id, entry.isPass)
+				entry.button.setText(if price then `R$ {Format.number(price)}` else "Buy")
+				entry.button.setEnabled(true)
 			end
 		end
 	end
 
-	openButton.Activated:Connect(function()
-		panel.Visible = not panel.Visible
-		if panel.Visible then
+	local menuButton = Menu.button({
+		name = "Store",
+		text = "Store",
+		icon = "Gem",
+		colour = Theme.Menu.Store,
+		order = 1,
+		side = "Right",
+		shine = true,
+	})
+	menuButton.Activated:Connect(function()
+		Menu.toggle(window)
+		if window.isOpen() then
 			task.spawn(refresh)
 		end
 	end)
-	close.Activated:Connect(function()
-		panel.Visible = false
-	end)
-	gui.Parent = player:WaitForChild("PlayerGui")
 
 	while true do
 		task.wait(UPDATE_SECONDS)
-		if panel.Visible then
+		if window.isOpen() then
 			refresh()
 		end
 	end

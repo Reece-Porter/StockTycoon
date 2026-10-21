@@ -1,8 +1,9 @@
 --!strict
--- The Rebirth button (right edge of the screen) and its window: what the next
--- rebirth needs and whether the player has it, what it resets and keeps, and
--- the income multiplier now and after. Rebirthing takes two taps. The server
--- sends Rebirths, RebirthCost and RebirthHasTier and checks everything again.
+-- The Rebirth menu button (with a dot once the player can rebirth) and its
+-- window: the income multiplier now and after, what the next rebirth needs
+-- (ticked once the player has it), what it resets and keeps, and a big
+-- Rebirth button that takes two taps. The server sends Rebirths, RebirthCost
+-- and RebirthHasTier and checks everything again.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,113 +12,127 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local RebirthConfig = require(ReplicatedStorage.Shared.Config.Rebirth)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
+local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
 
-local BUTTON_SIZE = UDim2.fromOffset(120, 48)
-local PANEL_MAX_SIZE = Vector2.new(400, 460)
-local BACKGROUND = Color3.fromRGB(20, 20, 25)
-local BUTTON_COLOUR = Color3.fromRGB(45, 45, 55)
-local READY = Color3.fromRGB(205, 150, 40)
-local NOT_READY = Color3.fromRGB(70, 65, 55)
-local DONE = "#78DC8C"
-local NEEDED = "#FF7878"
 -- How long "Tap again" stays up before the button resets.
 local CONFIRM_SECONDS = 3
+local NEED_HEIGHT = 40
+local GO_HEIGHT = 64
 
 local player = Players.LocalPlayer
 
+type Need = { frame: Frame, label: TextLabel, tick: Frame, cross: Frame }
+
 local RebirthController = {}
-
-local function corner(parent: Instance)
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, 8)
-	uiCorner.Parent = parent
-end
-
-local function button(text: string, colour: Color3): TextButton
-	local newButton = Instance.new("TextButton")
-	newButton.BackgroundColor3 = colour
-	newButton.Font = Enum.Font.BuilderSansBold
-	newButton.TextSize = 18
-	newButton.TextColor3 = Color3.new(1, 1, 1)
-	newButton.Text = text
-	newButton.AutoButtonColor = true
-	corner(newButton)
-	return newButton
-end
 
 local function numberAttribute(name: string): number
 	local value = player:GetAttribute(name)
 	return if typeof(value) == "number" then value else 0
 end
 
-local function mark(done: boolean): string
-	return if done then `<font color="{DONE}">Done</font>` else `<font color="{NEEDED}">Needed</font>`
+-- A line with a tick or cross in front of it.
+local function need(parent: Instance, order: number): Need
+	local frame = Instance.new("Frame")
+	frame.LayoutOrder = order
+	frame.Size = UDim2.new(1, 0, 0, NEED_HEIGHT)
+	frame.BackgroundTransparency = 1
+	frame.Parent = parent
+	local function mark(name: Icons.IconName, colour: Color3): Frame
+		local circle = Instance.new("Frame")
+		circle.AnchorPoint = Vector2.new(0, 0.5)
+		circle.Position = UDim2.fromScale(0, 0.5)
+		circle.Size = UDim2.fromOffset(30, 30)
+		circle.BackgroundColor3 = colour
+		Make.corner(circle)
+		Make.outline(circle, Theme.Colours.Ink, Theme.Stroke.Normal)
+		Icons.make(name, 30).Parent = circle
+		circle.Parent = frame
+		return circle
+	end
+	local tick = mark("Tick", Theme.Colours.Cash)
+	local cross = mark("Cross", Theme.Colours.Danger)
+	local label = Make.label(frame, {
+		size = Theme.TextSize.Body,
+		colour = Theme.Colours.Text,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	label.Position = UDim2.fromOffset(40, 0)
+	label.Size = UDim2.new(1, -40, 1, 0)
+	return { frame = frame, label = label, tick = tick, cross = cross }
 end
 
 function RebirthController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Rebirth"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 50
+	local window = Menu.window({ title = "Rebirth", colour = Theme.Menu.Rebirth })
+	local top = GO_HEIGHT + Theme.Size.Gap
+	local list = Scroll.list(window.Body)
+	list.Size = UDim2.new(1, 0, 1, -top)
 
-	local openButton = button("Rebirth", NOT_READY)
-	openButton.Name = "Open"
-	openButton.AnchorPoint = Vector2.new(1, 0.5)
-	openButton.Position = UDim2.new(1, -12, 0.5, 0)
-	openButton.Size = BUTTON_SIZE
-	openButton.Parent = gui
+	local multiplier = Make.label(list, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Big,
+		colour = Theme.Menu.Rebirth,
+		outline = true,
+	})
+	multiplier.LayoutOrder = 1
+	multiplier.Size = UDim2.new(1, 0, 0, 48)
+	local multiplierNote = Make.label(list, {
+		text = "income, plus slightly better odds on your own conveyor",
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+	})
+	multiplierNote.LayoutOrder = 2
+	multiplierNote.Size = UDim2.new(1, 0, 0, 20)
 
-	local panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromScale(0.9, 0.8)
-	panel.BackgroundColor3 = BACKGROUND
-	panel.BackgroundTransparency = 0.1
-	panel.Visible = false
-	corner(panel)
-	panel.Parent = gui
+	Scroll.heading(list, "You need", 3)
+	local cashNeed = need(list, 4)
+	local tierNeed = need(list, 5)
+	Scroll.heading(list, "Resets", 6)
+	local resets = Make.label(list, {
+		text = "Cash, every company, plots and floors",
+		size = Theme.TextSize.Body,
+		colour = Theme.Colours.Text,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	resets.LayoutOrder = 7
+	resets.Size = UDim2.new(1, 0, 0, 24)
+	Scroll.heading(list, "Keeps", 8)
+	local keeps = Make.label(list, {
+		text = "Rebirths, weapons and pets (pets go back to your Pets window)",
+		size = Theme.TextSize.Body,
+		colour = Theme.Colours.Text,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	keeps.LayoutOrder = 9
+	keeps.Size = UDim2.new(1, 0, 0, 44)
 
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = PANEL_MAX_SIZE
-	sizeLimit.Parent = panel
+	local go = Button.new({
+		text = "Rebirth",
+		icon = "Rebirth",
+		colour = Theme.Menu.Rebirth,
+		size = UDim2.new(1, 0, 0, GO_HEIGHT),
+		textSize = Theme.TextSize.Title,
+	})
+	go.Instance.AnchorPoint = Vector2.new(0, 1)
+	go.Instance.Position = UDim2.fromScale(0, 1)
+	go.Instance.Parent = window.Body
 
-	local title = Instance.new("TextLabel")
-	title.Position = UDim2.fromOffset(16, 8)
-	title.Size = UDim2.new(1, -80, 0, 44)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.BuilderSansBold
-	title.TextSize = 22
-	title.TextColor3 = Color3.new(1, 1, 1)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Parent = panel
-
-	local close = button("X", BUTTON_COLOUR)
-	close.AnchorPoint = Vector2.new(1, 0)
-	close.Position = UDim2.new(1, -8, 0, 8)
-	close.Size = UDim2.fromOffset(44, 44)
-	close.Parent = panel
-
-	local body = Instance.new("TextLabel")
-	body.Position = UDim2.fromOffset(16, 56)
-	body.Size = UDim2.new(1, -32, 1, -136)
-	body.BackgroundTransparency = 1
-	body.Font = Enum.Font.BuilderSansMedium
-	body.TextSize = 16
-	body.TextColor3 = Color3.new(1, 1, 1)
-	body.TextXAlignment = Enum.TextXAlignment.Left
-	body.TextYAlignment = Enum.TextYAlignment.Top
-	body.TextWrapped = true
-	body.RichText = true
-	body.Parent = panel
-
-	local go = button("Rebirth", NOT_READY)
-	go.AnchorPoint = Vector2.new(0.5, 1)
-	go.Position = UDim2.new(0.5, 0, 1, -12)
-	go.Size = UDim2.new(1, -24, 0, 56)
-	go.TextSize = 20
-	go.Parent = panel
+	local menuButton = Menu.button({
+		name = "Rebirth",
+		text = "Rebirth",
+		icon = "Rebirth",
+		colour = Theme.Menu.Rebirth,
+		order = 6,
+		side = "Left",
+	})
 
 	local cash: IntValue? = nil
 	local confirming = false
@@ -133,35 +148,27 @@ function RebirthController:Start()
 		local have = if cash then cash.Value else 0
 		local hasTier = player:GetAttribute("RebirthHasTier") == true
 		local tier = Tiers.byId[RebirthConfig.RequiredTier]
-		local now = RebirthMath.incomeMultiplier(rebirths)
-		local after = RebirthMath.incomeMultiplier(rebirths + 1)
 		local ready = isReady()
 
-		title.Text = `Rebirth ({rebirths} so far)`
-		body.Text = table.concat({
-			`<b>Income x{now} now, x{after} after</b>, plus slightly better odds on your own conveyor.`,
-			"",
-			"<b>You need</b>",
-			`{mark(have >= cost)}  {Format.cash(cost)} Cash (you have {Format.cash(have)})`,
-			`{mark(hasTier)}  A {tier.name} company or better, placed or in storage`,
-			"",
-			"<b>Resets</b>  Cash, every company, plots and floors",
-			"<b>Keeps</b>  Rebirths, weapons and pets (pets go back to your Pets window)",
-		}, "\n")
+		window.setTitle(`Rebirth ({rebirths} so far)`)
+		multiplier.Text =
+			`x{RebirthMath.incomeMultiplier(rebirths)}  →  x{RebirthMath.incomeMultiplier(rebirths + 1)}`
+		cashNeed.label.Text = `{Format.cash(cost)} Cash (you have {Format.cash(have)})`
+		cashNeed.tick.Visible = have >= cost
+		cashNeed.cross.Visible = have < cost
+		tierNeed.label.Text = `A {tier.name} company or better, placed or in storage`
+		tierNeed.tick.Visible = hasTier
+		tierNeed.cross.Visible = not hasTier
 
-		openButton.BackgroundColor3 = if ready then READY else NOT_READY
-		go.BackgroundColor3 = if ready then READY else NOT_READY
-		go.AutoButtonColor = ready
-		go.Text = if confirming then "Tap again to rebirth" else "Rebirth"
+		menuButton.setDot(ready)
+		go.setEnabled(ready)
+		go.setText(if confirming then "Tap again to rebirth" else "Rebirth")
 	end
 
-	openButton.Activated:Connect(function()
+	menuButton.Activated:Connect(function()
 		confirming = false
 		render()
-		panel.Visible = not panel.Visible
-	end)
-	close.Activated:Connect(function()
-		panel.Visible = false
+		Menu.toggle(window)
 	end)
 	go.Activated:Connect(function()
 		if not isReady() then
@@ -169,7 +176,7 @@ function RebirthController:Start()
 		end
 		if confirming then
 			confirming = false
-			panel.Visible = false
+			window.close()
 			Remotes.Rebirth:FireServer()
 		else
 			confirming = true
@@ -185,7 +192,6 @@ function RebirthController:Start()
 		player:GetAttributeChangedSignal(name):Connect(render)
 	end
 	render()
-	gui.Parent = player:WaitForChild("PlayerGui")
 
 	-- Cash comes from the player list value the server keeps up to date.
 	local leaderstats = player:WaitForChild("leaderstats")
