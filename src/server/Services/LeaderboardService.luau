@@ -9,7 +9,8 @@
 -- back. Cash per second is saved without any reward boost.
 --
 -- The boards are hand-built parts in Workspace.Map.Leaderboards
--- (studio/BuildMap.luau); this puts the list on each one's front face.
+-- (studio/BuildMap.luau); this puts the list on each one's front face
+-- (Lib/BoardDisplay draws it).
 -- Without DataStore access (Studio with API access off) the boards say so.
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -20,6 +21,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local LeaderboardConfig = require(ReplicatedStorage.Shared.Config.Leaderboards)
 local DataService = require(script.Parent.DataService)
 local IncomeService = require(script.Parent.IncomeService)
+local BoardDisplay = require(script.Parent.Parent.Lib.BoardDisplay)
 
 type Board = {
 	part: string,
@@ -28,7 +30,7 @@ type Board = {
 	value: (Player, DataService.Data) -> number,
 	format: (number) -> string,
 	store: OrderedDataStore?,
-	rows: { TextLabel },
+	rows: { BoardDisplay.Row },
 	status: TextLabel?,
 }
 
@@ -118,58 +120,10 @@ end
 
 -- The list shown on the board's front face.
 local function buildDisplay(board: Board, part: BasePart)
-	local old = part:FindFirstChild("LeaderboardGui")
-	if old then
-		old:Destroy()
-	end
-	local gui = Instance.new("SurfaceGui")
-	gui.Name = "LeaderboardGui"
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0
-
-	local background = Instance.new("Frame")
-	background.Size = UDim2.fromScale(1, 1)
-	background.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
-	background.Parent = gui
-
-	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0.03, 0)
-	padding.PaddingLeft = UDim.new(0.05, 0)
-	padding.PaddingRight = UDim.new(0.05, 0)
-	padding.Parent = background
-
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = background
-
-	local function line(order: number, height: number, bold: boolean): TextLabel
-		local label = Instance.new("TextLabel")
-		label.LayoutOrder = order
-		label.Size = UDim2.fromScale(1, height)
-		label.BackgroundTransparency = 1
-		label.Font = if bold then Enum.Font.BuilderSansBold else Enum.Font.BuilderSansMedium
-		label.TextScaled = true
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.RichText = true
-		label.Text = ""
-		label.Parent = background
-		return label
-	end
-
-	local title = line(0, 0.11, true)
-	title.TextXAlignment = Enum.TextXAlignment.Center
-	title.TextColor3 = Color3.fromRGB(255, 210, 90)
-	title.Text = board.title
-	board.status = line(1, 0.08, false)
+	local display = BoardDisplay.build(part, board.title, LeaderboardConfig.Entries)
+	board.status = display.status
+	board.rows = display.rows
 	setStatus(board, "Loading...")
-	table.clear(board.rows)
-	for rank = 1, LeaderboardConfig.Entries do
-		table.insert(board.rows, line(rank + 1, 0.075, false))
-	end
-	gui.Parent = part
 end
 
 local function findBoards()
@@ -249,10 +203,9 @@ local function readBoards()
 			local entry = entries[rank]
 			local userId = if entry then tonumber(entry.key) else nil
 			if entry and userId then
-				local value = board.format(entry.value)
-				row.Text = `<b>{rank}.</b> {nameOf(userId)}  <font color="#9BE59B">{value}</font>`
+				BoardDisplay.setRow(row, nameOf(userId), board.format(entry.value))
 			else
-				row.Text = ""
+				BoardDisplay.setRow(row, nil)
 			end
 		end
 	end

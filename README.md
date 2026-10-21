@@ -80,7 +80,7 @@ The map and the models the game copies are made by one Studio script, [`studio/B
 4. Paste the whole of `studio/BuildMap.luau` and press Run. The Output says `Map built`.
 5. Save the place.
 
-When the map needs to change, this file changes. Never paste older map scripts alongside it.
+When the map needs to change, this file changes, so run it again after pulling new code. If you forget, the Output says "The map is out of date" when you press Play, and admins see the same notice on screen. Never paste older map scripts alongside it.
 
 ## Where code syncs
 

@@ -41,7 +41,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - A dropped company returns to its rightful place after 10 seconds.
 
 ## Base, plots and floors (starting assumption)
-- Each player gets a base with a personal conveyor, the Valuation Machine, a lock button and floors of plots.
+- Each player gets a base with a personal conveyor, the Valuation Machine, floors of plots and a lock button on every floor.
 - Floor 1 starts with 6 plots. Plot upgrades add 1 plot at a time, up to 10 per floor.
 - Once a floor is full (10 plots), the player can buy the next floor, which starts with 6 plots and upgrades to 10.
 - Maximum 4 floors (40 plots) at launch.
@@ -210,14 +210,16 @@ Boost rules
 - New player spawns at their base with enough Cash for one Startup.
 - On-screen arrow guides them: buy from the personal conveyor, carry it home, place it, then collect its Cash from its pad.
 - After placing the first company, prompt them to try the Valuation Machine on their second one.
-- Then show them how to lock their base with its lock button.
+- Then show them how to lock their base with the lock button on their ground floor.
 - After 2 minutes, point them at the shared conveyor.
 - Each step finishes when the save, the base or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor step finishes on its own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
 
 ## Server and leaderboards (starting assumption)
 - 8 players per server, one base each. Set Max Players to 8 in the place's settings.
 - The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The weapon and pet shops stand side by side at one end of the street and the upgrade station at the other, all facing back along it, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
-- Each base (36 wide, 86 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine, the lock button and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
+- BuildMap stamps the map with its build (the `MapVersion` attribute on `Workspace.Map`). When it doesn't match `Config/Base.MapVersion`, the server warns in the Output and admins get a notice and a debug panel row saying to run BuildMap again. Bump both together whenever BuildMap changes what it builds.
+- Each base (42 wide, 96 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), a lock button in the middle of the walkway, pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
+- Every floor has its own lock button; the owner can lock the base from any open floor's button. A floor that isn't open yet isn't in the world, so its button can't be used.
 - How a base looks (visual pass Phase 5), in its own accent colour from `Theme.Base` (stored on the base as an `Accent` attribute):
   - Floors with grout lines making large tiles, and a two-tone front edge on each upper floor.
   - A carpet down the walkway with white edging and a row of diamonds.
@@ -227,12 +229,19 @@ Boost rules
   - Glass walls framed in the accent colour.
   - Accent trim round the edge, gold for a VIP with a slow shine running along it.
   - A headquarters sign over the way in with the owner's display name.
-  - While the base is locked, a shimmering force field across the way in with a padlock and the time left. It stops nobody: the server moves people out.
-  - The Valuation Machine: a glowing round pad between two cabinets with chasing lights, under a beam with a ticker of parody companies sliding past and a screen with a little moving line chart (made-up numbers).
+  - While the base is locked, a shimmering force field across the way in with a padlock and the time left (and a new player's protection time, without the field). It stops nobody: the server moves people out. Nothing floats over the lock buttons.
+  - The Valuation Machine, facing the walkway: a round stage under a glass tube where the company stands, between two pillars with gauges and chasing lights, under an arch with the machine's name and a ticker of parody companies sliding past, topped by a big screen with a little moving line chart (made-up numbers) and a beacon. While the owner's run is going, a scanner sweeps up and down the tube, the gauges swing, the lights chase faster and the beacon flashes.
   - The personal conveyor: side rails, a roller at the end, chevrons running along it, and a hatch over the start that swings open when a company comes out.
-  - The lock button: a big round button on a pedestal with a padlock, which presses down when the base locks.
+  - The lock buttons: a round red button on a podium in the middle of each floor's walkway, labelled LOCK with a padlock on every side, which stays pressed down (and says LOCKED) while the base is locked.
+  - A planter with a little tree in the front yard.
   - The spawn: a round pad with a glowing ring in the accent colour and a soft glow rising from it.
 - Everything only for looks never collides, gets touched or blocks a raycast (shots, the glass check), and stays inside the base's floor and below its top railings, so where the game thinks a base is doesn't change. The game's own parts keep their names, places and sizes; the spawn, lock button, machine pad and pet slots became invisible pads with the look built round them. Everything that moves runs on each player's device, only near the camera.
+- How the middle street looks (visual pass Phase 6), colours from `Theme.Street`:
+  - The shared conveyor: a red carpet between gold rails, with roller ends and a row of small lights along each rail. Chevrons run along the carpet and the lights chase, near the camera.
+  - A stock-exchange gateway at each tunnel: marble columns, a frieze with the game's name and a pediment with a gold medallion.
+  - The street: a road lane each side of the conveyor with a dashed line, zebra crossings in front of each row of bases, kerbs, street lamps (glowing bulbs, no lights), benches and planters in the gaps between bases, ticker posts by the crossings, little chart screens on stands, and a gold bull across from the upgrade station.
+  - Storefronts: a striped awning, a sign with the shop's name and an emblem (a gavel, a paw, an arrow), a counter with the till (`ShopPrompt`), goods on display (the five weapons on a pegboard; pet eggs on shelves and two plush pets; glowing arrows and a level meter), and a shopkeeper behind the counter who breathes, looks around, blinks and waves now and then.
+  - Leaderboards styled as stock-exchange boards: a coloured header with the title, ranked rows on alternating stripes with the top three in gold, silver and bronze, and a frame with a ticker strip and a soft glow behind.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
@@ -257,11 +266,11 @@ Boost rules
   - Custom events `MachineResult` (the multiplier; Taken, RanOut or Left; the tier), `StealStarted` (from a Plot or the Ground; the tier), `StealCompleted` (the tier) and `Rebirth` (minutes played since the last rebirth; the rebirth number).
 
 ## Map naming (to be built by hand in Studio)
-- `Workspace.Map.Bases.Base1` to `Base8` (each a Model), each containing `Conveyor`, `Machine`, `LockButton`, `Spawn`, `Entrance` and `Floors`.
-- Each base's `LockButton` is a part the owner uses to lock the base; the time left on a lock shows above it.
+- `Workspace.Map.Bases.Base1` to `Base8` (each a Model), each containing `Conveyor`, `Machine`, `Spawn`, `Gate` and `Floors`.
+- Each floor's `LockButton` (`Floors.Floor<n>.LockButton`) is a part the owner uses to lock the base; the time left on a lock shows on the force field at the way in (`Gate.Field`). A map built before the buttons moved onto the floors has one `LockButton` on the base itself, which still works.
 - Each base's `Machine` (the Valuation Machine) contains a part named `Pad`: companies being valued stand on it, and players use the machine there.
 - Each base's `Conveyor` model holds the belt plus two parts named `Start` and `End`. Companies appear at `Start` and travel in a straight line to `End`, sitting on the bottom face of those parts, so place them on the belt surface. `Spawn` is a part the owner appears on.
-- `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `CollectPads` (Pad1 to Pad10, the cash pad in front of each plot), `PetSlots` (Slot1, Slot2) and `Access` (stairs or lift pad). Locked plots are greyed out by code. Everything belonging to an upper floor is inside its folder (`Platform`, `Railings`, `Trim`, `Glass` and so on), because the game takes the whole folder out of the world until the floor is opened. Each upper floor's `TopOnly` model is only shown while it's the highest open floor.
+- `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `CollectPads` (Pad1 to Pad10, the cash pad in front of each plot), `PetSlots` (Slot1, Slot2), `LockButton` and `Access` (stairs or lift pad). Locked plots are greyed out by code. Everything belonging to an upper floor is inside its folder (`Platform`, `Railings`, `Trim`, `Glass` and so on), because the game takes the whole folder out of the world until the floor is opened. Each upper floor's `TopOnly` model is only shown while it's the highest open floor.
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
 - `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
 - Each base's `Glass` model holds the ground floor's glass walls, and each upper floor's `Glass` holds its own; stealing is refused if any glass is between the thief and the plot.
