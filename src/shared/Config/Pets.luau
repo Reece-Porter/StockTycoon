@@ -11,6 +11,8 @@
 -- The model for each pet lives in ReplicatedStorage.Assets.Pets, named by id;
 -- until one exists, the "Default" model is used, coloured by rarity.
 
+local Theme = require(script.Parent.Parent.Theme)
+
 export type RarityId = "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary" | "Mythic"
 export type Kind = "income" | "guard"
 
@@ -23,6 +25,7 @@ export type Rarity = {
 	income: number,
 	-- Seconds added to the steal hold time on the pet's floor.
 	guard: number,
+	-- From Theme.Rarities.
 	color: Color3,
 }
 
@@ -34,26 +37,26 @@ export type Pet = {
 }
 
 local rarities: { Rarity } = {
-	{ id = "Common", name = "Common", weight = 60, income = 0.05, guard = 0.5, color = Color3.fromRGB(190, 190, 190) },
+	{ id = "Common", name = "Common", weight = 60, income = 0.05, guard = 0.5, color = Theme.Rarities.Common },
 	{
 		id = "Uncommon",
 		name = "Uncommon",
 		weight = 25,
 		income = 0.1,
 		guard = 1,
-		color = Color3.fromRGB(110, 200, 110),
+		color = Theme.Rarities.Uncommon,
 	},
-	{ id = "Rare", name = "Rare", weight = 10, income = 0.2, guard = 1.5, color = Color3.fromRGB(80, 150, 255) },
-	{ id = "Epic", name = "Epic", weight = 4, income = 0.35, guard = 2, color = Color3.fromRGB(170, 90, 230) },
+	{ id = "Rare", name = "Rare", weight = 10, income = 0.2, guard = 1.5, color = Theme.Rarities.Rare },
+	{ id = "Epic", name = "Epic", weight = 4, income = 0.35, guard = 2, color = Theme.Rarities.Epic },
 	{
 		id = "Legendary",
 		name = "Legendary",
 		weight = 0.9,
 		income = 0.6,
 		guard = 3,
-		color = Color3.fromRGB(255, 170, 40),
+		color = Theme.Rarities.Legendary,
 	},
-	{ id = "Mythic", name = "Mythic", weight = 0.1, income = 1, guard = 4, color = Color3.fromRGB(255, 80, 140) },
+	{ id = "Mythic", name = "Mythic", weight = 0.1, income = 1, guard = 4, color = Theme.Rarities.Mythic },
 }
 
 local list: { Pet } = {

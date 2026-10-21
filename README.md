@@ -49,7 +49,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/buyproduct <product>`             | Gives a developer product as if it was bought (`cashsmall`, `cashmedium`, `cashlarge` or `locknow`)     |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
 
-Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack).
+Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack). Its **UI kit** button opens every piece of the visual pass's UI kit (buttons, windows, cards, badges, icons, toasts and the Cash count-up) on one screen, for checking the look in Studio's device emulator.
 
 ## Codes
 

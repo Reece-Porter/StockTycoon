@@ -3,8 +3,12 @@
 -- a small window of live values. The server decides who sees it (the IsAdmin
 -- attribute) and publishes each row as a "Debug_<name>" attribute on the
 -- player, so rows added in later slices show up here without client changes.
+-- A "UI kit" button at the top opens every UI kit piece on one screen
+-- (Ui/Kit/Gallery), for checking the visual pass in the device emulator.
 
 local Players = game:GetService("Players")
+
+local Gallery = require(script.Parent.Parent.Ui.Kit.Gallery)
 
 local PREFIX = "Debug_"
 local MARGIN = 8
@@ -103,6 +107,22 @@ local function createPanel()
 
 	toggle.Activated:Connect(function()
 		panel.Visible = not panel.Visible
+	end)
+
+	local kit = Instance.new("TextButton")
+	kit.Name = "UiKit"
+	kit.LayoutOrder = 0
+	kit.Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT)
+	kit.BackgroundColor3 = Color3.fromRGB(70, 70, 85)
+	kit.Font = Enum.Font.BuilderSansBold
+	kit.TextSize = 16
+	kit.TextColor3 = Color3.new(1, 1, 1)
+	kit.Text = "UI kit"
+	addCorner(kit)
+	kit.Parent = panel
+	kit.Activated:Connect(function()
+		panel.Visible = false
+		Gallery.open()
 	end)
 
 	renderRows(panel)
