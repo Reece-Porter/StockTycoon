@@ -28,7 +28,7 @@ local BASE = Theme.Base
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 2
+local MAP_VERSION = 3
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -253,6 +253,38 @@ local function ellipsoid(
 	return part
 end
 
+-- Marks a part as a market screen the client draws on (MarketScreensController):
+-- a ticker of companies sliding past, a moving chart, or a base owner's quote.
+-- faces lists the part's faces it shows on; distance is how near the camera
+-- must be for it to move.
+local SCREEN_TAG = "MarketScreen"
+local function screen(part: BasePart, kind: "Ticker" | "Chart" | "Quote" | "Ad", faces: string, distance: number)
+	part:SetAttribute("ScreenKind", kind)
+	part:SetAttribute("ScreenFaces", faces)
+	part:SetAttribute("ScreenDistance", distance)
+	part:AddTag(SCREEN_TAG)
+end
+
+-- Fixed words on one face of a part, in the game's display font.
+local function caption(part: BasePart, face: Enum.NormalId, text: string, colour: Color3, pixelsPerStud: number)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Caption"
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = pixelsPerStud
+	gui.LightInfluence = 0
+	gui.MaxDistance = 400
+	gui.Parent = part
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Theme.Fonts.Display
+	label.TextScaled = true
+	label.TextColor3 = colour
+	label.Text = text
+	label.Parent = gui
+end
+
 -- Takes off the looks hung on one of the game's parts (a plot, a pet slot,
 -- the spawn or the lock button) before they're made again, so running this
 -- twice changes nothing.
@@ -460,33 +492,25 @@ for index, spot in BASE_SPOTS do
 		Enum.PartType.Ball
 	)
 
-	-- Across the yard from the machine, a round planter with a little tree.
-	local planter = freshModel(base, "Planter")
-	local planterAt = at(YARD_X, groundTop, 13)
-	column(planter, "Tub", 1.2, 4.6, planterAt * CFrame.new(0, 0.6, 0), BASE.Housing)
-	column(planter, "TubRim", 0.2, 4.9, planterAt * CFrame.new(0, 1.2, 0), accent)
-	column(
-		planter,
-		"Soil",
-		0.1,
-		4.2,
-		planterAt * CFrame.new(0, 1.2, 0),
-		Color3.fromRGB(96, 70, 48),
-		Enum.Material.Grass
-	)
-	column(
-		planter,
-		"Trunk",
-		3.4,
-		0.6,
-		planterAt * CFrame.new(0, 2.9, 0),
-		Color3.fromRGB(120, 84, 56),
-		Enum.Material.Wood
-	)
-	for _, leaf in { { 0, 5.2, 0, 3.4 }, { 0.9, 4.6, 0.6, 2.4 }, { -0.8, 4.7, -0.6, 2.4 } } do
-		local size = Vector3.new(leaf[4], leaf[4], leaf[4])
-		local leafAt = planterAt * CFrame.new(leaf[1], leaf[2], leaf[3])
-		decor(planter, "Leaves", size, leafAt, Color3.fromRGB(88, 170, 82), Enum.Material.Grass, Enum.PartType.Ball)
+	-- Across the yard from the machine, the base's stock quote: a board the
+	-- client fills with the owner's ticker symbol, their Cash per second and
+	-- how it has moved lately, facing the walkway.
+	local oldPlanter = base:FindFirstChild("Planter")
+	if oldPlanter then
+		oldPlanter:Destroy()
+	end
+	local quote = freshModel(base, "Quote")
+	local quoteAt = at(YARD_X, groundTop, 13)
+	local quoteScreen =
+		decor(quote, "QuoteScreen", Vector3.new(6.4, 3.6, 0.2), quoteAt * CFrame.new(0, 4.4, 0), Theme.Colours.Ink)
+	screen(quoteScreen, "Quote", "Front", 90)
+	decor(quote, "QuoteFrame", Vector3.new(6.9, 4.1, 0.3), quoteAt * CFrame.new(0, 4.4, 0.2), accent)
+	local headerAt = quoteAt * CFrame.new(0, 6.85, 0.2)
+	local quoteHeader = decor(quote, "QuoteHeader", Vector3.new(6.9, 0.8, 0.35), headerAt, BASE.Machine)
+	caption(quoteHeader, Enum.NormalId.Front, "SHARE PRICE", Theme.Colours.Gold, 30)
+	for _, side in { -1, 1 } do
+		decor(quote, "QuoteLeg", Vector3.new(0.35, 2.6, 0.35), quoteAt * CFrame.new(side * 2.6, 1.3, 0.2), BASE.Machine)
+		decor(quote, "QuoteFoot", Vector3.new(1.2, 0.2, 1.2), quoteAt * CFrame.new(side * 2.6, 0.1, 0.2), BASE.Machine)
 	end
 
 	-- The headquarters sign over the way in; the client writes the owner's
@@ -508,6 +532,15 @@ for index, spot in BASE_SPOTS do
 	end
 	decor(sign, "Board", Vector3.new(0.6, 3.4, 2 * signPostZ), at(signX, groundTop + 9.2, 0), accent)
 	decor(sign, "Panel", Vector3.new(0.7, 2.6, 2 * signPostZ - 2), at(signX, groundTop + 9.2, 0), BASE.SignPanel)
+	-- A ticker of companies sliding past under the sign, both ways.
+	local signTicker = decor(
+		sign,
+		"Ticker",
+		Vector3.new(0.6, 0.8, 2 * signPostZ - 1.6),
+		at(signX, groundTop + 7, 0),
+		Theme.Colours.Ink
+	)
+	screen(signTicker, "Ticker", "Right,Left", 150)
 
 	-- The lock's force field across the way in, hidden until the base is
 	-- locked (the client shows it, with the time left). It stops nobody: the
@@ -635,9 +668,31 @@ for index, spot in BASE_SPOTS do
 			local where = at((edgeFront + HALL_BACK) / 2, tops[n] + 0.06, side * (WALKWAY / 2 - 0.2))
 			decor(parent, "CarpetEdge", edgeSize, where, BASE.Post, Enum.Material.Fabric)
 		end
-		for x = HALL_FRONT - 3, HALL_BACK + 3, -6 do
-			local where = at(x, tops[n] + 0.13, 0) * CFrame.Angles(0, math.rad(45), 0)
-			decor(parent, "Motif", Vector3.new(1, 0.06, 1), where, light, Enum.Material.Fabric)
+		-- A candlestick chart along the carpet, climbing from the front to
+		-- the back (the same on every base, different on each floor), with a
+		-- gap round the lock button.
+		local seed = n * 7919
+		local function nextRandom(): number
+			seed = (seed * 48271) % 2147483647
+			return seed / 2147483647
+		end
+		local price = -2.4
+		for x = HALL_FRONT - 3, HALL_BACK + 3, -3.5 do
+			local open = price
+			price = math.clamp(price + (nextRandom() - 0.3) * 1.3, -3.2, 3.2)
+			if math.abs(x - LOCK_X) < 2.5 then
+				continue
+			end
+			local low, high = math.min(open, price), math.max(open, price)
+			if high - low < 0.5 then
+				high = low + 0.5
+			end
+			local colour = if price >= open then Theme.Chart.Rising else Theme.Chart.Falling
+			local wickLength = high - low + 0.9
+			local wickAt = at(x, tops[n] + 0.11, (low + high) / 2)
+			decor(parent, "Wick", Vector3.new(0.14, 0.05, wickLength), wickAt, Theme.shade(colour, 0.25))
+			local bodyAt = at(x, tops[n] + 0.13, (low + high) / 2)
+			decor(parent, "Candle", Vector3.new(0.8, 0.06, high - low), bodyAt, colour)
 		end
 		-- Across the floor between the pairs of plots, each side of the carpet.
 		local groutLength = halfWidth - 1 - WALKWAY / 2
@@ -658,7 +713,43 @@ for index, spot in BASE_SPOTS do
 				BASE.Grout
 			)
 		end
+		-- A trading screen at the back of the walkway, with a moving chart
+		-- (drawn by the client) under a header. Not on the top floor, which is
+		-- open to the sky and would stick up past its railings.
+		if n < 4 then
+			local backX = HALL_BACK + 0.85
+			local tradingScreen = decor(
+				parent,
+				"TradingScreen",
+				Vector3.new(0.2, 4, 7.2),
+				at(backX + 0.15, tops[n] + 4.6, 0),
+				Theme.Colours.Ink
+			)
+			screen(tradingScreen, "Chart", "Right", 90)
+			decor(parent, "TradingFrame", Vector3.new(0.2, 4.4, 7.6), at(backX, tops[n] + 4.6, 0), accent)
+			local tradingHeader =
+				decor(parent, "TradingHeader", Vector3.new(0.25, 0.8, 7.6), at(backX, tops[n] + 7.2, 0), BASE.Machine)
+			caption(tradingHeader, Enum.NormalId.Right, "MARKET WATCH", Theme.Colours.Gold, 30)
+			for _, side in { -1, 1 } do
+				decor(
+					parent,
+					"TradingLeg",
+					Vector3.new(0.3, 2.4, 0.3),
+					at(backX, tops[n] + 1.2, side * 3.2),
+					BASE.Machine
+				)
+			end
+		end
 		if n > 1 then
+			-- An LED ticker across the floor's front edge, facing the street.
+			local frontTicker = decor(
+				parent,
+				"Ticker",
+				Vector3.new(0.12, 0.85, BASE_WIDTH - 4),
+				at(HALL_FRONT + 0.36, tops[n] - 0.5, 0),
+				Theme.Colours.Ink
+			)
+			screen(frontTicker, "Ticker", "Right", 150)
 			local fasciaWidth = BASE_WIDTH - 1
 			decor(
 				parent,
@@ -1549,9 +1640,151 @@ if terrain then
 	end
 end
 
--- 8. Models the game copies: the Default company, the weapon Tools and the
--- Default pet. Any that already exist (including ones built by hand) are
--- left alone.
+-- 7b. The skyline: a financial district standing beyond the hills all round,
+-- low detail and only for looks (nothing collides or casts a shadow). Glass
+-- towers with lit floors, a landmark exchange tower behind each gateway with
+-- a ticker across it, and billboards facing the map: parody company ads, big
+-- charts and slogans (the client draws the ads, charts and tickers).
+do
+	local SKYLINE = Theme.Skyline
+	local SLOGANS = { "BUY LOW, SELL HIGH", "TO THE MOON" }
+	local skyline = freshModel(map, "Skyline")
+	local random = Random.new(1929)
+	local bodies: { Color3 } = SKYLINE.Towers
+	local function tower(position: Vector3, width: number, depth: number, height: number): CFrame
+		local bottom = groundY - 10
+		local total = height + 10
+		local towerModel = Instance.new("Model")
+		towerModel.Name = "Tower"
+		towerModel.Parent = skyline
+		-- Turned to face the middle of the map.
+		local facing = CFrame.lookAt(Vector3.new(position.X, 0, position.Z), Vector3.new(0, 0, 0))
+		local function at(y: number): CFrame
+			return CFrame.new(position.X, y, position.Z) * facing.Rotation
+		end
+		local colour = bodies[math.floor(random:NextNumber(1, #bodies + 0.999))]
+		local body = decor(towerModel, "Body", Vector3.new(width, total, depth), at(bottom + total / 2), colour)
+		body.Reflectance = 0.1
+		body.CastShadow = false
+		-- Lit floors: a few bands round the tower.
+		local bands = math.max(2, math.floor(height / 45))
+		for band = 1, bands do
+			local y = groundY + height * band / (bands + 1)
+			local strip = decor(
+				towerModel,
+				"Windows",
+				Vector3.new(width + 0.4, 1.6, depth + 0.4),
+				at(y),
+				SKYLINE.Windows,
+				Enum.Material.Neon
+			)
+			strip.Transparency = 0.45
+			strip.CastShadow = false
+		end
+		local cap = decor(
+			towerModel,
+			"Roof",
+			Vector3.new(width * 0.7, 4, depth * 0.7),
+			at(groundY + height + 2),
+			Theme.shade(colour, 0.25)
+		)
+		cap.CastShadow = false
+		if height > 150 then
+			local mast = decor(towerModel, "Mast", Vector3.new(0.8, 18, 0.8), at(groundY + height + 13), SKYLINE.Mast)
+			mast.CastShadow = false
+			local beacon = decor(
+				towerModel,
+				"MastLight",
+				Vector3.new(1.4, 1.4, 1.4),
+				at(groundY + height + 22.5),
+				SKYLINE.Beacon,
+				Enum.Material.Neon,
+				Enum.PartType.Ball
+			)
+			beacon.CastShadow = false
+		end
+		return at(0)
+	end
+	-- A billboard on a tower's face towards the map.
+	local function billboard(face: CFrame, frontOffset: number, y: number, width: number, height: number): Part
+		local board = decor(
+			skyline,
+			"Billboard",
+			Vector3.new(width, height, 1),
+			face * CFrame.new(0, y, -frontOffset - 0.6),
+			Theme.Colours.Ink
+		)
+		board.CastShadow = false
+		local frame = decor(
+			skyline,
+			"BillboardFrame",
+			Vector3.new(width + 2, height + 2, 0.8),
+			face * CFrame.new(0, y, -frontOffset - 0.1),
+			SKYLINE.Frame
+		)
+		frame.CastShadow = false
+		return board
+	end
+
+	-- Rows of towers behind the hills on all four sides, with a billboard
+	-- on some.
+	local sideX = PLAY_HALF_X + HILLS + 30
+	local endZ = PLAY_HALF_Z + HILLS + 30
+	local spots: { { position: Vector3, board: string? } } = {}
+	for _, side in { -1, 1 } do
+		for k = 0, 11 do
+			local z = -300 + k * 55 + random:NextNumber(-12, 12)
+			local x = side * (sideX + random:NextNumber(0, 70))
+			local board = if k == 3 or k == 8 then "Ad" elseif k == 6 then "Slogan" else nil
+			table.insert(spots, { position = Vector3.new(x, 0, z), board = board })
+		end
+		for k = 0, 7 do
+			local x = -240 + k * 68 + random:NextNumber(-12, 12)
+			if math.abs(x) < 45 then
+				-- The landmark stands here.
+				continue
+			end
+			local z = side * (endZ + random:NextNumber(0, 70))
+			table.insert(spots, { position = Vector3.new(x, 0, z), board = if k == 2 then "Chart" else nil })
+		end
+	end
+	local slogans = 0
+	for _, spot in spots do
+		local width = random:NextNumber(18, 34)
+		local depth = random:NextNumber(18, 34)
+		local height = random:NextNumber(80, 210)
+		local face = tower(spot.position, width, depth, height)
+		if spot.board == "Slogan" then
+			-- A slogan in fixed words.
+			slogans += 1
+			local board = billboard(face, depth / 2, groundY + height * 0.62, 46, 16)
+			caption(board, Enum.NormalId.Front, SLOGANS[(slogans - 1) % #SLOGANS + 1], Theme.Colours.Gold, 6)
+		elseif spot.board then
+			local board = billboard(face, depth / 2, groundY + height * 0.62, 40, 20)
+			screen(board, spot.board :: any, "Front", 1500)
+		end
+	end
+	-- The landmark exchange towers behind the gateways, with a ticker across
+	-- them facing down the street.
+	for _, side in { -1, 1 } do
+		local face = tower(Vector3.new(0, 0, side * (endZ + 50)), 44, 36, 240)
+		local ticker = decor(
+			skyline,
+			"Ticker",
+			Vector3.new(44.4, 6, 1),
+			face * CFrame.new(0, groundY + 150, -18.6),
+			Theme.Colours.Ink
+		)
+		ticker.CastShadow = false
+		screen(ticker, "Ticker", "Front", 1500)
+		local nameBoard = billboard(face, 18, groundY + 205, 40, 10)
+		caption(nameBoard, Enum.NormalId.Front, "STOCK EXCHANGE", Theme.Colours.Gold, 6)
+	end
+end
+
+-- 8. Models the game copies, if they're missing: the Default company and the
+-- Default pet (for anything without its own; the game builds the real ones
+-- when the server starts). Any that already exist are left alone.
 local assets = folder(ReplicatedStorage, "Assets")
 
 local companies = folder(assets, "Companies")
@@ -1562,83 +1795,8 @@ if companies:FindFirstChild("Default") == nil then
 	box.Parent = companies
 end
 
-local weapons = folder(assets, "Weapons")
-local function toolPart(
-	tool: Tool,
-	name: string,
-	size: Vector3,
-	cframe: CFrame,
-	colour: Color3,
-	material: Enum.Material?,
-	cylinder: boolean?
-): Part
-	local part = newPart(tool, name, size, cframe, colour)
-	part.Material = material or Enum.Material.SmoothPlastic
-	if cylinder then
-		part.Shape = Enum.PartType.Cylinder
-	end
-	part.Anchored = false
-	part.CanCollide = false
-	part.Massless = true
-	return part
-end
-local function makeTool(id: string, build: (Tool) -> ())
-	if weapons:FindFirstChild(id) then
-		return
-	end
-	local tool = Instance.new("Tool")
-	tool.Name = id
-	tool.CanBeDropped = false
-	local handle = toolPart(tool, "Handle", Vector3.new(0.4, 0.4, 0.4), CFrame.new(), Color3.new(0, 0, 0))
-	handle.Transparency = 1
-	build(tool)
-	for _, child in tool:GetChildren() do
-		if child:IsA("BasePart") and child ~= handle then
-			local weld = Instance.new("Weld")
-			weld.Part0 = handle
-			weld.Part1 = child
-			weld.C0 = handle.CFrame:Inverse() * child.CFrame
-			weld.Parent = child
-		end
-	end
-	tool.Parent = weapons
-end
-local PAPER, BAND = Color3.fromRGB(235, 230, 215), Color3.fromRGB(120, 120, 125)
-makeTool("Newspaper", function(tool)
-	toolPart(tool, "Roll", Vector3.new(3, 0.6, 0.6), CFrame.new(0, 1, 0) * UPRIGHT, PAPER, nil, true)
-	toolPart(tool, "BandLow", Vector3.new(0.15, 0.66, 0.66), CFrame.new(0, 0.2, 0) * UPRIGHT, BAND, nil, true)
-	toolPart(tool, "BandHigh", Vector3.new(0.15, 0.66, 0.66), CFrame.new(0, 1.9, 0) * UPRIGHT, BAND, nil, true)
-end)
-makeTool("Briefcase", function(tool)
-	toolPart(tool, "Grip", Vector3.new(1, 0.2, 0.25), CFrame.new(0, 0, 0), Color3.fromRGB(60, 40, 25))
-	toolPart(tool, "Case", Vector3.new(2.2, 1.5, 0.6), CFrame.new(0, -0.95, 0), Color3.fromRGB(115, 75, 45))
-	toolPart(tool, "Clasp", Vector3.new(0.4, 0.2, 0.66), CFrame.new(0, -0.35, 0), GOLD, Enum.Material.Metal)
-end)
-makeTool("StaplerGun", function(tool)
-	local metal = Enum.Material.Metal
-	toolPart(tool, "Grip", Vector3.new(0.45, 1, 0.6), CFrame.new(0, 0, 0), Color3.fromRGB(50, 50, 55))
-	toolPart(tool, "Body", Vector3.new(0.8, 0.6, 2.2), CFrame.new(0, 0.75, -0.4), Color3.fromRGB(40, 110, 170))
-	toolPart(tool, "Lever", Vector3.new(0.7, 0.25, 2), CFrame.new(0, 1.15, -0.3), Color3.fromRGB(185, 185, 195), metal)
-	toolPart(tool, "Nozzle", Vector3.new(0.4, 0.3, 0.3), CFrame.new(0, 0.7, -1.6), Color3.fromRGB(150, 150, 160), metal)
-end)
-makeTool("Gavel", function(tool)
-	local wood, metal = Enum.Material.Wood, Enum.Material.Metal
-	toolPart(tool, "Shaft", Vector3.new(0.35, 2.6, 0.35), CFrame.new(0, 0.9, 0), Color3.fromRGB(140, 90, 50), wood)
-	toolPart(tool, "Head", Vector3.new(1.8, 0.9, 0.9), CFrame.new(0, 2.3, 0), Color3.fromRGB(100, 60, 30), wood, true)
-	toolPart(tool, "BandLeft", Vector3.new(0.15, 0.96, 0.96), CFrame.new(-0.6, 2.3, 0), GOLD, metal, true)
-	toolPart(tool, "BandRight", Vector3.new(0.15, 0.96, 0.96), CFrame.new(0.6, 2.3, 0), GOLD, metal, true)
-end)
-makeTool("GoldenCalculator", function(tool)
-	toolPart(tool, "Body", Vector3.new(1.3, 1.9, 0.35), CFrame.new(0, 0.9, 0), GOLD, Enum.Material.Foil)
-	local screen = Color3.fromRGB(70, 100, 70)
-	toolPart(tool, "Screen", Vector3.new(1, 0.45, 0.05), CFrame.new(0, 1.5, -0.2), screen, Enum.Material.Neon)
-	for row = 0, 2 do
-		for key = -1, 1 do
-			local cframe = CFrame.new(key * 0.35, 1.05 - row * 0.32, -0.2)
-			toolPart(tool, "Key", Vector3.new(0.22, 0.22, 0.06), cframe, Color3.fromRGB(250, 240, 205))
-		end
-	end
-end)
+-- The weapons are built by the game when the server starts (Lib/WeaponModels).
+folder(assets, "Weapons")
 
 local pets = folder(assets, "Pets")
 if pets:FindFirstChild("Default") == nil then
@@ -1664,48 +1822,13 @@ if pets:FindFirstChild("Default") == nil then
 	pet.Parent = pets
 end
 
--- 9. The goods on display in each shop, only for looks: copies of the five
--- weapons hung on a pegboard in the weapon shop, pet eggs on shelves and two
--- plush pets on the counter in the pet shop, and glowing arrows with a level
--- meter in the upgrade station. Built after section 8 so the weapon and pet
--- models exist.
+-- 9. The goods on display in each shop, only for looks: a pegboard with a hook
+-- for each weapon in the weapon shop, pet eggs on shelves and two seats on
+-- the counter in the pet shop, and glowing arrows with a level meter in the
+-- upgrade station. The game hangs the weapons on the hooks and stands real
+-- pets on the seats when the server starts, from the same models it uses
+-- everywhere else.
 do
-	-- A still copy of a model's parts, placed so that its pivot part sits at
-	-- cframe, scaled by scale.
-	local function displayCopy(
-		parent: Instance,
-		source: Instance,
-		pivot: BasePart,
-		cframe: CFrame,
-		scale: number,
-		tint: Color3?
-	)
-		for _, original in source:GetDescendants() do
-			if original:IsA("BasePart") and original.Transparency < 1 then
-				local offset = pivot.CFrame:ToObjectSpace(original.CFrame)
-				local copy = original:Clone()
-				-- Keep only how it looks: meshes and decals, not welds or scripts.
-				for _, child in copy:GetChildren() do
-					if child:IsA("DataModelMesh") then
-						child.Scale *= scale
-					elseif not (child:IsA("Decal") or child:IsA("SurfaceAppearance")) then
-						child:Destroy()
-					end
-				end
-				copy.Anchored = true
-				copy.CanCollide = false
-				copy.CanTouch = false
-				copy.CanQuery = false
-				copy.CastShadow = false
-				copy.Size = original.Size * scale
-				copy.CFrame = cframe * CFrame.new(offset.Position * scale) * offset.Rotation
-				if tint and original:GetAttribute("RarityTint") then
-					copy.Color = tint
-				end
-				copy.Parent = parent
-			end
-		end
-	end
 	local function shopFrame(shop: Instance): CFrame?
 		return if shop:IsA("Model") then shop.WorldPivot else nil
 	end
@@ -1717,14 +1840,12 @@ do
 		decor(goods, "Pegboard", Vector3.new(12, 5, 0.2), weaponFrame * CFrame.new(0, 5.6, 3.4), STREET.Metal)
 		local order = { "Newspaper", "Briefcase", "StaplerGun", "Gavel", "GoldenCalculator" }
 		for index, id in order do
-			local tool = weapons:FindFirstChild(id)
-			local handle = tool and tool:FindFirstChild("Handle")
-			if tool and handle and handle:IsA("BasePart") then
-				local x = -5 + (index - 1) * 2.5
-				local hook = weaponFrame * CFrame.new(x, 5.6, 2.7)
-				decor(goods, "Hook", Vector3.new(0.15, 0.15, 0.6), hook * CFrame.new(0, 1.6, 0.35), STREET.Rail)
-				displayCopy(goods, tool, handle, hook, 1)
-			end
+			local x = -5 + (index - 1) * 2.5
+			local hookAt = weaponFrame * CFrame.new(x, 5.6, 2.7)
+			decor(goods, "Hook", Vector3.new(0.15, 0.15, 0.6), hookAt * CFrame.new(0, 1.6, 0.35), STREET.Rail)
+			local hook = decor(goods, "WeaponHook", Vector3.new(0.2, 0.2, 0.2), hookAt, STREET.Rail)
+			hook.Transparency = 1
+			hook:SetAttribute("WeaponId", id)
 		end
 	end
 
@@ -1757,15 +1878,11 @@ do
 				ellipsoid(goods, "EggBand", Vector3.new(1, 0.22, 1), eggAt * CFrame.new(0, 0.05, 0), Theme.Colours.Card)
 			end
 		end
-		local plush = pets:FindFirstChild("Default")
-		local plushBody = plush and plush:FindFirstChild("Body")
-		if plush and plushBody and plushBody:IsA("BasePart") then
-			for index, side in { -1, 1 } do
-				local tint = if index == 1 then Theme.Rarities.Rare else Theme.Rarities.Legendary
-				local scale = 0.55
-				local seat = petFrame * CFrame.new(side * 3.9, 3.65 + plushBody.Size.Y * scale / 2, -2)
-				displayCopy(goods, plush, plushBody, seat, scale, tint)
-			end
+		for seat, side in { -1, 1 } do
+			local seatAt = petFrame * CFrame.new(side * 3.9, 3.7, -2)
+			local seatPart = decor(goods, "PlushSeat", Vector3.new(1.6, 0.1, 1.6), seatAt, STREET.Wood)
+			seatPart.Transparency = 1
+			seatPart:SetAttribute("Seat", seat)
 		end
 	end
 

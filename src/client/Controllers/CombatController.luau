@@ -6,7 +6,8 @@
 --
 -- Melee weapons hit someone in front of the character. Ranged weapons aim
 -- where the player clicked or tapped, and fire a staple that only this
--- player sees.
+-- player sees. Each weapon swings its own way (its Tool's Swing attribute,
+-- from Config/WeaponLooks), with the effects in CombatFxController.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
+local CombatFxController = require(script.Parent.CombatFxController)
 
 -- How far either side of straight ahead (as a dot product) still counts as in
 -- front: about 70 degrees for melee, 20 for ranged.
@@ -104,11 +106,13 @@ local function fireProjectile(root: BasePart, weapon: Weapons.Weapon, direction:
 	tween:Play()
 end
 
--- The default Animate script plays a swing when the Tool gets this value.
+-- The default Animate script plays a swing when the Tool gets this value:
+-- "Slash" or "Lunge".
 local function playSwing(tool: Tool)
+	local kind = tool:GetAttribute("Swing")
 	local swing = Instance.new("StringValue")
 	swing.Name = "toolanim"
-	swing.Value = "Slash"
+	swing.Value = if kind == "Lunge" then "Lunge" else "Slash"
 	swing.Parent = tool
 end
 
@@ -127,12 +131,14 @@ local function onActivated(tool: Tool)
 	lastSwing = now
 
 	playSwing(tool)
+	CombatFxController.swing(tool, weapon.id)
 	local direction = aimDirection(root, weapon)
 	local target = findTarget(root, weapon, direction)
 	if weapon.projectileSpeed then
 		fireProjectile(root, weapon, direction, target)
 	end
 	if target then
+		CombatFxController.attacked(target)
 		Remotes.Attack:FireServer(target)
 	end
 end

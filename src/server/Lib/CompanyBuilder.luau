@@ -24,36 +24,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local CompanyLooks = require(ReplicatedStorage.Shared.Config.CompanyLooks)
+local Pieces = require(ReplicatedStorage.Shared.Pieces)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 
 local CompanyBuilder = {}
 
 -- Stands a cylinder (which lies along x) up.
 local UPRIGHT = CFrame.Angles(0, 0, math.rad(90))
-
--- How a cylinder is turned before its own turn, by the way it points.
-local AXES: { [string]: CFrame } = {
-	x = CFrame.new(),
-	y = UPRIGHT,
-	z = CFrame.Angles(0, math.rad(90), 0),
-}
-
--- Which of the part's own faces ends up at the front or on top, by the way
--- a cylinder points.
-local FACES: { [string]: { [string]: Enum.NormalId } } = {
-	x = { Front = Enum.NormalId.Front, Top = Enum.NormalId.Top },
-	y = { Front = Enum.NormalId.Front, Top = Enum.NormalId.Right },
-	z = { Front = Enum.NormalId.Right, Top = Enum.NormalId.Top },
-}
-
-local SHAPES: { [string]: Enum.PartType } = {
-	Block = Enum.PartType.Block,
-	Ball = Enum.PartType.Ball,
-	Cylinder = Enum.PartType.Cylinder,
-	Wedge = Enum.PartType.Wedge,
-	-- A block with a sphere mesh, which stretches with the part.
-	Ellipsoid = Enum.PartType.Block,
-}
 
 -- How wide the nameplate is, as a share of the plinth's width, and its
 -- tallest.
@@ -64,43 +41,7 @@ local NAMEPLATE_HEIGHT = 0.42
 -- never flicker against each other.
 local RING_DROP = 0.03
 
-local function vector(values: { number }): Vector3
-	return Vector3.new(values[1] or 0, values[2] or 0, values[3] or 0)
-end
-
-local function angles(degrees: { number }?): CFrame
-	if degrees == nil then
-		return CFrame.new()
-	end
-	return CFrame.Angles(math.rad(degrees[1] or 0), math.rad(degrees[2] or 0), math.rad(degrees[3] or 0))
-end
-
-local function newPart(
-	parent: Instance,
-	name: string,
-	shape: Enum.PartType,
-	size: Vector3,
-	cframe: CFrame,
-	colour: Color3
-): Part
-	local part = Instance.new("Part")
-	part.Name = name
-	-- Shape first: a Ball keeps its sides equal.
-	part.Shape = shape
-	part.Size = size
-	part.CFrame = cframe
-	part.Color = colour
-	part.Material = Enum.Material.SmoothPlastic
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.CanQuery = false
-	part.CastShadow = math.max(size.X, size.Y, size.Z) >= CompanyLooks.SmallPiece
-	part.Parent = parent
-	return part
-end
+local newPart = Pieces.newPart
 
 -- A cylinder standing up, centred at height y.
 local function ring(parent: Instance, name: string, height: number, diameter: number, y: number, colour: Color3): Part
@@ -321,47 +262,24 @@ end
 local function buildObject(model: Model, look: CompanyLooks.Look, top: number)
 	local object = Instance.new("Model")
 	object.Name = "Object"
-	local base = CFrame.new(0, top, 0) * angles(look.tilt)
+	local base = CFrame.new(0, top, 0) * Pieces.angles(look.tilt)
 	local highest = top
 
 	for index, piece in look.pieces do
-		local shape: Enum.PartType? = SHAPES[piece.shape]
-		local axis = piece.axis or "x"
-		local turned: CFrame? = AXES[axis]
-		if shape == nil or turned == nil then
-			error(`[CompanyBuilder] {model.Name} piece {index}: unknown shape {piece.shape} or axis {axis}`)
-		end
-		local size = vector(piece.size)
-		local cframe = base * CFrame.new(vector(piece.at)) * angles(piece.turn) * turned
-		local part = newPart(object, `{piece.shape}{index}`, shape, size, cframe, piece.colour)
-		if piece.shape == "Ellipsoid" then
-			local mesh = Instance.new("SpecialMesh")
-			mesh.MeshType = Enum.MeshType.Sphere
-			mesh.Parent = part
-		end
-		part.Material = piece.material or Enum.Material.SmoothPlastic
-		part.Transparency = piece.transparency or 0
-		part.Reflectance = piece.reflectance or 0
-		if part.Transparency > 0 or part.Material == Enum.Material.Neon then
-			part.CastShadow = false
-		end
+		local part, cframe = Pieces.make(object, `{piece.shape}{index}`, piece, base)
 		local text = piece.text
 		if text then
-			local face = FACES[axis][text.face] or Enum.NormalId.Front
+			local face = Pieces.Faces[piece.axis or "x"][text.face] or Enum.NormalId.Front
 			addText(part, face, text.text, text.colour, CompanyLooks.TextPixelsPerStud)
 		end
-
 		-- How high the piece reaches, turned.
-		local reach = math.abs(cframe.RightVector.Y) * size.X / 2
-			+ math.abs(cframe.UpVector.Y) * size.Y / 2
-			+ math.abs(cframe.LookVector.Y) * size.Z / 2
-		highest = math.max(highest, cframe.Position.Y + reach)
+		highest = math.max(highest, cframe.Position.Y + Pieces.reach(cframe, part.Size))
 	end
 
 	local size = CompanyLooks.BadgeSize
 	local at = look.badge.at
 	local badgeCFrame = if at
-		then CFrame.new(0, top, 0) * CFrame.new(vector(at))
+		then CFrame.new(0, top, 0) * CFrame.new(Pieces.vector(at))
 		else CFrame.new(0, highest + CompanyLooks.BadgeGap + size / 2, 0)
 	local anchor =
 		newPart(object, "Badge", Enum.PartType.Block, Vector3.new(size, size, 0.1), badgeCFrame, look.badge.colour)

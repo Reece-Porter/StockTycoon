@@ -16,32 +16,12 @@
 -- Cylinders lie along x; can() stands one up and disc() turns one to face
 -- the front. Part budget: 30 parts per model, plinth included.
 
+local Pieces = require(script.Parent.Parent.Pieces)
 local Theme = require(script.Parent.Parent.Theme)
 
-export type Vec = { number }
-
-export type Text = {
-	text: string,
-	-- "Front" or "Top", of the piece before it is turned.
-	face: string,
-	colour: Color3,
-}
-
-export type Piece = {
-	-- "Block", "Ball", "Cylinder", "Wedge" or "Ellipsoid".
-	shape: string,
-	size: Vec,
-	at: Vec,
-	turn: Vec?,
-	-- The way a cylinder points before it is turned: "x", "y" (standing up)
-	-- or "z" (facing the front).
-	axis: string?,
-	colour: Color3,
-	material: Enum.Material?,
-	transparency: number?,
-	reflectance: number?,
-	text: Text?,
-}
+export type Vec = Pieces.Vec
+export type Text = Pieces.Text
+export type Piece = Pieces.Piece
 
 export type Badge = {
 	-- Two or three letters in an original badge, never a real logo.
@@ -76,62 +56,8 @@ export type Plinth = {
 	idle: boolean,
 }
 
-type Options = {
-	turn: Vec?,
-	material: Enum.Material?,
-	transparency: number?,
-	reflectance: number?,
-	text: Text?,
-}
-
-local function piece(shape: string, size: Vec, at: Vec, colour: Color3, options: Options?, axis: string?): Piece
-	local extra: Options = options or {}
-	return {
-		shape = shape,
-		size = size,
-		at = at,
-		turn = extra.turn,
-		axis = axis,
-		colour = colour,
-		material = extra.material,
-		transparency = extra.transparency,
-		reflectance = extra.reflectance,
-		text = extra.text,
-	}
-end
-
-local function block(size: Vec, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Block", size, at, colour, options)
-end
-
-local function ball(diameter: number, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Ball", { diameter, diameter, diameter }, at, colour, options)
-end
-
--- A stretched ball.
-local function ellipsoid(size: Vec, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Ellipsoid", size, at, colour, options)
-end
-
--- A ramp: full height at the back (+z), sloping down to the front.
-local function wedge(size: Vec, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Wedge", size, at, colour, options)
-end
-
--- A cylinder lying along x (before any turn).
-local function rod(length: number, diameter: number, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Cylinder", { length, diameter, diameter }, at, colour, options, "x")
-end
-
--- A cylinder standing up.
-local function can(height: number, diameter: number, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Cylinder", { height, diameter, diameter }, at, colour, options, "y")
-end
-
--- A cylinder facing the front, like a coin held up.
-local function disc(thickness: number, diameter: number, at: Vec, colour: Color3, options: Options?): Piece
-	return piece("Cylinder", { thickness, diameter, diameter }, at, colour, options, "z")
-end
+local block, ball, ellipsoid, wedge = Pieces.block, Pieces.ball, Pieces.ellipsoid, Pieces.wedge
+local rod, can, disc = Pieces.rod, Pieces.can, Pieces.disc
 
 local hex = Theme.hex
 local NEON = Enum.Material.Neon

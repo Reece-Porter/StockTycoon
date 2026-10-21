@@ -15,9 +15,10 @@
 -- Players get a PetList attribute (JSON: instanceId, petId, slotKey) for the
 -- pets window. Slot parts get SlotKey, Unlocked, PetId and PetInstanceId
 -- attributes, and the pet's model stands on the slot in Workspace.PlacedPets.
--- Pet models are built by hand in ReplicatedStorage.Assets.Pets; a pet
--- without its own model uses "Default", with its RarityTint parts coloured by
--- rarity.
+-- Pet models are built when the server starts (Lib/PetModels, from
+-- Config/PetLooks) into ReplicatedStorage.Assets.Pets, unless one was made by
+-- hand there; a pet without either uses "Default", with its RarityTint parts
+-- coloured by rarity.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -33,6 +34,7 @@ local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
 local LockedLook = require(script.Parent.Parent.Lib.LockedLook)
 local Passes = require(script.Parent.Parent.Lib.Passes)
+local PetModels = require(script.Parent.Parent.Lib.PetModels)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local MAX_KEY_LENGTH = 64
@@ -300,6 +302,7 @@ function PetService:DescribeFloors(player: Player): string
 end
 
 function PetService:Init()
+	PetModels.prepare()
 	placedFolder = Instance.new("Folder")
 	placedFolder.Name = "PlacedPets"
 	placedFolder.Parent = workspace

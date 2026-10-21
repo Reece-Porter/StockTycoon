@@ -7,10 +7,12 @@
 -- in the player's Backpack, and in their StarterGear so it comes back after
 -- every respawn. Equipping a weapon already owned works anywhere.
 --
--- Tools are built by hand in ReplicatedStorage.Assets.Weapons, named by weapon
--- id, with a "Default" Tool for any weapon without its own yet. If neither is
--- there the weapon still works, as a Tool with no handle, and the problem is
--- reported rather than any model being made up.
+-- Tools are built when the server starts (Lib/WeaponModels, from
+-- Config/WeaponLooks) into ReplicatedStorage.Assets.Weapons, unless one there
+-- was made by hand (a HandMade attribute), with a "Default" Tool for any
+-- weapon without one. If neither is there the weapon still works, as a Tool
+-- with no handle, and the problem is reported. The shop's pegboard gets a
+-- copy of each weapon, on the WeaponHook parts studio/BuildMap.luau leaves.
 --
 -- Players get OwnedWeapons (JSON list of ids) and EquippedWeapon attributes
 -- for the shop screen.
@@ -26,6 +28,7 @@ local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
+local WeaponModels = require(script.Parent.Parent.Lib.WeaponModels)
 
 local MAX_ID_LENGTH = 32
 
@@ -174,10 +177,32 @@ function WeaponShopService:GetProblems(): { string }
 	return problems
 end
 
+-- A copy of each weapon hanging on its hook on the pegboard.
+local function dressPegboard(shop: Instance)
+	local goods = shop:FindFirstChild("Goods")
+	if goods == nil then
+		return
+	end
+	for _, hook in goods:GetChildren() do
+		local weaponId = hook:GetAttribute("WeaponId")
+		if hook.Name == "WeaponHook" and hook:IsA("BasePart") and typeof(weaponId) == "string" then
+			local display = WeaponModels.display(weaponId)
+			if display then
+				display:PivotTo(hook.CFrame)
+				display.Parent = goods
+			end
+		end
+	end
+end
+
 function WeaponShopService:Init()
+	WeaponModels.prepare()
 	local map = workspace:FindFirstChild("Map")
 	local shops = map and map:FindFirstChild("Shops")
 	local shop = shops and shops:FindFirstChild("WeaponShop")
+	if shop then
+		dressPegboard(shop)
+	end
 	local prompt = shop and shop:FindFirstChild("ShopPrompt")
 	if prompt and prompt:IsA("BasePart") then
 		shopPrompt = prompt
