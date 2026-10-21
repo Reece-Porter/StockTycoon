@@ -7,6 +7,7 @@ The brief is in `docs/visual-pass.md`. This is the Phase 0 report it asks for.
 - **Phase 0** approved on 21 October 2026, with the recommended answer to each decision below.
 - **Phase 1** done: `src/shared/Theme.luau`, `LightingService`, the UI kit in `src/client/Ui/Kit` (with a gallery in the admin debug panel), toasts for notifications, and `docs/ASSETS_NEEDED.md`.
 - **Phase 2** done: every screen rebuilt with the kit. `Ui/Layout` and `Ui/Menu` place the Cash pill, teleports, guide, side menus and notifications; every window is a kit Window; the machine screen, world labels and debug panel use Theme. No client code hard-codes a colour or font any more. The upgrade station's window and the base upgrade button became one Upgrades window, and Codes got its own window.
+- **Phase 3** done: all 30 companies have their own model, built when the server starts by one shared builder (`src/server/Lib/CompanyBuilder.luau`) from config (`src/shared/Config/CompanyLooks.luau`): a tier plinth that gets grander each tier up, the pun object, a floating logo badge and a nameplate. A hand-made model in `Assets.Companies` still wins. Monopoly models spin and bob on the client (`CompanyFxController`), which also turns sparkles off far from the camera. The light budget is kept: one light, Conglomerate and Monopoly only (variants no longer add a second; the variant layer itself is Phase 4).
 
 ## How things are built now
 

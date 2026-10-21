@@ -3,9 +3,10 @@
 -- fonts or brand colours anywhere in their models.
 --
 -- priceScale and incomeScale vary each company from its tier's numbers and
--- must stay between 0.8 and 1.2. The model for each company lives in
--- ReplicatedStorage.Assets.Companies, named by id; until one exists, the
--- "Default" model is used.
+-- must stay between 0.8 and 1.2. Each company's look (its model's pieces,
+-- colours and logo badge) is in Config/CompanyLooks under the same id; the
+-- server builds the models from it when it starts. Adding a company means an
+-- entry here and one there (without one there it gets a plain box).
 
 export type Company = {
 	id: string,

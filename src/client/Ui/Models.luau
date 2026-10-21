@@ -1,7 +1,9 @@
 --!strict
 -- The models screens show in cards: from ReplicatedStorage.Assets, named by
--- id, or the "Default" model until one exists (the same rule the server uses
--- in the world). Nil if neither is there yet.
+-- id, or the "Default" model if there is none (the same rule the server uses
+-- in the world). Company models are built there by the server when it
+-- starts (CompanyModels), unless one was made by hand. Nil if neither is
+-- there yet.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

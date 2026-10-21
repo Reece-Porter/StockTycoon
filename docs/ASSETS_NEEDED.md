@@ -47,6 +47,45 @@ The menu icons are also drawn from shapes for now (Box, Weapon, Paw, Book, Rebir
 | Upgrades | Upgrades menu button and teleport | A chunky up arrow |
 | Collect | Cash pads (not used yet) | A coin with an arrow into it (Cash green) |
 
+## Company logo badges
+
+Each company's model has a floating badge (stand-in: the company's letters in a ringed circle, drawn from UI shapes, colours in `src/shared/Config/CompanyLooks.luau`). A real badge image per company would replace the letters. Each is a 256 x 256 PNG, transparent background, a round badge filling the image with a thick Ink (#1B1B2F) outline, readable at 48 x 48. Original designs only: never the real company's logo, logo shape, wordmark, mascot, font or colours. Keep each badge's background colour from the table so it matches its model.
+
+| Company | Badge colour | Suggested design |
+| --- | --- | --- |
+| Snackchat | Tomato #E8473B | A sandwich with a speech bubble |
+| Kittygram | Cream #FFF1D6 | A cat face on a kitchen scale dial |
+| Duolinguini | Navy #3D5A80 | A fork twirling linguine |
+| Pinterust | Rust #B4532A | A rusty drawing pin |
+| Ubber | Pink #FF7EB6 | A squishy round car |
+| Netflicks | Popcorn #FFF3C4 | A popcorn kernel with a film strip |
+| Spotifly | Pink #FF5FB0 | A fly wearing headphones |
+| Airbnbee | Bee yellow #FFD23F | A bee with a tiny house |
+| Discard | Teal #2A9D8F | A playing card dropping into a bin |
+| Zoomba | Red #E63946 | A vacuum puck with speed lines |
+| SpaceY | Red #E63946 | A rocket with three fins in a Y |
+| Stripey | Teal #2EC4B6 | A striped piggy bank |
+| TikTock | Orange #FF8C1A | An alarm clock with dancing legs |
+| Robinhoodie | Brown #8B5A2B | A hood with a feathered cap |
+| Canvaas | Gold #FFC83D | An easel with paint splats |
+| Pear | Pear green #9BCB3C | A whole pear with a leaf, no bite |
+| Macrohard | Gold #FFC83D | A hard hat with a lamp |
+| Amazin' | Cardboard #C69C6D | An open box with a sparkle |
+| Goggle | Purple #7B4AE2 | Swimming goggles |
+| Choca-Cola | Cream #F3E5C8 | A chocolate drip |
+| Samsong | Dark #2B2D42 | A phone singing a music note |
+| Disnee | Curtain red #C0263A | Theatre curtains |
+| Nestled | Red #D7263D | Three nesting dolls |
+| Unileverage | Mint #B5EAD7 | A lever lifting a soap bar |
+| Berkshire Hatchaway | Ink #1B1B2F | An egg hatching from a top hat |
+| Alphabet Soup | Orange #F28C28 | A bowl with letters |
+| Meh-ta | Light grey #E8ECF2 | A headset with a bored face |
+| Megamart | White #FFFFFF | An overflowing trolley |
+| Tencentury | Purple #7B4AE2 | A coin-stack clock tower |
+| Everything Inc. | Gold #FFC83D | A globe with a ring |
+
+Company models themselves need no assets: they're built from parts in code. A hand-made model (mesh or parts) for any company can be dropped into `ReplicatedStorage.Assets.Companies` with the company's id as its name, and it will be used instead; keep it within the same budget (30 parts, one light only on Conglomerate and Monopoly).
+
 ## Fonts
 
 None needed: the two fonts (FredokaOne and BuilderSans Bold) are built into Roblox.

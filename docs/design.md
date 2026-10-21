@@ -243,8 +243,17 @@ Boost rules
 - `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
 - Each base's `Glass` model holds the ground floor's glass walls, and each upper floor's `Glass` holds its own; stealing is refused if any glass is between the thief and the plot.
 - `Workspace.Map.Leaderboards` with four parts, `IncomeBoard`, `RebirthsBoard`, `StealsBoard` and `KnockoutsBoard`. The game writes each list on the part's front face.
-- Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. A model named `Default` is used for any company without its own model yet.
+- Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. The server builds one for every company when it starts, from its look in `src/shared/Config/CompanyLooks.luau` (see "Company models" below). A model built by hand in Studio and named by companyId is used instead and left alone. A model named `Default` is only used if a company somehow has neither.
 - Weapon models in `ReplicatedStorage.Assets.Weapons`, pet models in `ReplicatedStorage.Assets.Pets`, named by id. Each weapon is a Tool with a `Handle` part; a Tool named `Default` is used for any weapon without its own yet. A pet model named `Default` is used for any pet without its own; its parts with a `RarityTint` attribute take the pet's rarity colour.
+
+## Company models
+Every company model has the same structure, built by one shared builder (`src/server/Lib/CompanyBuilder.luau`) from config:
+- A round plinth in the tier's colour, grander each tier up: Startup plain and smallest; Scale-up adds a light trim ring; Unicorn adds a base step; Blue Chip swaps the trim for gold edging; Conglomerate adds a gentle Neon glow ring with the model's one light; Monopoly is the biggest, with a few slow sparkles, and its object slowly spins and bobs.
+- The pun object on top, made of simple shapes (blocks, balls, cylinders, wedges and stretched balls), each company's own design, colours and parts in `Config/CompanyLooks`.
+- A floating logo badge above the object: the company's letters in a ringed circle in its own colours, always facing the camera. Original designs only.
+- A nameplate on the plinth's front with the company's name.
+
+Budget for phones: at most 30 parts per model; everything anchored with no collisions, touches or raycast hits; small, see-through and Neon pieces cast no shadow; at most one light, and only on Conglomerate and Monopoly; text kept low resolution and hidden beyond 40 studs, the badge beyond 60. The sparkles and Monopoly motion run on each player's device and stop beyond 60 studs from the camera. Adding a company means an entry in `Config/Companies` and one in `Config/CompanyLooks` (without a look it gets a plain box on its plinth).
 
 ## Build order
 Each slice ends when its checks pass in Studio with at least two test players (Studio's local server test).
