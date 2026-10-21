@@ -10,28 +10,28 @@
 -- every part in its exact place rather than adjusting what's there, so it
 -- works whatever state the map is in and is safe to run again. When the map
 -- needs to change, this file changes; never run old map scripts alongside it.
+--
+-- It reads the game's colours from ReplicatedStorage.Shared.Theme, so Rojo
+-- must be connected to the Test place when you run it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local ACCENTS = {
-	Color3.fromRGB(70, 140, 230),
-	Color3.fromRGB(235, 120, 60),
-	Color3.fromRGB(90, 190, 110),
-	Color3.fromRGB(190, 100, 220),
-	Color3.fromRGB(230, 190, 60),
-	Color3.fromRGB(60, 190, 190),
-	Color3.fromRGB(230, 90, 120),
-	Color3.fromRGB(150, 150, 160),
-}
-local GROUND = Color3.fromRGB(215, 215, 222)
-local PLATFORM = Color3.fromRGB(232, 232, 238)
-local STEP = Color3.fromRGB(190, 190, 200)
-local PLOT = Color3.fromRGB(150, 170, 200)
+local sharedFolder = ReplicatedStorage:FindFirstChild("Shared")
+local themeModule = sharedFolder and sharedFolder:FindFirstChild("Theme")
+if themeModule == nil or not themeModule:IsA("ModuleScript") then
+	error("ReplicatedStorage.Shared.Theme is missing: connect Rojo to the Test place, then run this again.")
+end
+local Theme = require(themeModule :: ModuleScript) :: any
+local BASE = Theme.Base
+
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
-local GLASS = Color3.fromRGB(185, 225, 245)
-local CASH = Color3.fromRGB(60, 203, 90)
+local CASH = Theme.Colours.Cash
+-- Parts only for looks cast a shadow only if at least this big.
+local SHADOW_SIZE = 4
+-- Stands a cylinder (which lies along x) up.
+local UPRIGHT = CFrame.Angles(0, 0, math.rad(90))
 
 -- Eight bases, four either side of a street with the middle conveyor down
 -- the centre, all facing it. Each base is BASE_WIDTH along the street and
@@ -173,6 +173,68 @@ local function hide(part: BasePart)
 	part.CanCollide = false
 end
 
+-- A part only for looks: anchored, and nothing collides with it, touches it
+-- or hits it with a raycast, so it never gets in the way of walking, a shot
+-- or a steal check. Small ones cast no shadow.
+local function decor(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cframe: CFrame,
+	colour: Color3,
+	material: Enum.Material?,
+	shape: Enum.PartType?
+): Part
+	local part = newPart(parent, name, size, cframe, colour)
+	if shape then
+		part.Shape = shape
+		part.Size = size
+	end
+	if material then
+		part.Material = material
+	end
+	part.CanCollide = false
+	part.CanTouch = false
+	part.CanQuery = false
+	part.CastShadow = math.max(size.X, size.Y, size.Z) >= SHADOW_SIZE
+	return part
+end
+
+-- A decorative cylinder standing up, centred at cframe.
+local function column(
+	parent: Instance,
+	name: string,
+	height: number,
+	diameter: number,
+	cframe: CFrame,
+	colour: Color3,
+	material: Enum.Material?
+): Part
+	local size = Vector3.new(height, diameter, diameter)
+	return decor(parent, name, size, cframe * UPRIGHT, colour, material, Enum.PartType.Cylinder)
+end
+
+-- How thick handrails are. A handrail sits with its top level with the top
+-- of its railing, so the base stays no taller than it was.
+local BAR = 0.35
+
+-- A decorative cylinder lying along the z axis of cframe (a handrail).
+local function bar(parent: Instance, name: string, length: number, cframe: CFrame, colour: Color3): Part
+	local size = Vector3.new(length, BAR, BAR)
+	return decor(parent, name, size, cframe * CFrame.Angles(0, math.rad(90), 0), colour, nil, Enum.PartType.Cylinder)
+end
+
+-- Takes off the looks hung on one of the game's parts (a plot, a pet slot,
+-- the spawn or the lock button) before they're made again, so running this
+-- twice changes nothing.
+local function clearDecor(part: Instance)
+	for _, child in part:GetChildren() do
+		if child:IsA("BasePart") then
+			child:Destroy()
+		end
+	end
+end
+
 local baseplate = Workspace:FindFirstChild("Baseplate")
 local groundY = if baseplate and baseplate:IsA("BasePart")
 	then baseplate.CFrame.Position.Y + baseplate.Size.Y / 2
@@ -208,7 +270,13 @@ plaza.Material = Enum.Material.Pavement
 local bases = folder(map, "Bases")
 
 -- 2. The bases, each laid out the same way in its own frame (see the
--- constants at the top).
+-- constants at the top) and dressed in its own accent colour (Theme.Base,
+-- also stored on the base as an Accent attribute). Everything only for looks
+-- is a decor part and stays inside the base's floor and below its top
+-- railings, so the game's idea of where a base is doesn't change. The game's
+-- own parts keep their names, places and sizes; the Spawn, LockButton, the
+-- machine's Pad and the pet slots became invisible pads with the look built
+-- round them.
 for index, spot in BASE_SPOTS do
 	local base = model(bases, "Base" .. index)
 	local center = Vector3.new(spot.x, groundY + 0.5, spot.z)
@@ -217,36 +285,145 @@ for index, spot in BASE_SPOTS do
 	local function at(lx: number, ly: number, lz: number): CFrame
 		return frame * CFrame.new(lx, ly, lz)
 	end
-	local accent = ACCENTS[(index - 1) % #ACCENTS + 1]
-	local carpet = accent:Lerp(Color3.new(0, 0, 0), 0.3)
+	local accent: Color3 = BASE.Accents[(index - 1) % #BASE.Accents + 1]
+	base:SetAttribute("Accent", accent)
+	local carpet: Color3 = Theme.shade(accent, 0.3)
+	local light: Color3 = Theme.tint(accent, 0.55)
 	local groundTop = groundY + 1
 	local tops = { groundTop, groundTop + RISE, groundTop + 2 * RISE, groundTop + 3 * RISE }
 	local halfWidth, halfDepth = BASE_WIDTH / 2, BASE_DEPTH / 2
 
-	local floorPart = place(base, "Floor", Vector3.new(BASE_DEPTH, 1, BASE_WIDTH), at(0, groundY + 0.5, 0), GROUND)
-	floorPart.Color = GROUND
+	local floorPart = place(base, "Floor", Vector3.new(BASE_DEPTH, 1, BASE_WIDTH), at(0, groundY + 0.5, 0), BASE.Floor)
+	floorPart.Color = BASE.Floor
 	floorPart.Material = Enum.Material.SmoothPlastic
 
-	-- The front yard.
-	place(base, "Spawn", Vector3.new(6, 0.2, 6), at(27, groundTop + 0.1, 0), Color3.fromRGB(80, 200, 120))
+	-- The front yard. The spawn: a round pad with a glowing ring in the
+	-- accent colour and a soft glow rising from it.
+	local spawn = place(base, "Spawn", Vector3.new(6, 0.2, 6), at(27, groundTop + 0.1, 0), BASE.Plot)
+	spawn.Transparency = 1
+	clearDecor(spawn)
+	column(spawn, "SpawnRing", 0.14, 6.6, at(27, groundTop + 0.07, 0), accent, Enum.Material.Neon)
+	column(spawn, "SpawnDisc", 0.2, 6, at(27, groundTop + 0.1, 0), BASE.Plot)
+	local spawnGlow = column(spawn, "SpawnGlow", 4, 5, at(27, groundTop + 2.2, 0), accent, Enum.Material.Neon)
+	spawnGlow.Transparency = 0.88
+	spawnGlow.CastShadow = false
+
+	-- The personal conveyor: the belt between side rails with a roller at
+	-- the far end, and a hatch over the start whose door the client opens
+	-- when a company comes out. The client also runs chevrons along it.
 	local conveyor = model(base, "Conveyor")
-	place(conveyor, "Belt", Vector3.new(6, 1, 32), at(37, groundTop + 0.5, 0), Color3.fromRGB(60, 60, 60))
+	local belt = place(conveyor, "Belt", Vector3.new(6, 1, 32), at(37, groundTop + 0.5, 0), BASE.Belt)
+	belt.Color = BASE.Belt
+	belt.Material = Enum.Material.SmoothPlastic
 	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), at(37, groundTop + 1.5, -16), Color3.fromRGB(0, 255, 0)))
 	hide(place(conveyor, "End", Vector3.new(1, 1, 1), at(37, groundTop + 1.5, 16), Color3.fromRGB(255, 0, 0)))
+	local beltLook = freshModel(conveyor, "Look")
+	for _, side in { -1, 1 } do
+		decor(
+			beltLook,
+			"Rail",
+			Vector3.new(0.4, 1.3, 32),
+			at(37 + side * 3.2, groundTop + 0.65, 0),
+			Theme.shade(accent, 0.2)
+		)
+	end
+	decor(
+		beltLook,
+		"Roller",
+		Vector3.new(6.4, 1.1, 1.1),
+		at(37, groundTop + 0.55, 16),
+		BASE.Roller,
+		nil,
+		Enum.PartType.Cylinder
+	)
+	local hatch = freshModel(conveyor, "Hatch")
+	decor(hatch, "Back", Vector3.new(7.2, 6.6, 0.4), at(37, groundTop + 3.3, -17.8), BASE.Housing)
+	for _, side in { -1, 1 } do
+		decor(hatch, "Side", Vector3.new(0.4, 6.6, 2.4), at(37 + side * 3.4, groundTop + 3.3, -16.6), BASE.Housing)
+	end
+	decor(hatch, "Roof", Vector3.new(7.2, 0.5, 2.8), at(37, groundTop + 6.85, -16.6), BASE.Housing)
+	decor(hatch, "Stripe", Vector3.new(7.3, 0.25, 0.2), at(37, groundTop + 6.5, -15.25), accent, Enum.Material.Neon)
+	decor(hatch, "Door", Vector3.new(6.2, 5.6, 0.2), at(37, groundTop + 3.8, -15.3), Theme.shade(accent, 0.15))
+
+	-- The Valuation Machine: a glowing round pad between two cabinets with
+	-- blinking lights, under a beam with a scrolling ticker and a screen with
+	-- a little chart (both drawn by the client). The game stands companies on
+	-- the invisible Pad.
 	local machine = model(base, "Machine")
-	local padColour = Color3.fromRGB(150, 80, 255)
-	place(machine, "Pad", Vector3.new(6, 1, 6), at(27, groundTop + 0.5, -11), padColour, Enum.Material.Neon)
-	place(machine, "PillarLeft", Vector3.new(1, 8, 1), at(23.5, groundTop + 4, -11), DARK)
-	place(machine, "PillarRight", Vector3.new(1, 8, 1), at(30.5, groundTop + 4, -11), DARK)
-	place(machine, "Top", Vector3.new(8, 1, 1), at(27, groundTop + 8.5, -11), DARK)
-	local lockColour = Color3.fromRGB(220, 50, 50)
-	place(base, "LockButton", Vector3.new(3, 1.2, 3), at(27, groundTop + 0.6, 11), lockColour, Enum.Material.Neon)
+	local pad = place(machine, "Pad", Vector3.new(6, 1, 6), at(27, groundTop + 0.5, -11), BASE.MachinePad)
+	pad.Transparency = 1
+	for _, child in machine:GetChildren() do
+		if child ~= pad then
+			child:Destroy()
+		end
+	end
+	column(machine, "PadBase", 0.8, 6.8, at(27, groundTop + 0.4, -11), BASE.Machine)
+	column(machine, "PadGlow", 0.2, 5.8, at(27, groundTop + 0.88, -11), BASE.MachinePad, Enum.Material.Neon)
+	for _, side in { -1, 1 } do
+		local z = -11 + side * 4.4
+		decor(machine, "Cabinet", Vector3.new(2.2, 8, 1.6), at(27, groundTop + 4, z), BASE.Machine)
+		decor(machine, "Trim", Vector3.new(2.3, 0.3, 1.7), at(27, groundTop + 7.6, z), accent)
+		for k = 1, 3 do
+			local where = at(28.15, groundTop + 2 + k * 1.2, z)
+			decor(machine, "Light", Vector3.new(0.2, 0.45, 0.45), where, Theme.Colours.Cash, Enum.Material.Neon)
+		end
+	end
+	decor(machine, "Beam", Vector3.new(2.4, 1.4, 10.4), at(27, groundTop + 8.7, -11), BASE.Machine)
+	decor(machine, "Ticker", Vector3.new(0.1, 0.9, 9.6), at(28.25, groundTop + 8.7, -11), Theme.Colours.Ink)
+	decor(machine, "ScreenFrame", Vector3.new(0.3, 3.4, 7.4), at(26.9, groundTop + 11, -11), accent)
+	decor(machine, "Screen", Vector3.new(0.2, 3, 7), at(27.1, groundTop + 11, -11), Theme.Colours.Ink)
+
+	-- The lock button: a big round button on a pedestal (the client draws a
+	-- padlock on it and presses it down when the base locks), over the
+	-- invisible LockButton the game uses.
+	local lockButton = place(base, "LockButton", Vector3.new(3, 1.2, 3), at(27, groundTop + 0.6, 11), BASE.LockCap)
+	lockButton.Transparency = 1
+	clearDecor(lockButton)
+	column(lockButton, "Pedestal", 0.8, 2.8, at(27, groundTop + 0.4, 11), BASE.Machine)
+	column(lockButton, "Rim", 0.12, 2.5, at(27, groundTop + 0.84, 11), BASE.LockCap, Enum.Material.Neon)
+	column(lockButton, "Cap", 0.35, 2.2, at(27, groundTop + 0.975, 11), BASE.LockCap)
+
+	-- The headquarters sign over the way in; the client writes the owner's
+	-- name on its panel.
+	local sign = freshModel(base, "Sign")
+	for _, side in { -1, 1 } do
+		column(sign, "Post", 10.4, 0.9, at(41.5, groundTop + 5.2, side * 16.8), accent)
+		decor(
+			sign,
+			"PostCap",
+			Vector3.new(1.3, 1.3, 1.3),
+			at(41.5, groundTop + 10.65, side * 16.8),
+			BASE.Post,
+			nil,
+			Enum.PartType.Ball
+		)
+	end
+	decor(sign, "Board", Vector3.new(0.6, 3.4, 33.6), at(41.5, groundTop + 9.2, 0), accent)
+	decor(sign, "Panel", Vector3.new(0.7, 2.6, 31.6), at(41.5, groundTop + 9.2, 0), BASE.SignPanel)
+
+	-- The lock's force field across the way in, hidden until the base is
+	-- locked (the client shows it). It stops nobody: the game moves people
+	-- out of a locked base itself.
+	local gate = freshModel(base, "Gate")
+	local field = decor(
+		gate,
+		"Field",
+		Vector3.new(0.3, 10, 35),
+		at(42.6, groundTop + 5, 0),
+		Theme.World.Locked,
+		Enum.Material.ForceField
+	)
+	field.Transparency = 1
+	field.CastShadow = false
 
 	-- The hall: plots in pairs either side of the walkway from the front back
 	-- (so they unlock front to back), each turned to face the walkway with
 	-- its cash pad in front, then the pet slots behind them. Everything that
 	-- belongs to an upper floor is in its Floor folder, so the game can show
-	-- each floor only once the owner has opened it.
+	-- each floor only once the owner has opened it. Each plot is a display
+	-- stand: a white top on a darker lip with a glow in the accent colour
+	-- between them (the game turns locked ones to stone). Each pet slot is a
+	-- cushioned bed on a short pedestal.
 	local floors = folder(base, "Floors")
 	for n = 1, 4 do
 		local floor = folder(floors, "Floor" .. n)
@@ -254,8 +431,8 @@ for index, spot in BASE_SPOTS do
 		if n > 1 then
 			local hallSize = Vector3.new(HALL_FRONT - HALL_BACK, 1, BASE_WIDTH)
 			local platform =
-				place(floor, "Platform", hallSize, at((HALL_FRONT + HALL_BACK) / 2, top - 0.5, 0), PLATFORM)
-			platform.Color = PLATFORM
+				place(floor, "Platform", hallSize, at((HALL_FRONT + HALL_BACK) / 2, top - 0.5, 0), BASE.Floor)
+			platform.Color = BASE.Floor
 			platform.Material = Enum.Material.SmoothPlastic
 		end
 		local plots = folder(floor, "Plots")
@@ -264,14 +441,44 @@ for index, spot in BASE_SPOTS do
 			local side = if (i - 1) % 2 == 0 then -1 else 1
 			local plotX = HALL_FRONT - 4.5 - math.floor((i - 1) / 2) * 9
 			local facing = if side < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.new()
-			place(plots, "Plot" .. i, Vector3.new(7, 0.4, 7), at(plotX, top + 0.2, side * PLOT_Z) * facing, PLOT)
+			local plotAt = at(plotX, top, side * PLOT_Z) * facing
+			local plot = place(plots, "Plot" .. i, Vector3.new(7, 0.4, 7), plotAt * CFrame.new(0, 0.2, 0), BASE.Plot)
+			plot.Color = BASE.Plot
+			plot.Material = Enum.Material.SmoothPlastic
+			clearDecor(plot)
+			decor(plot, "Lip", Vector3.new(7.4, 0.25, 7.4), plotAt * CFrame.new(0, 0.125, 0), BASE.PlotLip)
+			local plotGlow = decor(
+				plot,
+				"Glow",
+				Vector3.new(7.3, 0.3, 7.3),
+				plotAt * CFrame.new(0, 0.15, 0),
+				accent,
+				Enum.Material.Neon
+			)
+			plotGlow.Transparency = 0.2
 			place(pads, "Pad" .. i, Vector3.new(5, 0.2, 3.5), at(plotX, top + 0.1, side * PAD_Z) * facing, CASH)
 		end
 		local slots = folder(floor, "PetSlots")
 		for slot = 1, 2 do
-			local slotColour = Color3.fromRGB(190, 150, 255)
 			local slotZ = (if slot == 1 then -1 else 1) * SLOT_Z
-			place(slots, "Slot" .. slot, Vector3.new(3, 0.4, 3), at(HALL_BACK + 4, top + 0.2, slotZ), slotColour)
+			local where = at(HALL_BACK + 4, top, slotZ)
+			local slotPart =
+				place(slots, "Slot" .. slot, Vector3.new(3, 0.4, 3), where * CFrame.new(0, 0.2, 0), BASE.Cushion)
+			slotPart.Transparency = 1
+			clearDecor(slotPart)
+			column(slotPart, "Pedestal", 0.2, 2.6, where * CFrame.new(0, 0.1, 0), BASE.Pedestal)
+			column(slotPart, "Bed", 0.22, 3.2, where * CFrame.new(0, 0.31, 0), light, Enum.Material.Fabric)
+			local cushion = decor(
+				slotPart,
+				"Cushion",
+				Vector3.new(2.5, 0.2, 2.5),
+				where * CFrame.new(0, 0.4, 0),
+				BASE.Cushion,
+				Enum.Material.Fabric
+			)
+			local round = Instance.new("SpecialMesh")
+			round.MeshType = Enum.MeshType.Sphere
+			round.Parent = cushion
 		end
 	end
 	if base:IsA("Model") then
@@ -284,9 +491,11 @@ for index, spot in BASE_SPOTS do
 		machine.WorldPivot = at(27, groundTop + 0.5, -11)
 	end
 
-	-- The walkway on every floor (from the street on the ground floor), a
-	-- coloured border, and supports along the sides under each upper floor.
-	-- The ground floor's are in Tidy, each upper floor's in its own Trim.
+	-- On every floor: the carpet down the walkway (from the street on the
+	-- ground floor) with white edging and a row of diamonds in the hall,
+	-- grout lines making large tiles between the plots, and on the upper
+	-- floors a two-tone front edge and supports along the sides. The ground
+	-- floor's are in Tidy, each upper floor's in its own Trim.
 	local trim = freshModel(base, "Tidy")
 	for n = 1, 4 do
 		local parent = if n == 1 then trim else freshModel(folder(floors, "Floor" .. n), "Trim")
@@ -295,7 +504,47 @@ for index, spot in BASE_SPOTS do
 		local walkway = newPart(parent, "Walkway", walkwaySize, at((front + HALL_BACK) / 2, tops[n] + 0.05, 0), carpet)
 		walkway.Material = Enum.Material.Fabric
 		walkway.CanCollide = false
+		walkway.CanQuery = false
+		walkway.CanTouch = false
+		local edgeFront = if n == 1 then 33.5 else HALL_FRONT
+		local edgeSize = Vector3.new(edgeFront - HALL_BACK, 0.12, 0.4)
+		for _, side in { -1, 1 } do
+			local where = at((edgeFront + HALL_BACK) / 2, tops[n] + 0.06, side * (WALKWAY / 2 - 0.2))
+			decor(parent, "CarpetEdge", edgeSize, where, BASE.Post, Enum.Material.Fabric)
+		end
+		for x = 18, -28, -6 do
+			local where = at(x, tops[n] + 0.13, 0) * CFrame.Angles(0, math.rad(45), 0)
+			decor(parent, "Motif", Vector3.new(1, 0.06, 1), where, light, Enum.Material.Fabric)
+		end
+		for _, x in { 12, 3, -6, -15, -24 } do
+			decor(parent, "Grout", Vector3.new(0.2, 0.04, BASE_WIDTH - 2), at(x, tops[n] + 0.02, 0), BASE.Grout)
+		end
+		for _, side in { -1, 1 } do
+			local groutSize = Vector3.new(HALL_FRONT - HALL_BACK, 0.04, 0.2)
+			decor(
+				parent,
+				"Grout",
+				groutSize,
+				at((HALL_FRONT + HALL_BACK) / 2, tops[n] + 0.02, side * 16.25),
+				BASE.Grout
+			)
+		end
 		if n > 1 then
+			local fasciaWidth = BASE_WIDTH - 1
+			decor(
+				parent,
+				"Fascia",
+				Vector3.new(0.3, 0.45, fasciaWidth),
+				at(HALL_FRONT + 0.15, tops[n] - 0.225, 0),
+				accent
+			)
+			decor(
+				parent,
+				"Fascia",
+				Vector3.new(0.3, 0.55, fasciaWidth),
+				at(HALL_FRONT + 0.15, tops[n] - 0.725, 0),
+				BASE.Edge
+			)
 			local supportHeight = tops[n] - tops[n - 1]
 			for _, x in { HALL_FRONT - 0.5, (HALL_FRONT + HALL_BACK) / 2, HALL_BACK + 0.5, -halfDepth + 0.5 } do
 				for _, side in { -1, 1 } do
@@ -317,31 +566,47 @@ for index, spot in BASE_SPOTS do
 	-- to the back of the stairs, so the only way in is from the front. Each
 	-- floor has its own band of glass up to the next floor (the top floor's
 	-- up to its railings): the ground floor's in Glass, each upper floor's in
-	-- its Floor folder.
+	-- its Floor folder. Each band has a frame in the accent colour (Frames):
+	-- posts along each wall and a strip along the bottom, and along the top
+	-- of the highest band.
 	for n = 1, 4 do
 		local glassParent = if n == 1 then base else folder(floors, "Floor" .. n)
 		local glassWalls = freshModel(glassParent, "Glass")
+		local frames = freshModel(glassParent, "Frames")
 		local glassTop = if n < 4 then tops[n + 1] else tops[4] + RAIL_HEIGHT
 		local glassHeight = glassTop - tops[n]
 		local glassY = tops[n] + glassHeight / 2
 		local function glass(size: Vector3, cframe: CFrame)
-			local pane = newPart(glassWalls, "Glass", size, cframe, GLASS, 0.6)
+			local pane = newPart(glassWalls, "Glass", size, cframe, BASE.Glass, 0.6)
 			pane.Material = Enum.Material.Glass
+			pane.Reflectance = 0.08
 			pane.CastShadow = false
 		end
+		local strips: { number } = if n < 4 then { tops[n] + 0.2 } else { tops[n] + 0.2, glassTop - 0.2 }
+		local sideLength = HALL_FRONT + halfDepth
+		local sideX = (HALL_FRONT - halfDepth) / 2
 		for _, side in { -1, 1 } do
-			local length = HALL_FRONT + halfDepth
-			glass(
-				Vector3.new(length, glassHeight, 0.5),
-				at((HALL_FRONT - halfDepth) / 2, glassY, side * (halfWidth - 0.25))
-			)
+			glass(Vector3.new(sideLength, glassHeight, 0.5), at(sideX, glassY, side * (halfWidth - 0.25)))
+			local frameZ = side * (halfWidth - 0.3)
+			for _, y in strips do
+				decor(frames, "Frame", Vector3.new(sideLength, 0.4, 0.6), at(sideX, y, frameZ), accent)
+			end
+			for x = HALL_FRONT, -halfDepth, -16 do
+				local postX = math.clamp(x, -halfDepth + 0.3, HALL_FRONT - 0.3)
+				decor(frames, "Mullion", Vector3.new(0.6, glassHeight, 0.6), at(postX, glassY, frameZ), accent)
+			end
 		end
 		glass(Vector3.new(0.5, glassHeight, BASE_WIDTH - 1), at(-halfDepth + 0.25, glassY, 0))
+		for _, y in strips do
+			decor(frames, "Frame", Vector3.new(0.6, 0.4, BASE_WIDTH), at(-halfDepth + 0.3, y, 0), accent)
+		end
 	end
 
 	-- Stairs up to each floor behind the hall. Floors 2 and 4 go up one
 	-- strip towards +z and floor 3 comes back up the other, each from a
-	-- landing to a landing that meets the back of the floor it serves.
+	-- landing to a landing that meets the back of the floor it serves. Each
+	-- step has a pale tread with a lip over its front edge, and both sides
+	-- have a glass rail with a rounded handrail on posts.
 	local landingX = (HALL_BACK - halfDepth) / 2
 	local landingWidth = HALL_BACK + halfDepth
 	local landingLength = halfWidth - LANDING_Z
@@ -360,52 +625,96 @@ for index, spot in BASE_SPOTS do
 			local z = bottomZ + dir * (k - 0.5) * tread
 			if n == 2 then
 				local height = stepTop - groundTop
-				newPart(access, "Step", Vector3.new(6, height, tread), at(stairX, groundTop + height / 2, z), STEP)
+				newPart(access, "Step", Vector3.new(6, height, tread), at(stairX, groundTop + height / 2, z), BASE.Step)
 			else
-				newPart(access, "Step", Vector3.new(6, 1, tread), at(stairX, stepTop - 0.5, z), STEP)
+				newPart(access, "Step", Vector3.new(6, 1, tread), at(stairX, stepTop - 0.5, z), BASE.Step)
 			end
+			local treadAt = at(stairX, stepTop + 0.05, z - dir * 0.075)
+			decor(access, "Tread", Vector3.new(6, 0.1, tread + 0.15), treadAt, BASE.Tread)
 		end
-		-- The landing at the top, across both strips; the glass walls guard
-		-- its outside. Until the next floor is open there are no stairs on
-		-- from it, so the other strip is railed off (TopOnly, which the game
-		-- shows only on the highest open floor).
+		-- The landing at the top, across both strips, with a trim where the
+		-- stairs meet it; the glass walls guard its outside. Until the next
+		-- floor is open there are no stairs on from it, so the other strip is
+		-- railed off (TopOnly, which the game shows only on the highest open
+		-- floor).
 		local landingZ = dir * (LANDING_Z + halfWidth) / 2
 		if n == 2 then
 			local height = high - groundTop
 			local size = Vector3.new(landingWidth, height, landingLength)
-			newPart(access, "TopLanding", size, at(landingX, groundTop + height / 2, landingZ), STEP)
+			newPart(access, "TopLanding", size, at(landingX, groundTop + height / 2, landingZ), BASE.Step)
 		else
 			local size = Vector3.new(landingWidth, 1, landingLength)
-			newPart(access, "TopLanding", size, at(landingX, high - 0.5, landingZ), PLATFORM)
+			newPart(access, "TopLanding", size, at(landingX, high - 0.5, landingZ), BASE.Floor)
 		end
+		local trimAt = at(landingX, high + 0.06, dir * (LANDING_Z + 0.15))
+		decor(access, "LandingTrim", Vector3.new(landingWidth, 0.12, 0.3), trimAt, accent)
 		local railY = high + RAIL_HEIGHT / 2
 		local topOnly = freshModel(floor, "TopOnly")
 		local across = at(STAIRS_X[if n % 2 == 0 then 2 else 1], railY, dir * (LANDING_Z + 0.25))
-		newPart(topOnly, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, accent, 0.35)
-		-- Sloping handrails on both sides the full length of the stairs,
-		-- standing on the line of the step edges, so they meet the landings
-		-- with no gap. Stairs off the ground get an underside.
+		local landingRail = newPart(topOnly, "LandingRail", Vector3.new(6, RAIL_HEIGHT, 0.5), across, BASE.Glass, 0.7)
+		landingRail.Material = Enum.Material.Glass
+		landingRail.CastShadow = false
+		decor(
+			topOnly,
+			"RailTop",
+			Vector3.new(6, BAR, BAR),
+			across * CFrame.new(0, RAIL_HEIGHT / 2 - BAR / 2, 0),
+			accent,
+			nil,
+			Enum.PartType.Cylinder
+		)
+		for _, postX in { -2.8, 2.8 } do
+			column(topOnly, "Post", RAIL_HEIGHT, 0.3, across * CFrame.new(postX, 0, 0), BASE.Post)
+		end
+		-- Glass rails on both sides the full length of the stairs, standing
+		-- on the line of the step edges, so they meet the landings with no
+		-- gap, each with a handrail on five posts. Stairs off the ground get
+		-- an underside.
 		local length = math.sqrt(RUN * RUN + rise * rise)
 		local tilt = -dir * math.atan2(rise, RUN)
 		local slope = at(stairX, (low + high) / 2, bottomZ + dir * RUN / 2) * CFrame.Angles(tilt, 0, 0)
 		for _, railX in { -2.75, 2.75 } do
 			local cframe = slope * CFrame.new(railX, RAIL_HEIGHT / 2, 0)
-			newPart(access, "Handrail", Vector3.new(0.5, RAIL_HEIGHT, length), cframe, accent, 0.35)
+			local panel = newPart(access, "Handrail", Vector3.new(0.5, RAIL_HEIGHT, length), cframe, BASE.Glass, 0.7)
+			panel.Material = Enum.Material.Glass
+			panel.CastShadow = false
+			bar(access, "RailTop", length, slope * CFrame.new(railX, RAIL_HEIGHT - BAR / 2, 0), accent)
+			for k = 0, 4 do
+				local along = -length / 2 + 1 + k * (length - 2) / 4
+				local foot = (slope * CFrame.new(railX, 0, along)).Position
+				column(
+					access,
+					"Post",
+					RAIL_HEIGHT,
+					0.3,
+					CFrame.new(foot + Vector3.new(0, RAIL_HEIGHT / 2, 0)) * frame.Rotation,
+					BASE.Post
+				)
+			end
 		end
 		if n > 2 then
-			newPart(access, "Underside", Vector3.new(6, 0.6, length - 1), slope * CFrame.new(0, -1.3, 0), STEP)
+			newPart(access, "Underside", Vector3.new(6, 0.6, length - 1), slope * CFrame.new(0, -1.3, 0), BASE.Step)
 		end
 	end
 
 	-- Railings along the front of the upper floors and at the back, open onto
-	-- the landing each floor's stairs arrive at. The glass walls guard the
-	-- sides.
+	-- the landing each floor's stairs arrive at: glass with a rounded
+	-- handrail on posts. The glass walls guard the sides.
 	for n = 2, 4 do
 		local floor = folder(floors, "Floor" .. n)
 		local railings = freshModel(floor, "Railings")
 		local y = tops[n] + RAIL_HEIGHT / 2
 		local function rail(size: Vector3, railX: number, z: number)
-			newPart(railings, "Rail", size, at(railX, y, z), accent, 0.35)
+			local panel = newPart(railings, "Rail", size, at(railX, y, z), BASE.Glass, 0.7)
+			panel.Material = Enum.Material.Glass
+			panel.CastShadow = false
+			local length = size.Z
+			bar(railings, "RailTop", length, at(railX, tops[n] + RAIL_HEIGHT - BAR / 2, z), accent)
+			local posts = math.max(2, math.floor(length / 4.5) + 1)
+			for k = 0, posts - 1 do
+				local postZ = z - length / 2 + 0.2 + k * (length - 0.4) / (posts - 1)
+				column(railings, "Post", RAIL_HEIGHT, 0.3, at(railX, y, postZ), BASE.Post)
+			end
 		end
 		rail(Vector3.new(0.5, RAIL_HEIGHT, BASE_WIDTH - 1), HALL_FRONT - 0.25, 0)
 		local dir = if n % 2 == 0 then 1 else -1
@@ -674,7 +983,6 @@ local function toolPart(
 	part.Massless = true
 	return part
 end
-local UPRIGHT = CFrame.Angles(0, 0, math.rad(90)) -- stands a cylinder up
 local function makeTool(id: string, build: (Tool) -> ())
 	if weapons:FindFirstChild(id) then
 		return
@@ -726,8 +1034,8 @@ makeTool("GoldenCalculator", function(tool)
 	local screen = Color3.fromRGB(70, 100, 70)
 	toolPart(tool, "Screen", Vector3.new(1, 0.45, 0.05), CFrame.new(0, 1.5, -0.2), screen, Enum.Material.Neon)
 	for row = 0, 2 do
-		for column = -1, 1 do
-			local cframe = CFrame.new(column * 0.35, 1.05 - row * 0.32, -0.2)
+		for key = -1, 1 do
+			local cframe = CFrame.new(key * 0.35, 1.05 - row * 0.32, -0.2)
 			toolPart(tool, "Key", Vector3.new(0.22, 0.22, 0.06), cframe, Color3.fromRGB(250, 240, 205))
 		end
 	end

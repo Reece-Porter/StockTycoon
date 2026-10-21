@@ -218,6 +218,21 @@ Boost rules
 - 8 players per server, one base each. Set Max Players to 8 in the place's settings.
 - The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The weapon and pet shops stand side by side at one end of the street and the upgrade station at the other, all facing back along it, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
 - Each base (36 wide, 86 deep) runs back from the street: a front yard with the personal conveyor, the Valuation Machine, the lock button and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
+- How a base looks (visual pass Phase 5), in its own accent colour from `Theme.Base` (stored on the base as an `Accent` attribute):
+  - Floors with grout lines making large tiles, and a two-tone front edge on each upper floor.
+  - A carpet down the walkway with white edging and a row of diamonds.
+  - Plots as display stands: a white top on a darker lip, with a soft glow in the accent colour once open; locked plots (and their cash pads) are dull stone with a padlock over them.
+  - Pet slots as cushioned beds on short pedestals.
+  - Stairs with pale treads, and glass rails with rounded handrails on posts; landings with trim.
+  - Glass walls framed in the accent colour.
+  - Accent trim round the edge, gold for a VIP with a slow shine running along it.
+  - A headquarters sign over the way in with the owner's display name.
+  - While the base is locked, a shimmering force field across the way in with a padlock and the time left. It stops nobody: the server moves people out.
+  - The Valuation Machine: a glowing round pad between two cabinets with chasing lights, under a beam with a ticker of parody companies sliding past and a screen with a little moving line chart (made-up numbers).
+  - The personal conveyor: side rails, a roller at the end, chevrons running along it, and a hatch over the start that swings open when a company comes out.
+  - The lock button: a big round button on a pedestal with a padlock, which presses down when the base locks.
+  - The spawn: a round pad with a glowing ring in the accent colour and a soft glow rising from it.
+- Everything only for looks never collides, gets touched or blocks a raycast (shots, the glass check), and stays inside the base's floor and below its top railings, so where the game thinks a base is doesn't change. The game's own parts keep their names, places and sizes; the spawn, lock button, machine pad and pet slots became invisible pads with the look built round them. Everything that moves runs on each player's device, only near the camera.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 

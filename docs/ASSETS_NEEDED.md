@@ -86,7 +86,16 @@ Each company's model has a floating badge (stand-in: the company's letters in a 
 
 Company models themselves need no assets: they're built from parts in code. A hand-made model (mesh or parts) for any company can be dropped into `ReplicatedStorage.Assets.Companies` with the company's id as its name, and it will be used instead; keep it within the same budget (30 parts, one light only on Conglomerate and Monopoly).
 
-## Particle textures
+## Bases
+
+Nothing is required: every base is built from parts and built-in materials (the lock's force field uses Roblox's ForceField material). These would make them better:
+
+| Asset | Replaces | Spec |
+| --- | --- | --- |
+| Belt texture | The chevron parts on each personal conveyor | 256 x 256 PNG, tiles along its length: a dark rubber belt (#3A3A4A) with two faint lighter chevrons pointing one way. Opaque. |
+| Carpet pattern | The carpet's diamond parts | 256 x 256 PNG, tiles both ways: a soft fabric look, white so the accent colour tints it, with a small diamond every half tile. Opaque. |
+| Machine screen frame | The plain screen and ticker panels | 512 x 256 PNG: a rounded monitor bezel with a small antenna, dark grey (#2B2D42), transparent in the middle and outside. |
+
 
 Small textures for company variant particles (`src/shared/Config/Variants.luau`). Each is a 64 x 64 PNG on a transparent background, white or light grey so the particle colours tint it, soft edges unless noted. Until each exists, the stand-in is Roblox's built-in sparkle, or a plain square for Pixel and Glitched.
 
