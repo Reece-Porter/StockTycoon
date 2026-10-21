@@ -11,6 +11,7 @@
 -- weapons, damage or guard boosts.
 
 local Rewards = require(script.Parent.Rewards)
+local Theme = require(script.Parent.Parent.Theme)
 
 export type PassName = "DoubleIncome" | "VIP" | "ExtraPetSlot"
 export type Pass = {
@@ -96,7 +97,7 @@ return {
 	-- Config/Pets.SlotsPerFloor.
 	ExtraPetSlots = 1,
 	-- The VIP tag in chat and the trim on a VIP's base.
-	VipColour = Color3.fromRGB(255, 200, 60),
+	VipColour = Theme.Colours.Gold,
 	-- Receipts kept to stop a purchase being given twice (oldest dropped).
 	ReceiptsKept = 100,
 }

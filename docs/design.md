@@ -169,8 +169,16 @@ Boost rules
 - What's on the pads is saved, so leaving never loses it. It stays with the plot: picking up a company, or having it stolen, leaves its Cash on the pad for the owner. Rebirth empties the pads along with Cash.
 - Offline earnings, rewards, codes and Cash packs still go straight into Cash.
 
+## Screen layout
+- Built from the UI kit in `src/client/Ui` (`docs/visual-pass.md`), every colour and font from `src/shared/Theme.luau`. Designed for a small phone first, and scaled up a little on bigger screens.
+- Top middle: Cash with income per second underneath and a boost chip beside it, then the teleport buttons, then the new-player guide.
+- Left: the menu (Storage, Upgrades, Weapons, Pets, Index, Rebirth, Rewards), three across at the top left in landscape and two across below the top in portrait, so it stays clear of the thumbstick. A red dot marks something waiting (an affordable base upgrade, a reward or prize to claim, a rebirth ready).
+- Right: Store and Codes, clear of the jump button.
+- Notifications slide in below the top middle, between the side menus. Only one window is open at a time.
+- The Upgrades window has two tabs: Base (the next plot or floor, bought anywhere) and Station (the upgrade station's upgrades, bought at the station, with a teleport there when away).
+
 ## Teleports (starting assumption)
-- Buttons at the top of the screen teleport to Home (your base), Upgrades (the upgrade station) and Weapons (the weapon shop, beside the pet shop).
+- Buttons at the top of the screen, under Cash, teleport to Home (your base), Upgrades (the upgrade station) and Weapons (the weapon shop, beside the pet shop).
 - Not while carrying a company, which must still be carried home on foot, and at most once every 5 seconds (`Config/Travel.luau`).
 
 ## Offline earnings (starting assumption)

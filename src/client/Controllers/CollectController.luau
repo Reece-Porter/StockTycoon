@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 
 local LABEL_NAME = "CashLabel"
 local LABEL_SIZE = UDim2.fromOffset(120, 30)
@@ -16,7 +17,6 @@ local LABEL_HEIGHT = 1.6
 -- Labels on pads further away than this aren't drawn, so a base full of
 -- pads doesn't crowd the screen.
 local LABEL_DISTANCE = 45
-local CASH_COLOUR = Color3.fromRGB(60, 203, 90)
 local POP_SIZE = UDim2.fromOffset(160, 44)
 local POP_RISE = 4
 local POP = TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -27,11 +27,14 @@ local function label(parent: Instance, size: UDim2, text: string?): TextLabel
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Size = size
 	textLabel.BackgroundTransparency = 1
-	textLabel.Font = Enum.Font.BuilderSansBold
+	textLabel.Font = Theme.Fonts.Display
 	textLabel.TextScaled = true
-	textLabel.TextColor3 = CASH_COLOUR
-	textLabel.TextStrokeColor3 = Color3.fromRGB(20, 40, 20)
-	textLabel.TextStrokeTransparency = 0.2
+	textLabel.TextColor3 = Theme.Colours.Cash
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	stroke.Color = Theme.Colours.Ink
+	stroke.Thickness = Theme.Stroke.Normal
+	stroke.Parent = textLabel
 	textLabel.Text = text or ""
 	textLabel.Parent = parent
 	return textLabel
@@ -106,7 +109,11 @@ local function pop(pad: BasePart, amount: number)
 	local text = label(gui, UDim2.fromScale(1, 1), `+{Format.cash(amount)}`)
 	gui.Parent = anchor
 	TweenService:Create(gui, POP, { StudsOffsetWorldSpace = Vector3.new(0, POP_RISE, 0) }):Play()
-	local fade = TweenService:Create(text, POP, { TextTransparency = 1, TextStrokeTransparency = 1 })
+	local stroke = text:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		TweenService:Create(stroke, POP, { Transparency = 1 }):Play()
+	end
+	local fade = TweenService:Create(text, POP, { TextTransparency = 1 })
 	fade.Completed:Connect(function()
 		anchor:Destroy()
 	end)

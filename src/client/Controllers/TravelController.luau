@@ -1,75 +1,68 @@
 --!strict
--- The teleport buttons along the top of the screen (Config/Travel): Home,
--- Upgrades and Weapons. The server checks each teleport (TravelService); the
--- buttons go grey while the player is carrying a company or waiting for the
--- next teleport.
+-- The teleport buttons in the stack at the top of the screen, under Cash
+-- (Config/Travel): Home, Upgrades and Weapons. The server checks each
+-- teleport (TravelService); the buttons grey out while the player is
+-- carrying a company or waiting for the next teleport.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local TravelConfig = require(ReplicatedStorage.Shared.Config.Travel)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
 
-local BUTTON_SIZE = Vector2.new(88, 40)
-local GAP = 6
--- Above the notifications at the top of the screen.
-local TOP_OFFSET = 8
-local READY = Color3.fromRGB(50, 120, 200)
-local WAITING = Color3.fromRGB(70, 70, 80)
+-- Three fit between the side menus on a small phone.
+local BUTTON_SIZE = UDim2.fromOffset(88, Theme.Size.Touch)
+local GAP = 4
 local UPDATE_SECONDS = 0.25
+
+local LOOKS: { [string]: { icon: Icons.IconName, colour: Color3 } } = {
+	Home = { icon = "Home", colour = Theme.Colours.Primary },
+	Upgrades = { icon = "Arrow", colour = Theme.Menu.Upgrades },
+	Weapons = { icon = "Weapon", colour = Theme.Menu.Weapons },
+}
 
 local player = Players.LocalPlayer
 
 local TravelController = {}
 
 function TravelController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Travel"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 40
-
 	local row = Instance.new("Frame")
-	row.Name = "Buttons"
-	row.AnchorPoint = Vector2.new(0.5, 0)
-	row.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET)
-	row.Size = UDim2.fromOffset(#TravelConfig.Places * BUTTON_SIZE.X + (#TravelConfig.Places - 1) * GAP, BUTTON_SIZE.Y)
+	row.Name = "Teleports"
+	row.AutomaticSize = Enum.AutomaticSize.XY
 	row.BackgroundTransparency = 1
-	row.Parent = gui
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.Padding = UDim.new(0, GAP)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = row
+	Make.list(row, Enum.FillDirection.Horizontal, GAP)
 
-	local buttons: { [string]: TextButton } = {}
+	local buttons: { [string]: Button.Button } = {}
 	for order, place in TravelConfig.Places do
-		local button = Instance.new("TextButton")
-		button.LayoutOrder = order
-		button.Size = UDim2.fromOffset(BUTTON_SIZE.X, BUTTON_SIZE.Y)
-		button.BackgroundColor3 = READY
-		button.BackgroundTransparency = 0.1
-		button.Font = Enum.Font.BuilderSansBold
-		button.TextSize = 16
-		button.TextColor3 = Color3.new(1, 1, 1)
-		button.Text = place
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 8)
-		corner.Parent = button
-		button.Parent = row
+		local look = LOOKS[place] or { icon = "Arrow" :: Icons.IconName, colour = Theme.Colours.Primary }
+		local button = Button.new({
+			text = place,
+			icon = look.icon,
+			colour = look.colour,
+			size = BUTTON_SIZE,
+			textSize = Theme.TextSize.Small,
+			layoutOrder = order,
+		})
+		button.Instance.Parent = row
 		button.Activated:Connect(function()
 			Remotes.Travel:FireServer(place)
 		end)
 		buttons[place] = button
 	end
-	gui.Parent = player:WaitForChild("PlayerGui")
+	Menu.addTop(row, 2)
 
 	while true do
 		local readyAt = player:GetAttribute("TravelReadyAt")
 		local left = if typeof(readyAt) == "number" then readyAt - workspace:GetServerTimeNow() else 0
 		local carrying = player:GetAttribute("CarryingCompanyId") ~= nil
 		for place, button in buttons do
-			button.BackgroundColor3 = if carrying or left > 0 then WAITING else READY
-			button.Text = if left > 0 then `{place} {math.ceil(left)}s` else place
+			button.setEnabled(not carrying and left <= 0)
+			button.setText(if left > 0 then `{math.ceil(left)}s` else place)
 		end
 		task.wait(UPDATE_SECONDS)
 	end

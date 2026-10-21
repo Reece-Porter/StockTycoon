@@ -21,7 +21,7 @@ function Badge.new(text: string, colour: Color3, gradient: ColorSequence?): Fram
 	pill.Name = "Badge"
 	pill.Size = UDim2.fromOffset(0, HEIGHT)
 	pill.AutomaticSize = Enum.AutomaticSize.X
-	pill.BackgroundColor3 = if gradient then Color3.new(1, 1, 1) else colour
+	pill.BackgroundColor3 = if gradient then Theme.Colours.Card else colour
 	Make.corner(pill)
 	Make.outline(pill, Theme.Colours.Ink, Theme.Stroke.Thin)
 	Make.padding(pill, 0, 9)

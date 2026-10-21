@@ -19,6 +19,8 @@ export type Props = {
 	size: UDim2?,
 	textSize: number?,
 	layoutOrder: number?,
+	-- The icon above a smaller label, for square menu buttons.
+	stacked: boolean?,
 }
 
 export type Button = {
@@ -74,13 +76,18 @@ function Button.new(props: Props): Button
 	content.BackgroundTransparency = 1
 	content.ZIndex = 3
 	content.Parent = face
-	local layout = Make.list(content, Enum.FillDirection.Horizontal, 6)
+	local stacked = props.stacked == true
+	local layout = Make.list(
+		content,
+		if stacked then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal,
+		if stacked then 0 else 6
+	)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local textSize = props.textSize or Theme.TextSize.Button
+	local textSize = props.textSize or (if stacked then Theme.TextSize.Small else Theme.TextSize.Button)
 	if props.icon then
-		local icon = Icons.make(props.icon, math.floor(textSize * 1.3))
+		local icon = Icons.make(props.icon, math.floor(textSize * (if stacked then 2 else 1.3)))
 		icon.LayoutOrder = 1
 		icon.Parent = content
 	end
@@ -92,9 +99,18 @@ function Button.new(props: Props): Button
 		outline = true,
 	})
 	label.LayoutOrder = 2
-	label.AutomaticSize = Enum.AutomaticSize.X
-	label.Size = UDim2.fromScale(0, 1)
 	label.ZIndex = 3
+	if stacked then
+		label.Size = UDim2.new(1, -4, 0, textSize + 2)
+		label.TextScaled = true
+		local fit = Instance.new("UITextSizeConstraint")
+		fit.MaxTextSize = textSize
+		fit.MinTextSize = 9
+		fit.Parent = label
+	else
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.Size = UDim2.fromScale(0, 1)
+	end
 
 	local enabled = true
 	local hovering = false

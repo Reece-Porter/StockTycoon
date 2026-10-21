@@ -1,7 +1,7 @@
 --!strict
--- The "while you were away" popup: shows once when the server reports
--- offline earnings in the OfflineEarnings attribute (JSON: away, counted and
--- cash). The server has already added the Cash.
+-- The "Welcome back!" popup: shows once when the server reports offline
+-- earnings in the OfflineEarnings attribute (JSON: away, counted and cash),
+-- with the amount counting up. The server has already added the Cash.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -9,68 +9,65 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Format = require(ReplicatedStorage.Shared.Format)
 local OfflineConfig = require(ReplicatedStorage.Shared.Config.Offline)
+local Theme = require(ReplicatedStorage.Shared.Theme)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local CountUp = require(script.Parent.Parent.Ui.Kit.CountUp)
+local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
 
 local player = Players.LocalPlayer
 
 local OfflineController = {}
 
 function OfflineController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Offline"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 150
+	local window = Menu.window({
+		title = "Welcome back!",
+		colour = Theme.Colours.Cash,
+		maxSize = Vector2.new(400, 300),
+		displayOrder = 70,
+	})
+	local away = Make.label(window.Body, {
+		size = Theme.TextSize.Body,
+		colour = Theme.Colours.Text,
+		wrapped = true,
+	})
+	away.Size = UDim2.new(1, 0, 0, 24)
 
-	local panel = Instance.new("Frame")
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.new(0.85, 0, 0, 210)
-	panel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-	panel.BackgroundTransparency = 0.05
-	panel.Visible = false
-	panel.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = panel
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(380, 210)
-	sizeLimit.Parent = panel
+	local amountRow = Instance.new("Frame")
+	amountRow.Position = UDim2.fromOffset(0, 28)
+	amountRow.Size = UDim2.new(1, 0, 0, 52)
+	amountRow.BackgroundTransparency = 1
+	amountRow.Parent = window.Body
+	local rowLayout = Make.list(amountRow, Enum.FillDirection.Horizontal, Theme.Size.Gap)
+	rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	Icons.make("Cash", 44).Parent = amountRow
+	local amount = Make.label(amountRow, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Big,
+		colour = Theme.Colours.Cash,
+		outline = true,
+	})
+	amount.LayoutOrder = 2
+	amount.Size = UDim2.fromScale(0, 1)
+	amount.AutomaticSize = Enum.AutomaticSize.X
+	local counter = CountUp.new(amount, Format.cash, 0)
 
-	local title = Instance.new("TextLabel")
-	title.Position = UDim2.fromOffset(16, 12)
-	title.Size = UDim2.new(1, -32, 0, 34)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.BuilderSansBold
-	title.TextSize = 24
-	title.TextColor3 = Color3.new(1, 1, 1)
-	title.Text = "Welcome back!"
-	title.Parent = panel
+	local note = Make.label(window.Body, {
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+		wrapped = true,
+	})
+	note.Position = UDim2.fromOffset(0, 84)
+	note.Size = UDim2.new(1, 0, 0, 36)
 
-	local body = Instance.new("TextLabel")
-	body.Position = UDim2.fromOffset(16, 50)
-	body.Size = UDim2.new(1, -32, 0, 90)
-	body.BackgroundTransparency = 1
-	body.Font = Enum.Font.BuilderSansMedium
-	body.TextSize = 17
-	body.TextColor3 = Color3.new(1, 1, 1)
-	body.TextWrapped = true
-	body.RichText = true
-	body.Parent = panel
-
-	local ok = Instance.new("TextButton")
-	ok.AnchorPoint = Vector2.new(0.5, 1)
-	ok.Position = UDim2.new(0.5, 0, 1, -14)
-	ok.Size = UDim2.fromOffset(160, 48)
-	ok.BackgroundColor3 = Color3.fromRGB(70, 150, 90)
-	ok.Font = Enum.Font.BuilderSansBold
-	ok.TextSize = 20
-	ok.TextColor3 = Color3.new(1, 1, 1)
-	ok.Text = "Nice!"
-	ok.Parent = panel
-	local okCorner = Instance.new("UICorner")
-	okCorner.CornerRadius = UDim.new(0, 8)
-	okCorner.Parent = ok
+	local ok = Button.new({ text = "Nice!", colour = Theme.Colours.Cash, size = UDim2.fromOffset(170, 56) })
+	ok.Instance.AnchorPoint = Vector2.new(0.5, 1)
+	ok.Instance.Position = UDim2.fromScale(0.5, 1)
+	ok.Instance.Parent = window.Body
 	ok.Activated:Connect(function()
-		panel.Visible = false
+		window.close()
 	end)
 
 	local function show()
@@ -82,17 +79,15 @@ function OfflineController:Start()
 		if not decoded or typeof(report) ~= "table" or typeof(report.cash) ~= "number" then
 			return
 		end
-		local away = Format.longDuration(tonumber(report.away) or 0)
 		local share = math.floor(OfflineConfig.IncomeShare * 100 + 0.5)
 		local cap = Format.longDuration(OfflineConfig.MaxSeconds)
-		body.Text = `You were away for {away}. Your companies earned <b>{Format.cash(report.cash)}</b>`
-			.. `\n<font size="14" color="#BBBBBB">({share}% of your income, for up to {cap})</font>`
-		panel.Visible = true
+		away.Text = `You were away for {Format.longDuration(tonumber(report.away) or 0)}. Your companies earned`
+		note.Text = `{share}% of your income, for up to {cap}`
+		Menu.open(window)
+		counter.set(report.cash)
 	end
 	player:GetAttributeChangedSignal("OfflineEarnings"):Connect(show)
 	show()
-
-	gui.Parent = player:WaitForChild("PlayerGui")
 end
 
 return OfflineController

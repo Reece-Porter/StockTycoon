@@ -28,6 +28,7 @@ export type Props = {
 	displayOrder: number?,
 	-- Runs when a tab is chosen (and for the first tab when it opens).
 	onTab: ((name: string) -> ())?,
+	onOpen: (() -> ())?,
 	onClose: (() -> ())?,
 }
 
@@ -40,6 +41,8 @@ export type Window = {
 	close: () -> (),
 	isOpen: () -> boolean,
 	selectTab: (name: string) -> (),
+	-- The tab showing, if it has tabs.
+	tab: () -> string?,
 	setTitle: (title: string) -> (),
 }
 
@@ -217,6 +220,9 @@ function Window.new(props: Props): Window
 		if currentTab == nil and #tabNames > 0 then
 			selectTab(tabNames[1])
 		end
+		if props.onOpen then
+			props.onOpen()
+		end
 		scale.Scale = Theme.Tween.OpenScale
 		panel.GroupTransparency = 1
 		dim.BackgroundTransparency = 1
@@ -260,6 +266,9 @@ function Window.new(props: Props): Window
 			return isOpen
 		end,
 		selectTab = selectTab,
+		tab = function()
+			return currentTab
+		end,
 		setTitle = function(text: string)
 			title.Text = text
 		end,

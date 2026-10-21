@@ -1,32 +1,30 @@
 --!strict
--- Admin-only debug panel: a "Debug" button at the top of the screen that opens
--- a small window of live values. The server decides who sees it (the IsAdmin
--- attribute) and publishes each row as a "Debug_<name>" attribute on the
--- player, so rows added in later slices show up here without client changes.
--- A "UI kit" button at the top opens every UI kit piece on one screen
--- (Ui/Kit/Gallery), for checking the visual pass in the device emulator.
+-- Admin-only debug panel: a "Debug" button in the top right corner of the
+-- screen that opens a panel of live values. The server decides who sees it
+-- (the IsAdmin attribute) and publishes each row as a "Debug_<name>"
+-- attribute on the player, so rows added in later slices show up here without
+-- client changes. A "UI kit" button at the top opens every UI kit piece on one
+-- screen (Ui/Kit/Gallery), for checking the visual pass in the device
+-- emulator.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Theme = require(ReplicatedStorage.Shared.Theme)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
 local Gallery = require(script.Parent.Parent.Ui.Kit.Gallery)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
 
 local PREFIX = "Debug_"
-local MARGIN = 8
-local BUTTON_HEIGHT = 44
-local MAX_PANEL_WIDTH = 360
+local TOGGLE_SIZE = UDim2.fromOffset(96, Theme.Size.Touch)
+local MAX_PANEL_SIZE = Vector2.new(360, 520)
 
 local player = Players.LocalPlayer
 
 local DebugPanelController = {}
 
-local function addCorner(parent: Instance)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = parent
-end
-
-local function renderRows(panel: Frame)
-	for _, child in panel:GetChildren() do
+local function renderRows(list: ScrollingFrame)
+	for _, child in list:GetChildren() do
 		if child:IsA("TextLabel") then
 			child:Destroy()
 		end
@@ -41,19 +39,18 @@ local function renderRows(panel: Frame)
 	table.sort(names)
 
 	for index, name in names do
-		local label = Instance.new("TextLabel")
+		local label = Make.label(list, {
+			text = `<b>{string.sub(name, #PREFIX + 1)}</b>  {tostring(player:GetAttribute(name))}`,
+			size = Theme.TextSize.Small,
+			colour = Theme.Colours.Text,
+			alignX = Enum.TextXAlignment.Left,
+			wrapped = true,
+		})
 		label.Name = name
+		label.RichText = true
 		label.LayoutOrder = index
 		label.Size = UDim2.fromScale(1, 0)
 		label.AutomaticSize = Enum.AutomaticSize.Y
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.BuilderSans
-		label.TextSize = 16
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.TextWrapped = true
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.Text = `{string.sub(name, #PREFIX + 1)}: {tostring(player:GetAttribute(name))}`
-		label.Parent = panel
 	end
 end
 
@@ -61,74 +58,67 @@ local function createPanel()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "DebugPanel"
 	gui.ResetOnSpawn = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 100
 
-	local toggle = Instance.new("TextButton")
-	toggle.Name = "Toggle"
-	toggle.AnchorPoint = Vector2.new(0.5, 0)
-	toggle.Position = UDim2.new(0.5, 0, 0, MARGIN)
-	toggle.Size = UDim2.fromOffset(96, BUTTON_HEIGHT)
-	toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-	toggle.BackgroundTransparency = 0.2
-	toggle.Font = Enum.Font.BuilderSansBold
-	toggle.TextSize = 18
-	toggle.TextColor3 = Color3.new(1, 1, 1)
-	toggle.Text = "Debug"
-	addCorner(toggle)
-	toggle.Parent = gui
+	local toggle = Button.new({
+		text = "Debug",
+		colour = Theme.Colours.Ink,
+		size = TOGGLE_SIZE,
+		textSize = Theme.TextSize.Body,
+	})
+	toggle.Instance.AnchorPoint = Vector2.new(1, 0)
+	toggle.Instance.Position = UDim2.new(1, -Theme.Layout.Margin, 0, Theme.Layout.TopGap)
+	toggle.Instance.Parent = gui
 
 	local panel = Instance.new("Frame")
 	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(0.5, 0)
-	panel.Position = UDim2.new(0.5, 0, 0, MARGIN + BUTTON_HEIGHT + MARGIN)
-	panel.Size = UDim2.new(1, -2 * MARGIN, 0, 0)
-	panel.AutomaticSize = Enum.AutomaticSize.Y
-	panel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-	panel.BackgroundTransparency = 0.15
+	panel.AnchorPoint = Vector2.new(1, 0)
+	panel.Position = UDim2.new(1, -Theme.Layout.Margin, 0, Theme.Layout.TopGap + Theme.Size.Touch + Theme.Size.Gap)
+	panel.Size = UDim2.new(1, -2 * Theme.Layout.Margin, 0.8, 0)
+	panel.BackgroundColor3 = Theme.Colours.Panel
+	panel.Active = true
 	panel.Visible = false
-	addCorner(panel)
+	Make.corner(panel, Theme.Corner.Medium)
+	Make.outline(panel, Theme.Colours.Ink, Theme.Stroke.Normal)
 	panel.Parent = gui
-
 	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(MAX_PANEL_WIDTH, math.huge)
+	sizeLimit.MaxSize = MAX_PANEL_SIZE
 	sizeLimit.Parent = panel
 
-	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 12)
-	padding.PaddingBottom = UDim.new(0, 12)
-	padding.PaddingLeft = UDim.new(0, 12)
-	padding.PaddingRight = UDim.new(0, 12)
-	padding.Parent = panel
+	local list = Instance.new("ScrollingFrame")
+	list.Size = UDim2.fromScale(1, 1)
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.ScrollBarThickness = 6
+	list.ScrollBarImageColor3 = Theme.Colours.Ink
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	list.CanvasSize = UDim2.new()
+	list.Parent = panel
+	Make.padding(list, Theme.Size.Padding)
+	Make.list(list, Enum.FillDirection.Vertical, 6)
 
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 6)
-	layout.Parent = panel
-
-	toggle.Activated:Connect(function()
-		panel.Visible = not panel.Visible
-	end)
-
-	local kit = Instance.new("TextButton")
-	kit.Name = "UiKit"
-	kit.LayoutOrder = 0
-	kit.Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT)
-	kit.BackgroundColor3 = Color3.fromRGB(70, 70, 85)
-	kit.Font = Enum.Font.BuilderSansBold
-	kit.TextSize = 16
-	kit.TextColor3 = Color3.new(1, 1, 1)
-	kit.Text = "UI kit"
-	addCorner(kit)
-	kit.Parent = panel
+	local kit = Button.new({
+		text = "UI kit",
+		colour = Theme.Colours.Purple,
+		size = UDim2.new(1, 0, 0, Theme.Size.Touch),
+		textSize = Theme.TextSize.Body,
+		layoutOrder = 0,
+	})
+	kit.Instance.Parent = list
 	kit.Activated:Connect(function()
 		panel.Visible = false
 		Gallery.open()
 	end)
 
-	renderRows(panel)
+	toggle.Activated:Connect(function()
+		panel.Visible = not panel.Visible
+	end)
+
+	renderRows(list)
 	player.AttributeChanged:Connect(function(name)
 		if string.sub(name, 1, #PREFIX) == PREFIX then
-			renderRows(panel)
+			renderRows(list)
 		end
 	end)
 

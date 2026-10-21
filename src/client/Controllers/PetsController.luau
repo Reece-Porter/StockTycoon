@@ -1,12 +1,12 @@
 --!strict
--- The Pets button and window, and the pet slots on bases.
+-- The Pets menu button and window, and the pet slots on bases.
 --
--- The window lists every pet the player owns (the server's PetList attribute)
--- and where each one is. A pet not in a slot can be let go for good, with a
--- second tap to make sure. The player's own empty pet slots get a "Place pet"
--- prompt, which opens the window to choose a pet for that slot, and slots with
--- a pet get "Take back". Every slot with a pet, on any base, shows its name,
--- rarity and what it does. The server checks every request.
+-- The window has a card for every pet the player owns (the server's PetList
+-- attribute) saying where it is. A pet not in a slot can be let go for good,
+-- with a second tap to make sure. The player's own empty pet slots get a
+-- "Place pet" prompt, which opens the window to choose a pet for that slot,
+-- and slots with a pet get "Take back". Every slot with a pet, on any base,
+-- shows its name, rarity and what it does. The server checks every request.
 
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -17,16 +17,17 @@ local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
+local Badge = require(script.Parent.Parent.Ui.Kit.Badge)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Card = require(script.Parent.Parent.Ui.Kit.Card)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
+local Menu = require(script.Parent.Parent.Ui.Menu)
+local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
 
--- Beside the Weapons button, under Upgrade on the left edge.
-local BUTTON_POSITION = UDim2.new(0, 96, 0.5, 48)
-local BUTTON_SIZE = UDim2.fromOffset(76, 48)
-local ROW_HEIGHT = 60
-local PANEL_MAX_SIZE = Vector2.new(400, 480)
-local BACKGROUND = Color3.fromRGB(20, 20, 25)
-local BUTTON_COLOUR = Color3.fromRGB(45, 45, 55)
-local PLACE = Color3.fromRGB(70, 150, 90)
-local LET_GO = Color3.fromRGB(150, 60, 60)
+local CARD_SIZE = UDim2.fromOffset(136, 220)
+local FOOTER_HEIGHT = 50
+local HINT_HEIGHT = 24
 -- How long a "Sure?" stays up before the Let go button resets.
 local CONFIRM_SECONDS = 3
 local LABEL_MAX_DISTANCE = 80
@@ -46,24 +47,6 @@ local function extraSlotPassId(): number
 		end
 	end
 	return 0
-end
-
-local function corner(parent: Instance)
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, 8)
-	uiCorner.Parent = parent
-end
-
-local function button(text: string, colour: Color3): TextButton
-	local newButton = Instance.new("TextButton")
-	newButton.BackgroundColor3 = colour
-	newButton.Font = Enum.Font.BuilderSansBold
-	newButton.TextSize = 18
-	newButton.TextColor3 = Color3.new(1, 1, 1)
-	newButton.Text = text
-	newButton.AutoButtonColor = true
-	corner(newButton)
-	return newButton
 end
 
 local function readPets(): { Entry }
@@ -101,195 +84,125 @@ local function sorted(entries: { Entry }): { Entry }
 	return list
 end
 
-local function hexOf(colour: Color3): string
-	return `#{colour:ToHex()}`
-end
-
 local function floorText(slotKey: string): string
 	local floor = PetMath.floorOf(slotKey)
 	return if floor then `On Floor {floor}` else "Placed"
 end
 
--- The label above a pet slot with a pet in it.
-local function slotLabel(part: BasePart): TextLabel
+-- The label above a pet slot with a pet in it: its name, then its rarity and
+-- what it does in the rarity's colour.
+local function slotLabel(part: BasePart): (TextLabel, TextLabel)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "PetLabel"
 	gui.Adornee = part
-	gui.Size = UDim2.fromOffset(200, 60)
+	gui.Size = UDim2.fromOffset(220, 56)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, part.Size.Y / 2 + 5, 0)
 	gui.MaxDistance = LABEL_MAX_DISTANCE
 	gui.LightInfluence = 0
 	gui.Parent = part
+	Make.list(gui, Enum.FillDirection.Vertical, 0)
 
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.BuilderSansBold
-	label.TextSize = 16
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0.4
-	label.RichText = true
-	label.Parent = gui
-	return label
+	local name = Make.label(gui, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Button,
+		colour = Theme.Colours.TextOnColour,
+		outline = true,
+	})
+	name.LayoutOrder = 1
+	name.Size = UDim2.new(1, 0, 0, 28)
+	local detail = Make.label(gui, {
+		font = Theme.Fonts.Body,
+		size = Theme.TextSize.Small,
+		outline = true,
+	})
+	detail.LayoutOrder = 2
+	detail.Size = UDim2.new(1, 0, 0, 22)
+	return name, detail
 end
 
 function PetsController:Start()
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Pets"
-	gui.ResetOnSpawn = false
-	gui.DisplayOrder = 50
-
-	local openButton = button("Pets", BACKGROUND)
-	openButton.Name = "Open"
-	openButton.BackgroundTransparency = 0.2
-	openButton.Position = BUTTON_POSITION
-	openButton.Size = BUTTON_SIZE
-	openButton.TextSize = 16
-	openButton.Parent = gui
-
-	local panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromScale(0.9, 0.75)
-	panel.BackgroundColor3 = BACKGROUND
-	panel.BackgroundTransparency = 0.1
-	panel.Visible = false
-	corner(panel)
-	panel.Parent = gui
-
-	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = PANEL_MAX_SIZE
-	sizeLimit.Parent = panel
-
-	local title = Instance.new("TextLabel")
-	title.Position = UDim2.fromOffset(16, 8)
-	title.Size = UDim2.new(1, -80, 0, 44)
-	title.BackgroundTransparency = 1
-	title.Font = Enum.Font.BuilderSansBold
-	title.TextSize = 22
-	title.TextColor3 = Color3.new(1, 1, 1)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Parent = panel
-
-	local close = button("X", BUTTON_COLOUR)
-	close.AnchorPoint = Vector2.new(1, 0)
-	close.Position = UDim2.new(1, -8, 0, 8)
-	close.Size = UDim2.fromOffset(44, 44)
-	close.Parent = panel
-
-	local hint = Instance.new("TextLabel")
-	hint.Position = UDim2.fromOffset(16, 52)
-	hint.Size = UDim2.new(1, -32, 0, 20)
-	hint.BackgroundTransparency = 1
-	hint.Font = Enum.Font.BuilderSansMedium
-	hint.TextSize = 14
-	hint.TextColor3 = Color3.fromRGB(200, 200, 200)
-	hint.TextXAlignment = Enum.TextXAlignment.Left
-	hint.TextWrapped = true
-	hint.Parent = panel
-
-	local list = Instance.new("ScrollingFrame")
-	list.Position = UDim2.fromOffset(12, 80)
-	list.Size = UDim2.new(1, -24, 1, -92)
-	list.BackgroundTransparency = 1
-	list.BorderSizePixel = 0
-	list.ScrollBarThickness = 6
-	list.CanvasSize = UDim2.new()
-	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	list.Parent = panel
-
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 8)
-	layout.Parent = list
+	local window = Menu.window({ title = "Pets", colour = Theme.Menu.Pets })
+	local hint = Make.label(window.Body, {
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	hint.Size = UDim2.new(1, 0, 0, HINT_HEIGHT)
+	local grid = Scroll.grid(window.Body, CARD_SIZE)
+	grid.Position = UDim2.fromOffset(0, HINT_HEIGHT)
+	grid.Size = UDim2.new(1, 0, 1, -HINT_HEIGHT)
 
 	-- The slot the player is choosing a pet for, while the window is open
 	-- from a slot's prompt.
 	local choosingFor: string? = nil
 	local confirming: string? = nil
 
-	local function addRow(order: number, entry: Entry, render: () -> ())
+	local function addCard(order: number, entry: Entry, render: () -> ())
 		local pet = Pets.byId[entry.petId]
-		local rarity = if pet then Pets.rarityById[pet.rarity] else nil
-
-		local row = Instance.new("Frame")
-		row.Name = "Row"
-		row.LayoutOrder = order
-		row.Size = UDim2.new(1, 0, 0, ROW_HEIGHT)
-		row.BackgroundColor3 = BUTTON_COLOUR
-		row.BackgroundTransparency = 0.3
-		corner(row)
-
-		local text = Instance.new("TextLabel")
-		text.Position = UDim2.fromOffset(12, 0)
-		text.Size = UDim2.new(1, -136, 1, 0)
-		text.BackgroundTransparency = 1
-		text.Font = Enum.Font.BuilderSansMedium
-		text.TextSize = 15
-		text.TextColor3 = Color3.new(1, 1, 1)
-		text.TextXAlignment = Enum.TextXAlignment.Left
-		text.TextWrapped = true
-		text.RichText = true
-		local name = if pet then pet.name else entry.petId
-		local rarityText = if rarity then `<font color="{hexOf(rarity.color)}">{rarity.name}</font>` else ""
-		local effect = if pet then PetMath.describe(pet) else ""
-		text.Text = `<b><font size="17">{name}</font></b>\n{rarityText}  ·  {effect}`
-		text.Parent = row
-
+		local rarityId = if pet then pet.rarity else "Common"
+		local card = Card.new({
+			accent = Theme.Rarities[rarityId] or Theme.Colours.Locked,
+			title = if pet then pet.name else entry.petId,
+			stat = if pet then PetMath.describe(pet) else "",
+			badge = Badge.rarity(rarityId),
+			icon = "Paw",
+			footerHeight = FOOTER_HEIGHT,
+			layoutOrder = order,
+		})
+		card.Instance.Name = "Entry"
 		local slotKey = entry.slotKey
+		local choosing = choosingFor
+		local isConfirming = confirming == entry.instanceId
+		local action = Button.new({
+			text = if slotKey
+				then floorText(slotKey)
+				elseif choosing then "Put here"
+				elseif isConfirming then "Sure?"
+				else "Let go",
+			colour = if slotKey
+				then Theme.Colours.Locked
+				elseif choosing then Theme.Colours.Cash
+				else Theme.Colours.Danger,
+			size = UDim2.fromScale(1, 1),
+			textSize = Theme.TextSize.Body,
+		})
+		action.Instance.Parent = card.Footer
 		if slotKey then
-			local placed = Instance.new("TextLabel")
-			placed.AnchorPoint = Vector2.new(1, 0.5)
-			placed.Position = UDim2.new(1, -8, 0.5, 0)
-			placed.Size = UDim2.fromOffset(116, 44)
-			placed.BackgroundTransparency = 1
-			placed.Font = Enum.Font.BuilderSansBold
-			placed.TextSize = 16
-			placed.TextColor3 = Color3.fromRGB(200, 200, 200)
-			placed.Text = floorText(slotKey)
-			placed.Parent = row
-		else
-			local choosing = choosingFor
-			local isConfirming = confirming == entry.instanceId
-			local label = if choosing then "Put here" elseif isConfirming then "Sure?" else "Let go"
-			local action = button(label, if choosing then PLACE else LET_GO)
-			action.AnchorPoint = Vector2.new(1, 0.5)
-			action.Position = UDim2.new(1, -8, 0.5, 0)
-			action.Size = UDim2.fromOffset(116, 44)
-			action.Activated:Connect(function()
-				if choosing then
-					Remotes.PlacePet:FireServer(entry.instanceId, choosing)
-					choosingFor = nil
-					panel.Visible = false
-				elseif confirming == entry.instanceId then
-					confirming = nil
-					Remotes.DeletePet:FireServer(entry.instanceId)
-				else
-					confirming = entry.instanceId
-					render()
-					task.delay(CONFIRM_SECONDS, function()
-						if confirming == entry.instanceId then
-							confirming = nil
-							render()
-						end
-					end)
-				end
-			end)
-			action.Parent = row
+			action.setEnabled(false)
 		end
-
-		row.Parent = list
+		action.Activated:Connect(function()
+			if slotKey then
+				return
+			elseif choosing then
+				Remotes.PlacePet:FireServer(entry.instanceId, choosing)
+				choosingFor = nil
+				window.close()
+			elseif confirming == entry.instanceId then
+				confirming = nil
+				Remotes.DeletePet:FireServer(entry.instanceId)
+			else
+				confirming = entry.instanceId
+				render()
+				task.delay(CONFIRM_SECONDS, function()
+					if confirming == entry.instanceId then
+						confirming = nil
+						render()
+					end
+				end)
+			end
+		end)
+		card.Instance.Parent = grid
 	end
 
 	local function render()
-		for _, child in list:GetChildren() do
-			if child.Name == "Row" then
+		for _, child in grid:GetChildren() do
+			if child.Name == "Entry" then
 				child:Destroy()
 			end
 		end
 		local entries = readPets()
-		title.Text = `Pets ({#entries}/{Pets.InventoryCap})`
+		window.setTitle(`Pets ({#entries}/{Pets.InventoryCap})`)
 		local choosing = choosingFor
 		if choosing then
 			local floor = PetMath.floorOf(choosing)
@@ -300,22 +213,25 @@ function PetsController:Start()
 			hint.Text = "Put pets in your floors' pet slots to boost that floor."
 		end
 		for index, entry in sorted(entries) do
-			addRow(index, entry, render)
+			addCard(index, entry, render)
 		end
 	end
 
-	openButton.Activated:Connect(function()
+	local menuButton = Menu.button({
+		name = "Pets",
+		text = "Pets",
+		icon = "Paw",
+		colour = Theme.Menu.Pets,
+		order = 4,
+		side = "Left",
+	})
+	menuButton.Activated:Connect(function()
 		choosingFor = nil
 		render()
-		panel.Visible = not panel.Visible
-	end)
-	close.Activated:Connect(function()
-		choosingFor = nil
-		panel.Visible = false
+		Menu.toggle(window)
 	end)
 	player:GetAttributeChangedSignal("PetList"):Connect(render)
 	render()
-	gui.Parent = player:WaitForChild("PlayerGui")
 
 	-- Pet slots, on every base. Slot parts stream in and out, so watch the
 	-- folders rather than the parts.
@@ -323,7 +239,7 @@ function PetsController:Start()
 		if not part:IsA("BasePart") or refreshers[part] then
 			return
 		end
-		local label = slotLabel(part)
+		local nameLabel, detailLabel = slotLabel(part)
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "PetSlotPrompt"
 		prompt.HoldDuration = 0
@@ -337,10 +253,12 @@ function PetsController:Start()
 			local pet = if typeof(petId) == "string" then Pets.byId[petId] else nil
 			if pet then
 				local rarity = Pets.rarityById[pet.rarity]
-				local effect = PetMath.describe(pet)
-				label.Text = `{pet.name}\n<font color="{hexOf(rarity.color)}">{rarity.name}</font>  ·  {effect}`
+				nameLabel.Text = pet.name
+				detailLabel.Text = `{rarity.name}  ·  {PetMath.describe(pet)}`
+				detailLabel.TextColor3 = Theme.Rarities[pet.rarity] or Theme.Colours.TextOnColour
 			else
-				label.Text = ""
+				nameLabel.Text = ""
+				detailLabel.Text = ""
 			end
 			local isMine = base:GetAttribute("OwnerUserId") == player.UserId
 			local unlocked = part:GetAttribute("Unlocked") == true
@@ -373,7 +291,7 @@ function PetsController:Start()
 			else
 				choosingFor = slotKey
 				render()
-				panel.Visible = true
+				Menu.open(window)
 			end
 		end)
 

@@ -13,8 +13,8 @@ local Make = require(script.Parent.Make)
 
 export type Kind = "Info" | "Success" | "Warning" | "Error"
 
--- Below the teleport buttons along the top of the screen.
-local TOP_OFFSET = 56
+-- Where the stack starts until Ui/Menu says (just below its top stack).
+local DEFAULT_TOP = 56
 local MAX_WIDTH = 420
 local EDGE_WIDTH = 8
 local SLIDE = 24
@@ -30,6 +30,8 @@ type Toast = {
 local stack: Frame? = nil
 local toasts: { Toast } = {}
 local order = 0
+local top = DEFAULT_TOP
+local maxWidth = MAX_WIDTH
 
 local Toasts = {}
 
@@ -45,13 +47,13 @@ local function getStack(): Frame
 	local frame = Instance.new("Frame")
 	frame.Name = "Stack"
 	frame.AnchorPoint = Vector2.new(0.5, 0)
-	frame.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET)
+	frame.Position = UDim2.new(0.5, 0, 0, top)
 	frame.Size = UDim2.new(1, -24, 0, 0)
 	frame.AutomaticSize = Enum.AutomaticSize.Y
 	frame.BackgroundTransparency = 1
 	frame.Parent = gui
 	local limit = Instance.new("UISizeConstraint")
-	limit.MaxSize = Vector2.new(MAX_WIDTH, math.huge)
+	limit.MaxSize = Vector2.new(maxWidth, math.huge)
 	limit.Parent = frame
 	local layout = Make.list(frame, Enum.FillDirection.Vertical, 6)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -78,6 +80,23 @@ local function remove(toast: Toast)
 		toast.holder:Destroy()
 	end)
 	fade:Play()
+end
+
+-- Moves the stack's top edge (pixels from the top of the screen).
+function Toasts.setTop(pixels: number)
+	top = pixels
+	if stack then
+		stack.Position = UDim2.new(0.5, 0, 0, pixels)
+	end
+end
+
+-- Keeps toasts at most this wide (pixels), e.g. between side menus.
+function Toasts.setWidth(pixels: number)
+	maxWidth = math.clamp(pixels, 200, MAX_WIDTH)
+	local limit = stack and stack:FindFirstChildOfClass("UISizeConstraint")
+	if limit then
+		limit.MaxSize = Vector2.new(maxWidth, math.huge)
+	end
 end
 
 -- Shows a message; kind sets the colour of its left edge (Info if not given).

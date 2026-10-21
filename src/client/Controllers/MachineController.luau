@@ -3,10 +3,12 @@
 --
 -- A "Put in machine" prompt sits on the machine's Pad at their own base while
 -- they carry a company that hasn't been valued. While a run is going, the
--- machine screen shows a live line chart, the current multiplier in large text
--- and one big Take button, and no countdown (CLAUDE.md). The chart's height
--- follows the highest value seen so far and its width grows with time, so it
--- never gives away the peak or how long is left.
+-- machine screen shows a live line chart that draws in as it goes (green
+-- where the value rises, red where it falls), the current multiplier very
+-- large with a gentle pulse, one huge Take button, and no countdown
+-- (CLAUDE.md). The chart's height follows the highest value seen so far and
+-- its width grows with time, so it never gives away the peak or how long is
+-- left.
 --
 -- The path is drawn from the parameters the server sends in the MachineRun
 -- attribute, using the same MachinePath maths. Take sends nothing but the
@@ -21,7 +23,10 @@ local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local MachineConfig = require(ReplicatedStorage.Shared.Config.Machine)
 local MachinePath = require(ReplicatedStorage.Shared.MachinePath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local CompanyLabel = require(script.Parent.Parent.Ui.CompanyLabel)
+local Button = require(script.Parent.Parent.Ui.Kit.Button)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
 
 type Run = MachinePath.Params & { startedAt: number, companyId: string }
 
@@ -29,10 +34,13 @@ local SAMPLE_SECONDS = 0.25
 local MIN_WINDOW_SECONDS = 8
 local REDRAW_SECONDS = 1 / 30
 local CLOSE_AFTER_SECONDS = 4
-local LINE_THICKNESS = 3
-local LINE_COLOUR = Color3.fromRGB(110, 230, 140)
-local BACKGROUND = Color3.fromRGB(20, 20, 25)
-local PANEL_MAX_SIZE = Vector2.new(560, 460)
+local LINE_THICKNESS = 5
+local PANEL_MAX_SIZE = Vector2.new(580, 480)
+local TAKE_HEIGHT = 76
+local GRID_LINES = 4
+-- The multiplier's pulse: how much it grows and how fast.
+local PULSE_SIZE = 0.04
+local PULSE_SPEED = 5
 
 local player = Players.LocalPlayer
 
@@ -51,90 +59,121 @@ local function formatMultiplier(value: number): string
 	return string.format("%.2fx", value)
 end
 
-local function text(parent: Instance, size: number, bold: boolean): TextLabel
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Font = if bold then Enum.Font.BuilderSansBold else Enum.Font.BuilderSansMedium
-	label.TextSize = size
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.Parent = parent
-	return label
-end
-
 local function buildScreen()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "Machine"
 	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 150
 	gui.Enabled = false
+
+	local dim = Instance.new("Frame")
+	dim.Size = UDim2.fromScale(1, 1)
+	dim.BackgroundColor3 = Theme.Colours.Dim
+	dim.BackgroundTransparency = Theme.DimTransparency
+	dim.Active = true
+	dim.Parent = gui
 
 	local panel = Instance.new("Frame")
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromScale(0.94, 0.8)
-	panel.BackgroundColor3 = BACKGROUND
-	panel.BackgroundTransparency = 0.05
+	panel.Size = UDim2.fromScale(0.94, 0.88)
+	panel.BackgroundColor3 = Theme.Colours.Panel
+	panel.Active = true
+	Make.corner(panel, Theme.Corner.Large)
+	Make.outline(panel, Theme.Colours.Ink, Theme.Stroke.Thick)
 	panel.Parent = gui
-
 	local sizeLimit = Instance.new("UISizeConstraint")
 	sizeLimit.MaxSize = PANEL_MAX_SIZE
 	sizeLimit.Parent = panel
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = panel
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, Theme.Size.HeaderHeight)
+	header.BackgroundColor3 = Theme.Colours.Purple
+	Make.corner(header, Theme.Corner.Large)
+	header.Parent = panel
+	local square = Instance.new("Frame")
+	square.Position = UDim2.fromScale(0, 0.5)
+	square.Size = UDim2.fromScale(1, 0.5)
+	square.BackgroundColor3 = Theme.Colours.Purple
+	square.BorderSizePixel = 0
+	square.Parent = header
+	local title = Make.label(header, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Button,
+		colour = Theme.Colours.TextOnColour,
+		outline = true,
+		alignX = Enum.TextXAlignment.Left,
+	})
+	title.Position = UDim2.fromOffset(Theme.Size.Padding + 4, 0)
+	title.Size = UDim2.new(1, -2 * Theme.Size.Padding, 1, 0)
+	title.TextTruncate = Enum.TextTruncate.AtEnd
+	title.ZIndex = 2
 
-	local title = text(panel, 18, true)
-	title.Position = UDim2.fromOffset(16, 10)
-	title.Size = UDim2.new(1, -32, 0, 22)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextColor3 = Color3.fromRGB(200, 200, 210)
+	local top = Theme.Size.HeaderHeight + 4
+	local multiplier = Make.label(panel, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Huge,
+		colour = Theme.Chart.Rising,
+		outline = true,
+	})
+	multiplier.Position = UDim2.fromOffset(0, top)
+	multiplier.Size = UDim2.new(1, 0, 0, 64)
+	local pulse = Instance.new("UIScale")
+	pulse.Parent = multiplier
 
-	local multiplier = text(panel, 56, true)
-	multiplier.Position = UDim2.fromOffset(16, 34)
-	multiplier.Size = UDim2.new(1, -32, 0, 62)
-	multiplier.TextColor3 = LINE_COLOUR
+	local note = Make.label(panel, {
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+	})
+	note.Position = UDim2.fromOffset(0, top + 64)
+	note.Size = UDim2.new(1, 0, 0, 20)
 
-	local note = text(panel, 15, false)
-	note.Position = UDim2.fromOffset(16, 96)
-	note.Size = UDim2.new(1, -32, 0, 18)
-	note.TextColor3 = Color3.fromRGB(180, 180, 190)
-
+	local chartTop = top + 88
 	local chart = Instance.new("Frame")
-	chart.Position = UDim2.fromOffset(16, 118)
-	chart.Size = UDim2.new(1, -32, 1, -202)
-	chart.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	chart.Position = UDim2.fromOffset(Theme.Size.Padding, chartTop)
+	chart.Size = UDim2.new(1, -2 * Theme.Size.Padding, 1, -(chartTop + TAKE_HEIGHT + 2 * Theme.Size.Padding))
+	chart.BackgroundColor3 = Theme.Chart.Background
 	chart.ClipsDescendants = true
+	Make.corner(chart, Theme.Corner.Medium)
+	Make.outline(chart, Theme.Colours.Ink, Theme.Stroke.Normal)
 	chart.Parent = panel
+	for line = 1, GRID_LINES - 1 do
+		local grid = Instance.new("Frame")
+		grid.Position = UDim2.fromScale(0, line / GRID_LINES)
+		grid.Size = UDim2.new(1, 0, 0, 1)
+		grid.BackgroundColor3 = Theme.Chart.Grid
+		grid.BorderSizePixel = 0
+		grid.Parent = chart
+	end
 
-	local floorLabel = text(chart, 13, false)
+	local floorLabel = Make.label(chart, {
+		text = formatMultiplier(MachinePath.FLOOR),
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.TextMuted,
+		alignX = Enum.TextXAlignment.Left,
+	})
 	floorLabel.AnchorPoint = Vector2.new(0, 1)
 	floorLabel.Position = UDim2.new(0, 6, 1, -4)
 	floorLabel.Size = UDim2.fromOffset(60, 16)
-	floorLabel.TextXAlignment = Enum.TextXAlignment.Left
-	floorLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-	floorLabel.Text = formatMultiplier(MachinePath.FLOOR)
 
-	local take = Instance.new("TextButton")
-	take.AnchorPoint = Vector2.new(0.5, 1)
-	take.Position = UDim2.new(0.5, 0, 1, -12)
-	take.Size = UDim2.new(1, -32, 0, 64)
-	take.BackgroundColor3 = Color3.fromRGB(60, 170, 90)
-	take.Font = Enum.Font.BuilderSansBold
-	take.TextSize = 30
-	take.TextColor3 = Color3.new(1, 1, 1)
-	take.Text = "Take"
-	take.Parent = panel
-
-	local takeCorner = Instance.new("UICorner")
-	takeCorner.CornerRadius = UDim.new(0, 10)
-	takeCorner.Parent = take
+	local take = Button.new({
+		text = "TAKE",
+		colour = Theme.Colours.Cash,
+		size = UDim2.new(1, -2 * Theme.Size.Padding, 0, TAKE_HEIGHT),
+		textSize = Theme.TextSize.Big,
+	})
+	take.Instance.AnchorPoint = Vector2.new(0.5, 1)
+	take.Instance.Position = UDim2.new(0.5, 0, 1, -Theme.Size.Padding)
+	take.Instance.Parent = panel
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 	return {
 		gui = gui,
 		title = title,
 		multiplier = multiplier,
+		pulse = pulse,
 		note = note,
 		chart = chart,
 		take = take,
@@ -193,6 +232,7 @@ function MachineController:Start()
 	local run: Run? = nil
 	local finished = false
 	local seenAtPress: number? = nil
+	local taking = false
 	local lastDraw = 0
 
 	local function segment(index: number): Frame
@@ -202,8 +242,9 @@ function MachineController:Start()
 		end
 		local line = Instance.new("Frame")
 		line.AnchorPoint = Vector2.new(0.5, 0.5)
-		line.BackgroundColor3 = LINE_COLOUR
+		line.BackgroundColor3 = Theme.Chart.Rising
 		line.BorderSizePixel = 0
+		Make.corner(line)
 		line.Parent = screen.chart
 		segments[index] = line
 		return line
@@ -215,6 +256,8 @@ function MachineController:Start()
 		end
 		local value = MachinePath.value(current, elapsed)
 		screen.multiplier.Text = formatMultiplier(value)
+		local previous = samples[#samples] or MachinePath.FLOOR
+		screen.multiplier.TextColor3 = if value >= previous then Theme.Chart.Rising else Theme.Chart.Falling
 
 		local points = table.clone(samples)
 		local times = {}
@@ -244,8 +287,10 @@ function MachineController:Start()
 			local delta = to - from
 			local line = segment(index)
 			line.Visible = true
+			-- Screen y grows downwards, so a rise goes up the screen.
+			line.BackgroundColor3 = if to.Y <= from.Y then Theme.Chart.Rising else Theme.Chart.Falling
 			line.Position = UDim2.fromOffset(middle.X, middle.Y)
-			line.Size = UDim2.fromOffset(delta.Magnitude + 1, LINE_THICKNESS)
+			line.Size = UDim2.fromOffset(delta.Magnitude + LINE_THICKNESS, LINE_THICKNESS)
 			line.Rotation = math.deg(math.atan2(delta.Y, delta.X))
 		end
 		for index = #points, #segments do
@@ -265,20 +310,23 @@ function MachineController:Start()
 		screen.title.Text = `Valuation Machine  ·  {if company then company.name else newRun.companyId}`
 		screen.note.Text = "Press Take to lock in the multiplier."
 		screen.multiplier.Text = formatMultiplier(MachinePath.FLOOR)
-		screen.take.Visible = true
-		screen.take.Active = true
-		screen.take.Text = "Take"
+		screen.multiplier.TextColor3 = Theme.Chart.Rising
+		screen.take.Instance.Visible = true
+		screen.take.setEnabled(true)
+		screen.take.setText("TAKE")
+		taking = false
 		screen.gui.Enabled = true
 	end
 
 	screen.take.Activated:Connect(function()
 		local current = run
-		if current == nil or finished or not screen.take.Active then
+		if current == nil or finished or taking then
 			return
 		end
 		seenAtPress = MachinePath.value(current, workspace:GetServerTimeNow() - current.startedAt)
-		screen.take.Active = false
-		screen.take.Text = "Locking in..."
+		taking = true
+		screen.take.setEnabled(false)
+		screen.take.setText("Locking in...")
 		Remotes.TakeValuation:FireServer()
 	end)
 
@@ -286,7 +334,9 @@ function MachineController:Start()
 		finished = true
 		run = nil
 		screen.multiplier.Text = `{formatMultiplier(value)} locked`
-		screen.take.Visible = false
+		screen.multiplier.TextColor3 = Theme.Chart.Rising
+		screen.pulse.Scale = 1
+		screen.take.Instance.Visible = false
 		local note = if timedOut then "Time ran out, so it kept the final value." else "Locked in."
 		if player:GetAttribute("IsAdmin") == true and seenAtPress then
 			note ..= `  (Admin: you pressed at {formatMultiplier(seenAtPress)})`
@@ -313,6 +363,9 @@ function MachineController:Start()
 	RunService.RenderStepped:Connect(function()
 		local current = run
 		local now = os.clock()
+		if current and not finished then
+			screen.pulse.Scale = 1 + math.sin(now * PULSE_SPEED) * PULSE_SIZE
+		end
 		if current == nil or finished or now - lastDraw < REDRAW_SECONDS then
 			return
 		end

@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 
 -- How far either side of straight ahead (as a dot product) still counts as in
@@ -20,7 +21,7 @@ local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local MELEE_FACING = 0.35
 local RANGED_FACING = 0.94
 local PROJECTILE_SIZE = Vector3.new(0.3, 0.3, 1)
-local PROJECTILE_COLOUR = Color3.fromRGB(200, 200, 210)
+local PROJECTILE_COLOUR = Theme.World.Projectile
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()

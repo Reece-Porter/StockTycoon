@@ -54,7 +54,7 @@ end
 function Make.shine(parent: GuiObject): UIGradient
 	local gradient = Instance.new("UIGradient")
 	gradient.Rotation = 90
-	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0.82, 0.82, 0.82))
+	gradient.Color = Theme.Shine
 	gradient.Parent = parent
 	return gradient
 end
@@ -89,7 +89,7 @@ function Make.label(parent: Instance, props: LabelProps): TextLabel
 end
 
 -- A list layout for the frame's children.
-function Make.list(parent: GuiObject, direction: Enum.FillDirection, gap: number?): UIListLayout
+function Make.list(parent: Instance, direction: Enum.FillDirection, gap: number?): UIListLayout
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = direction
 	layout.SortOrder = Enum.SortOrder.LayoutOrder

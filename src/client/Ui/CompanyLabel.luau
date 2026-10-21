@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
+local Theme = require(ReplicatedStorage.Shared.Theme)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 
@@ -20,17 +21,31 @@ function CompanyLabel.mainPart(model: Model): BasePart?
 	return model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 end
 
-local function addText(parent: Instance, order: number, text: string, size: number, color: Color3, bold: boolean)
+local function addText(
+	parent: Instance,
+	order: number,
+	text: string,
+	size: number,
+	colour: Color3,
+	font: Enum.Font,
+	outline: number
+): TextLabel
 	local label = Instance.new("TextLabel")
 	label.LayoutOrder = order
-	label.Size = UDim2.new(1, 0, 0, size + 4)
+	label.Size = UDim2.new(1, 0, 0, size + 6)
 	label.BackgroundTransparency = 1
-	label.Font = if bold then Enum.Font.BuilderSansBold else Enum.Font.BuilderSansMedium
+	label.Font = font
 	label.TextSize = size
-	label.TextColor3 = color
-	label.TextStrokeTransparency = 0.4
+	label.TextColor3 = colour
 	label.Text = text
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	stroke.Color = Theme.Colours.Ink
+	stroke.Thickness = outline
+	stroke.LineJoinMode = Enum.LineJoinMode.Round
+	stroke.Parent = label
 	label.Parent = parent
+	return label
 end
 
 -- The detail line (third line) of a label made by attach, to update it.
@@ -73,9 +88,10 @@ function CompanyLabel.attach(model: Model, companyId: string, tierId: string, de
 	local variantId = model:GetAttribute("Variant")
 	local variant = if typeof(variantId) == "string" then Variants.byId[variantId] else nil
 	local name = if variant then `{variant.name} {company.name}` else company.name
-	addText(gui, 1, name, 20, if variant then variant.colour else Color3.new(1, 1, 1), true)
-	addText(gui, 2, tier.name, 15, tier.color, true)
-	addText(gui, 3, detail, 15, Color3.fromRGB(230, 230, 230), false)
+	local nameColour = if variant then variant.colour else Theme.Colours.TextOnColour
+	addText(gui, 1, name, Theme.TextSize.Button, nameColour, Theme.Fonts.Display, Theme.Stroke.Normal)
+	addText(gui, 2, tier.name, Theme.TextSize.Small, tier.color, Theme.Fonts.Body, Theme.Stroke.Thin)
+	addText(gui, 3, detail, Theme.TextSize.Small, Theme.Colours.TextOnColour, Theme.Fonts.Body, Theme.Stroke.Thin)
 
 	gui.Parent = model
 	return gui

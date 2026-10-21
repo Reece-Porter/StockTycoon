@@ -49,11 +49,11 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/buyproduct <product>`             | Gives a developer product as if it was bought (`cashsmall`, `cashmedium`, `cashlarge` or `locknow`)     |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
 
-Admins also get a **Debug** button at the top of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack). Its **UI kit** button opens every piece of the visual pass's UI kit (buttons, windows, cards, badges, icons, toasts and the Cash count-up) on one screen, for checking the look in Studio's device emulator.
+Admins also get a **Debug** button in the top right corner of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack). Its **UI kit** button opens every piece of the visual pass's UI kit (buttons, windows, cards, badges, icons, toasts and the Cash count-up) on one screen, for checking the look in Studio's device emulator.
 
 ## Codes
 
-Players type codes into the **Codes** box at the bottom of the Rewards window. The list is in [`src/server/Config/Codes.luau`](src/server/Config/Codes.luau): a new code is one line there, with what it gives and an optional last day. Each code works once per player.
+Players type codes into the **Codes** window (the Codes button on the right of the screen). The list is in [`src/server/Config/Codes.luau`](src/server/Config/Codes.luau): a new code is one line there, with what it gives and an optional last day. Each code works once per player.
 
 | Code         | Gives                          | Last day   |
 | ------------ | ------------------------------ | ---------- |
@@ -62,7 +62,7 @@ Players type codes into the **Codes** box at the bottom of the Rewards window. T
 
 ## Setting up the store
 
-The Store button sells three game passes and four developer products (`src/shared/Config/Monetisation.luau`). Until each has an id it shows as "Not on sale yet". To put them on sale:
+The Store button sells three game passes and four developer products (`src/shared/Config/Monetisation.luau`). Until each has an id it shows as "Not on sale". To put them on sale:
 
 1. On the [Creator Dashboard](https://create.roblox.com/dashboard/creations), open the game, then **Monetization > Passes**. Create 2x Income, VIP and Extra Pet Slot, give each a picture and a price, and put them on sale.
 2. In **Monetization > Developer Products**, create Cash Pack, Big Cash Pack, Huge Cash Pack and Lock Base Now with their prices.

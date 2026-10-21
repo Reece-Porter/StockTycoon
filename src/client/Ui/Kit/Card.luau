@@ -21,8 +21,10 @@ export type Props = {
 	title: string,
 	stat: string?,
 	badge: Frame?,
-	-- A model shown turning slightly to the camera, or else an icon.
-	model: Model?,
+	-- A model (or a Tool) shown turned slightly to the camera, or else an icon.
+	model: Instance?,
+	-- Shows the model as a dark shape only (something not found yet).
+	silhouette: boolean?,
 	icon: Icons.IconName?,
 	-- Defaults to a size that fits two or three across on a phone.
 	size: UDim2?,
@@ -34,6 +36,7 @@ export type Props = {
 export type Card = {
 	Instance: Frame,
 	Footer: Frame,
+	setTitle: (text: string) -> (),
 	setStat: (text: string) -> (),
 	setLocked: (locked: boolean) -> (),
 	setOwned: (owned: boolean) -> (),
@@ -41,14 +44,29 @@ export type Card = {
 
 local Card = {}
 
--- The model in a viewport, framed so all of it shows.
-local function showModel(parent: Frame, model: Model)
+-- The model in a viewport, framed so all of it shows. A Tool's parts are put
+-- in a model first.
+local function showModel(parent: Frame, model: Instance, silhouette: boolean)
 	local viewport = Instance.new("ViewportFrame")
 	viewport.Size = UDim2.fromScale(1, 1)
 	viewport.BackgroundTransparency = 1
 	viewport.Ambient = Theme.Colours.Panel
 	viewport.LightColor = Theme.Colours.Card
-	local copy = model:Clone()
+	if silhouette then
+		viewport.ImageColor3 = Theme.Colours.Ink
+		viewport.ImageTransparency = 0.15
+	end
+	local clone = model:Clone()
+	local copy: Model
+	if clone:IsA("Model") then
+		copy = clone
+	else
+		copy = Instance.new("Model")
+		for _, child in clone:GetChildren() do
+			child.Parent = copy
+		end
+		clone:Destroy()
+	end
 	copy.Parent = viewport
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 40
@@ -81,7 +99,7 @@ function Card.new(props: Props): Card
 	Make.corner(art, Theme.Corner.Small)
 	art.Parent = card
 	if props.model then
-		showModel(art, props.model)
+		showModel(art, props.model, props.silhouette == true)
 	elseif props.icon then
 		local icon = Icons.make(props.icon, 48)
 		icon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -159,6 +177,9 @@ function Card.new(props: Props): Card
 	return {
 		Instance = card,
 		Footer = footer,
+		setTitle = function(text: string)
+			name.Text = text
+		end,
 		setStat = function(text: string)
 			stat.Text = text
 		end,
