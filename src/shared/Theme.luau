@@ -237,6 +237,29 @@ Theme.Scenery = {
 	Billboards = { hex("#3D8BFF"), hex("#FF8A3D"), hex("#A66CFF"), hex("#2FBFA8") },
 }
 
+-- The photo booth (studio/BuildMap.luau, visual pass Phase 10), far from the
+-- map, for screenshots of models, pets and bases: a curved backdrop in one
+-- of these soft colours (the /backdrop admin command), white podiums, and
+-- warm and cool studio lights.
+Theme.Booth = {
+	Backdrops = {
+		Sky = hex("#CFE6FF"),
+		Gold = hex("#FFE7A3"),
+		Green = hex("#C4F0CE"),
+		Blue = hex("#BCD6FF"),
+		Purple = hex("#E2D3FF"),
+		Teal = hex("#BDEFE6"),
+		Pink = hex("#FFD3E4"),
+		White = hex("#F4F6FB"),
+		Night = hex("#22253A"),
+	} :: { [string]: Color3 },
+	Podium = hex("#FFFFFF"),
+	PodiumRim = hex("#D5DAE8"),
+	Stage = hex("#EEF1F7"),
+	KeyLight = hex("#FFF2DC"),
+	FillLight = hex("#DCE8FF"),
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),

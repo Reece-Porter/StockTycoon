@@ -255,6 +255,7 @@ Boost rules
 ## Admin and debug tools (starting assumption)
 - Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier on any conveyor, grant pets and weapons, skip playtime, reset own data.
 - Debug panel (admins only) showing live economy values, active boosts and the current machine path.
+- A photo booth for store and marketing screenshots (visual pass Phase 10; `docs/ART_BRIEFS.md`): `Workspace.Map.PhotoBooth`, built by BuildMap far out past the city. Admins pose companies, pets and a copy of their base there with `/booth`, `/pose`, `/backdrop` and `/boothcam` (`Lib/PhotoBooth`, `PhotoBoothController`). Posed things are still copies in its Posed folder that nothing in the game looks at.
 - Build alongside slice 2 and extend with each slice, so every feature can be tested without grinding.
 
 ## Codes (starting assumption)

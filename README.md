@@ -48,6 +48,10 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/removepass <pass> [player]`       | Takes a game pass away for this session                                                                 |
 | `/buyproduct <product>`             | Gives a developer product as if it was bought (`cashsmall`, `cashmedium`, `cashlarge` or `locknow`)     |
 | `/resetdata`                        | Wipes your save back to a new player's                                                                  |
+| `/booth [back]`                     | Takes you to the photo booth for screenshots, or `back` home (see `docs/ART_BRIEFS.md`)                 |
+| `/pose <hero, left or right> <company or pet> [variant] [size]` | Poses a company or pet on a booth podium; `/pose base` copies your base onto the stage; `/pose clear` |
+| `/backdrop <colour>`                | Paints the booth's backdrop: sky, gold, green, blue, purple, teal, pink, white or night                 |
+| `/boothcam <icon, wide, base, free or off>` | Looks through a booth camera with the HUD hidden; `free` only hides the HUD, anywhere in the map |
 
 Admins also get a **Debug** button in the top right corner of the screen that shows live values, including whether saving is on and why their last attack was or wasn't allowed (LastAttack). Its **UI kit** button opens every piece of the visual pass's UI kit (buttons, windows, cards, badges, icons, toasts and the Cash count-up) on one screen, for checking the look in Studio's device emulator.
 
