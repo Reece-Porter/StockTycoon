@@ -27,7 +27,7 @@ local Theme = require(themeModule :: ModuleScript) :: any
 -- Everything this script reads from Theme, checked before anything changes,
 -- so a Theme from older code (not pulled yet, or Rojo not synced) stops it
 -- here with the map untouched.
-for _, key in { "Base", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" } do
+for _, key in { "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" } do
 	if Theme[key] == nil then
 		error(
 			`ReplicatedStorage.Shared.Theme is out of date (it has no {key}): pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again.`
@@ -49,7 +49,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 5
+local MAP_VERSION = 6
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -2119,6 +2119,165 @@ do
 			decor(goods, "MeterBar", Vector3.new(0.5, height, 0.1), barAt, colour, Enum.Material.Neon)
 		end
 	end
+end
+
+-- 10. The photo booth (visual pass Phase 10): a little studio far out past
+-- the city, out of everyone's sight, where models, pets and bases are posed
+-- for the screenshots behind icons and thumbnails (docs/ART_BRIEFS.md).
+-- Admins get there with /booth and pose things with /pose (AdminService):
+--   - Backdrop: a floor curving up into a back wall, in one soft colour that
+--     /backdrop changes (Theme.Booth).
+--   - Three round podiums: Hero in the middle, Left and Right, each with an
+--     invisible Spot_ part on top that models stand on.
+--   - A big stage beside it for a copy of a base (Spot_Base).
+--   - Studio lights: a warm key light, a cool fill and a rim light from
+--     behind, and one over the stage.
+--   - Cameras: invisible parts to look through with /boothcam, Camera_Icon
+--     (square icons), Camera_Wide (thumbnails) and Camera_Base, each with its
+--     FieldOfView.
+progress("map built, adding the photo booth")
+local BOOTH_AT = Vector3.new(0, groundY + 300, 2600)
+local BOOTH_STAGE_X = 170
+do
+	local BOOTH = Theme.Booth
+	local booth = freshModel(map, "PhotoBooth")
+	local origin = CFrame.new(BOOTH_AT)
+	local function at(x: number, y: number, z: number): CFrame
+		return origin * CFrame.new(x, y, z)
+	end
+	-- Turned so its front (-z) looks from one point to another.
+	local function looking(from: CFrame, to: CFrame): CFrame
+		local look = (to.Position - from.Position).Unit
+		local yaw = math.atan2(-look.X, -look.Z)
+		return CFrame.new(from.Position) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.asin(look.Y), 0, 0)
+	end
+	-- An invisible marker the game finds by name.
+	local function marker(parent: Instance, name: string, cframe: CFrame): Part
+		local part = decor(parent, name, Vector3.new(1, 0.2, 1), cframe, BOOTH.Podium)
+		part.Transparency = 1
+		part.CastShadow = false
+		return part
+	end
+	local function solid(parent: Instance, name: string, size: Vector3, cframe: CFrame, colour: Color3): Part
+		local part = newPart(parent, name, size, cframe, colour)
+		part.CastShadow = false
+		return part
+	end
+
+	-- The backdrop: the floor runs back to a quarter circle that curves up
+	-- into the back wall, so there's no corner line behind a model.
+	local backdrop = Instance.new("Model")
+	backdrop.Name = "Backdrop"
+	backdrop.Parent = booth
+	local colour = BOOTH.Backdrops.Sky
+	local width, coveZ, radius, strips = 90, 33, 12, 10
+	solid(backdrop, "Floor", Vector3.new(width, 1, coveZ + 15), at(0, -0.5, (coveZ - 15) / 2), colour)
+	for strip = 1, strips do
+		local angle = (strip - 0.5) / strips * math.pi / 2
+		local stripAt = at(0, radius - radius * math.cos(angle), coveZ + radius * math.sin(angle))
+		local size = Vector3.new(width, 1, radius * math.pi / 2 / strips + 0.3)
+		solid(backdrop, "Cove", size, stripAt * CFrame.Angles(-angle, 0, 0) * CFrame.new(0, -0.5, 0), colour)
+	end
+	solid(backdrop, "Wall", Vector3.new(width, 44, 1), at(0, radius + 22, coveZ + radius + 0.5), colour)
+
+	-- The podiums, each a white disc on a pale rim, with its spot on top.
+	local spots = Instance.new("Folder")
+	spots.Name = "Spots"
+	spots.Parent = booth
+	for _, podium in
+		{
+			{ name = "Hero", x = 0, z = 10, diameter = 12 },
+			{ name = "Left", x = -17, z = 13, diameter = 9 },
+			{ name = "Right", x = 17, z = 13, diameter = 9 },
+		}
+	do
+		column(booth, "PodiumRim", 0.6, podium.diameter + 0.8, at(podium.x, 0.3, podium.z), BOOTH.PodiumRim)
+		column(booth, "Podium", 1, podium.diameter, at(podium.x, 0.5, podium.z), BOOTH.Podium)
+		marker(spots, `Spot_{podium.name}`, at(podium.x, 1.1, podium.z))
+	end
+
+	-- The stage for a base, beside the podiums, with its own pale wall.
+	local stageAt = at(BOOTH_STAGE_X, 0, 40)
+	solid(booth, "Stage", Vector3.new(140, 1, 150), stageAt * CFrame.new(0, -0.5, 0), BOOTH.Stage)
+	solid(booth, "StageWall", Vector3.new(140, 90, 1), stageAt * CFrame.new(0, 45, 75.5), BOOTH.Stage)
+	marker(spots, "Spot_Base", stageAt * CFrame.new(0, 0.1, 0))
+
+	-- Studio lights on invisible rigs.
+	local lights = Instance.new("Folder")
+	lights.Name = "Lights"
+	lights.Parent = booth
+	local hero = at(0, 4, 10)
+	local rigs: { { name: string, from: CFrame, to: CFrame, colour: Color3, brightness: number, angle: number, shadows: boolean } } =
+		{
+			{
+				name = "KeyLight",
+				from = at(-22, 26, -16),
+				to = hero,
+				colour = BOOTH.KeyLight,
+				brightness = 3,
+				angle = 50,
+				shadows = true,
+			},
+			{
+				name = "FillLight",
+				from = at(24, 14, -12),
+				to = hero,
+				colour = BOOTH.FillLight,
+				brightness = 1.2,
+				angle = 70,
+				shadows = false,
+			},
+			{
+				name = "RimLight",
+				from = at(0, 34, 38),
+				to = at(0, 5, 10),
+				colour = BOOTH.KeyLight,
+				brightness = 2,
+				angle = 45,
+				shadows = false,
+			},
+			{
+				name = "StageLight",
+				from = stageAt * CFrame.new(-50, 90, -90),
+				to = stageAt * CFrame.new(0, 10, 0),
+				colour = BOOTH.KeyLight,
+				brightness = 2,
+				angle = 60,
+				shadows = true,
+			},
+		}
+	for _, rig in rigs do
+		local part = marker(lights, rig.name, looking(rig.from, rig.to))
+		local light = Instance.new("SpotLight")
+		light.Color = rig.colour
+		light.Brightness = rig.brightness
+		light.Angle = rig.angle
+		light.Range = 60
+		light.Shadows = rig.shadows
+		light.Face = Enum.NormalId.Front
+		light.Parent = part
+	end
+
+	-- Where to look from for each kind of shot.
+	local cameras = Instance.new("Folder")
+	cameras.Name = "Cameras"
+	cameras.Parent = booth
+	local shots: { { name: string, from: CFrame, to: CFrame, fieldOfView: number } } = {
+		{ name = "Camera_Icon", from = at(0, 6.5, -16), to = at(0, 4.2, 10), fieldOfView = 32 },
+		{ name = "Camera_Wide", from = at(0, 10, -40), to = at(0, 4, 13), fieldOfView = 40 },
+		{
+			name = "Camera_Base",
+			from = stageAt * CFrame.new(-70, 60, -110),
+			to = stageAt * CFrame.new(0, 14, 0),
+			fieldOfView = 45,
+		},
+	}
+	for _, shot in shots do
+		local camera = marker(cameras, shot.name, looking(shot.from, shot.to))
+		camera:SetAttribute("FieldOfView", shot.fieldOfView)
+	end
+	-- Where an admin stands, out of shot.
+	marker(booth, "Stand", at(-38, 3, -8))
 end
 
 -- Set last, so a run that stops part way still counts as out of date.

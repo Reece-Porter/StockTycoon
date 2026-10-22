@@ -43,6 +43,7 @@ local RewardsService = require(script.Parent.RewardsService)
 local StealService = require(script.Parent.StealService)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
 local WeaponShopService = require(script.Parent.WeaponShopService)
+local PhotoBooth = require(script.Parent.Parent.Lib.PhotoBooth)
 
 -- Keeps typed amounts well inside the range a number stores exactly.
 local MAX_AMOUNT = 1e15
@@ -574,6 +575,73 @@ local commands: { Command } = {
 		usage = "/analytics",
 		run = function()
 			return AnalyticsService:GetReport()
+		end,
+	},
+	{
+		alias = "/booth",
+		usage = "/booth [back]",
+		run = function(player, args)
+			if args[1] and string.lower(args[1]) == "back" then
+				local base = BaseService:GetBase(player)
+				local character = player.Character
+				if base == nil or character == nil then
+					return "You don't have a base to go back to."
+				end
+				player:SetAttribute("BoothCamera", nil)
+				character:PivotTo(base.spawn.CFrame + Vector3.new(0, 4, 0))
+				return "Back at your base."
+			end
+			return PhotoBooth.goTo(player)
+		end,
+	},
+	{
+		alias = "/pose",
+		usage = "/pose <hero|left|right> <company or pet> [variant] [size], /pose base, /pose clear [spot]",
+		run = function(player, args)
+			local first = if args[1] then string.lower(args[1]) else ""
+			if first == "clear" then
+				PhotoBooth.clear(
+					if args[2]
+						then string.upper(string.sub(args[2], 1, 1)) .. string.lower(string.sub(args[2], 2))
+						else nil
+				)
+				return "Cleared."
+			end
+			if first == "base" then
+				local base = BaseService:GetBase(player)
+				if base == nil then
+					return "You don't have a base."
+				end
+				return PhotoBooth.poseBase(base.model, base.name)
+			end
+			if args[2] == nil then
+				return "Usage: /pose <hero|left|right> <company or pet> [variant] [size], /pose base, /pose clear [spot]"
+			end
+			-- The name can be several words; a variant and a size can follow.
+			local words = table.move(args, 2, #args, 1, {})
+			local size = tonumber(words[#words])
+			if size then
+				table.remove(words)
+			end
+			local variant: string? = nil
+			if #words > 1 and findVariant(words[#words]) then
+				variant = table.remove(words)
+			end
+			return PhotoBooth.pose(args[1], table.concat(words, " "), variant, size)
+		end,
+	},
+	{
+		alias = "/backdrop",
+		usage = "/backdrop <colour>",
+		run = function(_, args)
+			return PhotoBooth.backdrop(args[1] or "")
+		end,
+	},
+	{
+		alias = "/boothcam",
+		usage = "/boothcam <icon|wide|base|free|off>",
+		run = function(player, args)
+			return PhotoBooth.camera(player, args[1] or "")
 		end,
 	},
 	{

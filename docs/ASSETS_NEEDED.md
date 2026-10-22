@@ -161,6 +161,10 @@ Small textures for company variant particles (`src/shared/Config/Variants.luau`)
 
 None needed: the two fonts (FredokaOne and BuilderSans Bold) are built into Roblox.
 
+## Store and marketing art
+
+The game pass, developer product and game icons and the thumbnails have their own briefs in `docs/ART_BRIEFS.md`, with the photo booth to pose the shots.
+
 ## Sounds
 
 None are required: the game plays without them. Phase 7 would use these (short, cartoon, no realistic weapon sounds):
