@@ -11,6 +11,7 @@ local Make = require(script.Parent.Make)
 
 export type IconName =
 	"Cash"
+	| "Gold"
 	| "Padlock"
 	| "Tick"
 	| "Cross"
@@ -36,6 +37,7 @@ Icons.names = {} :: { IconName }
 for _, name in
 	{
 		"Cash",
+		"Gold",
 		"Padlock",
 		"Tick",
 		"Cross",
@@ -161,6 +163,20 @@ function Icons.make(name: IconName, pixels: number, colour: Color3?, outline: bo
 			outline = true,
 		})
 		sign.TextScaled = true
+	elseif name == "Gold" then
+		-- A gold coin: a darker rim round a bright face with a G.
+		local rim =
+			shape(root, Vector2.new(0.5, 0.5), Vector2.new(0.86, 0.86), Theme.shade(Theme.Colours.Gold, 0.2), true)
+		Make.corner(rim)
+		local face = shape(rim, Vector2.new(0.5, 0.5), Vector2.new(0.76, 0.76), Theme.Colours.Gold, false)
+		Make.corner(face)
+		local letter = Make.label(face, {
+			text = "G",
+			font = Theme.Fonts.Display,
+			colour = Theme.Colours.TextOnColour,
+			outline = true,
+		})
+		letter.TextScaled = true
 	elseif name == "Box" then
 		local body = shape(root, Vector2.new(0.5, 0.62), Vector2.new(0.72, 0.52), tint, lined)
 		Make.corner(body, 2)

@@ -16,6 +16,9 @@ local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 export type Data = {
 	DataVersion: number,
 	Cash: number,
+	-- Gold: whole amounts, earned from Index challenges and the battle arena
+	-- and spent at the upgrade station. Kept through rebirth.
+	Gold: number,
 	-- Companies bought but not placed yet. Config/Base.StorageCapacity limits
 	-- what a player can store themselves; companies returned to storage
 	-- automatically (for example after a reset) may go over it.
@@ -25,8 +28,11 @@ export type Data = {
 	-- The company in the player's hands, saved so it can never be lost. A save
 	-- that loads with one (the server stopped mid-carry) moves it to Storage.
 	Carrying: Types.CompanyInstance?,
-	-- Plots open on each floor, e.g. { 10, 7 }: Floor 1 full, Floor 2 has 7.
-	-- The number of entries is the number of floors opened.
+	-- Plots bought with Cash on each floor, e.g. { 10, 7 }: Floor 1 full,
+	-- Floor 2 has 7. Only the Config/Base.CashFloors floors are bought; the
+	-- floors above open with rebirths, worked out from Rebirths
+	-- (UpgradeMath.open), so they aren't saved here. (Saves from before then
+	-- may have bought some up there, and keep them.) Kept through rebirth.
 	UnlockedPlots: { number },
 	-- The company in the player's Valuation Machine, if a run is going. Saved
 	-- so it can never be lost: a save that loads with one is settled as if
@@ -44,8 +50,8 @@ export type Data = {
 	-- Playtime and daily rewards, banked boost and free spins. Kept through
 	-- rebirth.
 	Rewards: Types.RewardsState,
-	-- Every company ever owned, and the Index prizes claimed. Kept through
-	-- rebirth.
+	-- Every company ever owned, and the Index prizes and challenges claimed.
+	-- Kept through rebirth.
 	Index: Types.IndexState,
 	-- os.time() when the player was last in the game, for offline earnings.
 	-- 0 until they have been.
@@ -61,7 +67,8 @@ export type Data = {
 	-- Developer product purchases already given (Roblox purchase ids, the
 	-- newest Config/Monetisation.ReceiptsKept), so none is given twice.
 	Receipts: { string },
-	-- Upgrade station levels by Config/Perks id (0 if never bought).
+	-- Upgrade station levels by Config/Perks id (0 if never bought). Kept
+	-- through rebirth.
 	Perks: { [string]: number },
 	-- Cash each plot's companies have made, by plot key, waiting on the
 	-- plot's cash pad until the owner steps on it (CollectService).
@@ -69,8 +76,9 @@ export type Data = {
 }
 
 local Template: Data = {
-	DataVersion = 14,
+	DataVersion = 15,
 	Cash = Economy.StartingCash,
+	Gold = 0,
 	Storage = {},
 	Placed = {},
 	UnlockedPlots = { BaseConfig.StartingPlots },
@@ -91,6 +99,7 @@ local Template: Data = {
 		Discovered = {},
 		Claimed = {},
 		Variants = {},
+		Challenges = {},
 	},
 	LastSeen = 0,
 	TutorialStep = Onboarding.Steps.Buy,

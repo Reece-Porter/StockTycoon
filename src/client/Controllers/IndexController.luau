@@ -5,10 +5,12 @@
 --     "???" for ones not found yet.
 --   Variants: every variant, what it earns and how rare it is, shown on a
 --     sample company once found, with "???" for ones not found yet.
---   Prizes: the prizes for collecting so many different companies.
--- The server sends IndexDiscovered, IndexClaimed and IndexVariants (JSON
--- lists) and checks every claim. The cards are only built while the window
--- is open.
+--   Challenges: the prizes for collecting so many different companies, then
+--     the challenges that pay Gold (every company of a tier, so many
+--     variants), each with its progress and a Claim button.
+-- The server sends IndexDiscovered, IndexClaimed, IndexVariants and
+-- IndexChallenges (JSON lists) and checks every claim. The cards are only
+-- built while the window is open.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -80,7 +82,7 @@ function IndexController:Start()
 	local made = Menu.window({
 		title = "Index",
 		colour = Theme.Menu.Index,
-		tabs = { "Companies", "Variants", "Prizes" },
+		tabs = { "Companies", "Variants", "Challenges" },
 		onTab = function(name)
 			for pageName, page in pages do
 				page.Visible = pageName == name
@@ -96,7 +98,7 @@ function IndexController:Start()
 	end
 	local companiesPage = page("Companies")
 	local variantsPage = page("Variants")
-	local prizesPage = page("Prizes")
+	local prizesPage = page("Challenges")
 
 	local menuButton = Menu.button({
 		name = "Index",
@@ -112,14 +114,20 @@ function IndexController:Start()
 		local claimed = readList("IndexClaimed")
 		local found = #discoveredList
 		local ready = RewardMath.readyIndex(found, claimed)
-		menuButton.setDot(#ready > 0)
-		made.setTitle(`Index ({found}/{#Companies.list})`)
-		if not made.isOpen() then
-			return
-		end
 		local discovered: { [string]: boolean } = {}
 		for _, id in discoveredList do
 			discovered[id] = true
+		end
+		local variantSet: { [string]: boolean } = {}
+		for _, id in readList("IndexVariants") do
+			variantSet[id] = true
+		end
+		local challengesClaimed = readList("IndexChallenges")
+		local readyChallenges = RewardMath.readyChallenges(discovered, variantSet, challengesClaimed)
+		menuButton.setDot(#ready > 0 or #readyChallenges > 0)
+		made.setTitle(`Index ({found}/{#Companies.list})`)
+		if not made.isOpen() then
+			return
 		end
 
 		-- Companies, by tier.
@@ -173,7 +181,7 @@ function IndexController:Start()
 			card.Instance.Parent = variantGrid
 		end
 
-		-- Prizes.
+		-- Challenges: the collecting prizes, then the Gold challenges.
 		clear(prizesPage)
 		Scroll.heading(prizesPage, "Prizes for collecting companies", 1)
 		for index, milestone in IndexConfig.Milestones do
@@ -205,6 +213,36 @@ function IndexController:Start()
 				Remotes.ClaimIndex:FireServer(count)
 			end)
 		end
+		local after = 2 + #IndexConfig.Milestones
+		Scroll.heading(prizesPage, "Challenges for Gold", after, Theme.Colours.Gold)
+		for index, challenge in IndexConfig.Challenges do
+			local have, need = RewardMath.challengeProgress(challenge, discovered, variantSet)
+			local isClaimed = table.find(challengesClaimed, challenge.id) ~= nil
+			local isReady = table.find(readyChallenges, challenge.id) ~= nil
+			local row = Row.new({
+				title = RewardMath.describeChallenge(challenge),
+				detail = RewardMath.describeAll(challenge.grants),
+				icon = "Gold",
+				accent = if isClaimed then Theme.Colours.Cash else Theme.Colours.Gold,
+				height = ROW_HEIGHT,
+				actionWidth = ACTION_WIDTH,
+				layoutOrder = after + index,
+			})
+			row.Instance.Name = challenge.id
+			row.Instance.Parent = prizesPage
+			local button = Button.new({
+				text = if isClaimed then "Claimed" elseif isReady then "Claim" else `{have}/{need}`,
+				colour = Theme.Colours.Gold,
+				size = UDim2.fromScale(1, 1),
+				textSize = Theme.TextSize.Body,
+			})
+			button.setEnabled(isReady)
+			button.Instance.Parent = row.Action
+			local id = challenge.id
+			button.Activated:Connect(function()
+				Remotes.ClaimChallenge:FireServer(id)
+			end)
+		end
 	end
 
 	menuButton.Activated:Connect(function()
@@ -218,6 +256,7 @@ function IndexController:Start()
 	player:GetAttributeChangedSignal("IndexDiscovered"):Connect(render)
 	player:GetAttributeChangedSignal("IndexClaimed"):Connect(render)
 	player:GetAttributeChangedSignal("IndexVariants"):Connect(render)
+	player:GetAttributeChangedSignal("IndexChallenges"):Connect(render)
 	render()
 end
 

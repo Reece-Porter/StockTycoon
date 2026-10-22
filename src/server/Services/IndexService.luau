@@ -1,14 +1,16 @@
 --!strict
 -- The Index (Config/Index): every kind of company a player has ever owned,
--- with prizes for collecting so many different ones. A company counts once it
+-- with prizes for collecting so many different ones, and challenges (every
+-- company of a tier, so many variants) that pay Gold. A company counts once it
 -- is in the player's save in any way (storage, a plot, their hands or the
 -- Valuation Machine), so buying and completing a steal both count. The Index
 -- and its claimed prizes are kept through rebirth. Prizes are given by
 -- RewardsService; the client only asks to claim. The Index also keeps every
 -- variant (Config/Variants) the player has owned.
 --
--- Players get IndexDiscovered, IndexClaimed and IndexVariants attributes (JSON
--- lists) for the Index screen.
+-- Players get IndexDiscovered, IndexClaimed, IndexVariants and
+-- IndexChallenges (claimed challenge ids) attributes (JSON lists) for the
+-- Index screen.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -17,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local IndexConfig = require(ReplicatedStorage.Shared.Config.Index)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 local DataService = require(script.Parent.DataService)
@@ -24,6 +27,8 @@ local RewardsService = require(script.Parent.RewardsService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local claimLimiter = RateLimiter.new(2, 4)
+local challengeLimiter = RateLimiter.new(2, 4)
+local MAX_ID_LENGTH = 32
 
 local IndexService = {}
 
@@ -64,6 +69,7 @@ local function publish(player: Player)
 		end
 	end
 	player:SetAttribute("IndexVariants", HttpService:JSONEncode(variants))
+	player:SetAttribute("IndexChallenges", HttpService:JSONEncode(data.Index.Challenges))
 end
 
 -- Adds any company the player owns now that isn't in their Index yet.
@@ -135,6 +141,28 @@ local function claim(player: Player, count: number): string
 	return `Index prize for {count} companies: {RewardsService:Grant(player, milestone.grants, "Index")}!`
 end
 
+-- Returns the message for the player.
+local function claimChallenge(player: Player, challengeId: string): string
+	local challenge = nil
+	for _, candidate in IndexConfig.Challenges do
+		if candidate.id == challengeId then
+			challenge = candidate
+		end
+	end
+	local data = DataService:GetData(player)
+	if challenge == nil or data == nil then
+		return "That isn't an Index challenge."
+	end
+	local have, need = RewardMath.challengeProgress(challenge, data.Index.Discovered, data.Index.Variants)
+	if have < need then
+		return `{RewardMath.describeChallenge(challenge)} for that: {have}/{need} so far.`
+	end
+	if not DataService:ClaimChallenge(player, challenge.id) then
+		return "You've already claimed that."
+	end
+	return `{RewardMath.describeChallenge(challenge)}: {RewardsService:Grant(player, challenge.grants, "Index")}!`
+end
+
 -- Admin testing: discovers up to this many companies the player hasn't found
 -- yet, at random.
 function IndexService:DiscoverRandom(player: Player, count: number): number
@@ -167,6 +195,11 @@ function IndexService:Start()
 	Remotes.ClaimIndex.OnServerEvent:Connect(function(player: Player, count: unknown)
 		if claimLimiter:allow(player) and typeof(count) == "number" then
 			notify(player, claim(player, count))
+		end
+	end)
+	Remotes.ClaimChallenge.OnServerEvent:Connect(function(player: Player, challengeId: unknown)
+		if challengeLimiter:allow(player) and typeof(challengeId) == "string" and #challengeId <= MAX_ID_LENGTH then
+			notify(player, claimChallenge(player, challengeId))
 		end
 	end)
 end

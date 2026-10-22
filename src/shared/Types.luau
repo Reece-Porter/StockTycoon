@@ -59,6 +59,8 @@ export type IndexState = {
 	Claimed: { number },
 	-- Variants (Config/Variants ids) the player has ever owned.
 	Variants: { [string]: boolean },
+	-- Index challenges (Config/Index.Challenges ids) claimed.
+	Challenges: { string },
 }
 
 -- What's been reported to Roblox analytics.

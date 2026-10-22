@@ -4,7 +4,8 @@
 -- 2 to 8 players play a match: five rounds where each spins three random
 -- stocks and picks one, then each keeps their total value or puts it
 -- through the arena's Valuation Machine (0.5x to 5x, MachinePath). The
--- higher a player finishes, the more Cash they get. Everyone spins with the
+-- higher a player finishes, the more Cash and Gold they get, and the more
+-- rebirths they have, the more Gold. Everyone spins with the
 -- same odds (Luck x1), so rebirths don't decide it. One player can play a
 -- practice match alone, with no reward. Nothing here is sold for Robux.
 
@@ -45,6 +46,13 @@ return {
 		{ incomeSeconds = 240, minimum = 2_000 },
 	} :: { Reward },
 	OtherReward = { incomeSeconds = 120, minimum = 1_000 } :: Reward,
+
+	-- Gold by place too, the same way (1st, 2nd, 3rd, then everyone else),
+	-- times 1 + GoldPerRebirth x the player's rebirths: so 1st place is 25
+	-- Gold at first, 50 after five rebirths and 75 after ten.
+	GoldRewards = { 25, 15, 10 } :: { number },
+	OtherGold = 5,
+	GoldPerRebirth = 0.2,
 
 	-- How close (in studs) a player must be to the arena's join podium to
 	-- join, and to a street teleporter to go to the arena, with leeway for

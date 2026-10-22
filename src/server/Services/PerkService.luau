@@ -1,13 +1,14 @@
 --!strict
 -- The upgrade station (docs/design.md, "Upgrade station"; Config/Perks):
--- upgrades bought with Cash at Workspace.Map.Shops.UpgradeStation's
+-- upgrades bought with Gold at Workspace.Map.Shops.UpgradeStation's
 -- ShopPrompt, one level at a time. The server checks the player is at the
--- station, has the Cash and isn't at the top level; the client only asks.
+-- station, has the Gold and isn't at the top level; the client only asks.
 --
 -- Each upgrade works where it matters, read from the save with PerkMath:
 -- walk speed here (Lib/Movement), damage in CombatService, Spinner Luck
 -- (saved as ConveyorLuck) and variant chance in SpinnerService, and the
--- money multiplier in IncomeService. Rebirth sets them back to 0 (DataService).
+-- money multiplier in IncomeService. Rebirth keeps them, like the Gold they
+-- cost (unless Config/Perks.ResetOnRebirth).
 --
 -- Players get a PerkLevels attribute (JSON: upgrade id to level) for the
 -- Upgrades window.
@@ -81,11 +82,11 @@ local function buy(player: Player, perkId: string): string
 	if cost == nil then
 		return `{perk.name} is at its top level.`
 	end
-	if not DataService:SpendCash(player, cost) then
-		return `You need {Format.cash(cost)} for that.`
+	if not DataService:SpendGold(player, cost) then
+		return `You need {Format.gold(cost)} for that. Earn Gold from Index challenges and the battle arena.`
 	end
 	DataService:SetPerkLevel(player, perk.id, level + 1)
-	AnalyticsService:Spent(player, "Upgrade", cost, perk.id)
+	AnalyticsService:SpentGold(player, "Upgrade", cost, perk.id)
 	return `{perk.name} is now level {level + 1}!`
 end
 

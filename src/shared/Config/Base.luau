@@ -15,13 +15,19 @@ return {
 	PlotsPerFloor = 10,
 	MaxFloors = 4,
 
-	-- Upgrade costs. Extra plots unlock one at a time: the first extra plot
-	-- (Plot7) on each floor costs FirstExtraPlotCost[floor], and each one after
-	-- costs PlotCostGrowth times the one before. A full floor lets the player
-	-- open the next floor for FloorCost[floor]; Floor 1 is open from the start.
-	FirstExtraPlotCost = { 250, 12_000, 250_000, 4_000_000 },
+	-- Floors 1 to CashFloors are bought with Cash. Extra plots unlock one at a
+	-- time: the first extra plot (Plot7) on each floor costs
+	-- FirstExtraPlotCost[floor], and each one after costs PlotCostGrowth times
+	-- the one before. A full floor lets the player open the next floor for
+	-- FloorCost[floor]; Floor 1 is open from the start.
+	CashFloors = 2,
+	FirstExtraPlotCost = { 250, 12_000 },
 	PlotCostGrowth = 2,
-	FloorCost = { 0, 8_000, 150_000, 3_000_000 },
+	FloorCost = { 0, 8_000 },
+	-- The floors above those open with rebirths instead: every rebirth opens
+	-- this many plots there, filling them from the bottom, once the Cash
+	-- floors are full (so 2 a rebirth fill floors 3 and 4 by rebirth 10).
+	PlotsPerRebirth = 2,
 
 	-- How close (in studs) a player must be to use a plot, and how much extra
 	-- the server allows for network lag.

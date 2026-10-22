@@ -54,6 +54,11 @@ function Format.cash(value: number): string
 	return `${Format.number(value)}`
 end
 
+-- Gold, the currency rebirth never takes: "25 Gold", "1.2K Gold".
+function Format.gold(value: number): string
+	return `{Format.number(value)} Gold`
+end
+
 function Format.income(value: number): string
 	return `+${Format.number(value)}/s`
 end

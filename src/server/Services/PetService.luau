@@ -29,6 +29,7 @@ local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Types = require(ReplicatedStorage.Shared.Types)
+local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
@@ -89,13 +90,18 @@ local function slotsOpen(player: Player): number
 	return Pets.SlotsPerFloor + (if Passes.owns(player, "ExtraPetSlot") then Monetisation.ExtraPetSlots else 0)
 end
 
+-- Whether the floor is open (UpgradeMath.open, with the rebirths' floors).
+local function floorOpen(data: DataService.Data, floor: number): boolean
+	return UpgradeMath.open(data.UnlockedPlots, data.Rebirths)[floor] ~= nil
+end
+
 local function isOpen(player: Player, slot: BaseService.PetSlot, data: DataService.Data): boolean
-	return data.UnlockedPlots[slot.floor] ~= nil and slot.index <= slotsOpen(player)
+	return floorOpen(data, slot.floor) and slot.index <= slotsOpen(player)
 end
 
 -- A slot on an opened floor that only the Extra Pet Slot pass opens.
 local function isPassSlot(slot: BaseService.PetSlot, data: DataService.Data): boolean
-	return data.UnlockedPlots[slot.floor] ~= nil
+	return floorOpen(data, slot.floor)
 		and slot.index > Pets.SlotsPerFloor
 		and slot.index <= Pets.SlotsPerFloor + Monetisation.ExtraPetSlots
 end
@@ -292,7 +298,7 @@ function PetService:DescribeFloors(player: Player): string
 		return "not loaded"
 	end
 	local lines = {}
-	for floor = 1, #data.UnlockedPlots do
+	for floor = 1, #UpgradeMath.open(data.UnlockedPlots, data.Rebirths) do
 		local bonus = PetMath.floorBonuses(data.Pets)[floor]
 		local income = if bonus then math.floor(bonus.income * 100 + 0.5) else 0
 		local guard = if bonus then bonus.guard else 0

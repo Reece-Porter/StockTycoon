@@ -1,6 +1,6 @@
 # Stock Tycoon (working title)
 
-Roblox tycoon game in the style of Steal a Brainrot. Parody companies come out of each base's Stock Spinner and along a shared conveyor, players buy them, carry them back to their base, optionally run them through the Valuation Machine, then place them on plots where they generate Cash per second. Bases grow upwards: players upgrade to unlock more plots and new floors. A central weapon shop sells weapons for fighting other players, mainly over the shared conveyor. A pet shop next to it sells pet spins; pets are placed on a floor to give that floor a modifier. During an hourly Hostile Takeover, other players can steal placed companies. Rebirth resets progress for a permanent income multiplier.
+Roblox tycoon game in the style of Steal a Brainrot. Parody companies come out of each base's Stock Spinner and along a shared conveyor, players buy them, carry them back to their base, optionally run them through the Valuation Machine, then place them on plots where they generate Cash per second. Bases grow upwards: players upgrade to unlock more plots and new floors. A central weapon shop sells weapons for fighting other players, mainly over the shared conveyor. A pet shop next to it sells pet spins; pets are placed on a floor to give that floor a modifier. During an hourly Hostile Takeover, other players can steal placed companies. Rebirth gives up your Cash for a permanent income multiplier and more plots. Gold, a second currency that rebirth never takes, buys upgrades.
 
 Full game design, numbers and build order: `docs/design.md`. Read it before starting any feature. Values marked as starting assumptions are tunable and live in Config, never hard-coded.
 
@@ -11,9 +11,9 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
 2. Player buys a company; the character physically carries it back to their base.
 3. At the base, the player either places it straight onto a free plot, or puts it into the Valuation Machine first (free the first time, Cash to run it again).
 4. Placed companies generate Cash per second. Cash buys more companies and plots.
-5. Cash also buys base upgrades (more plots, new floors), weapons and pet spins.
+5. Cash also buys base upgrades (more plots on floors 1 and 2, and floor 2 itself), weapons and pet spins. Gold, earned from Index challenges and the battle arena, buys the upgrade station's upgrades.
 6. During a Hostile Takeover (5 minutes at the start of every hour), other players can enter a base, pick up a placed company and carry it to their own base. Owners defend with a timed base lock and by tagging thieves. Outside a takeover, bases can't be stolen from.
-7. Rebirth resets cash, companies and base upgrades for a permanent income multiplier.
+7. Rebirth takes only the player's Cash, for a permanent income multiplier, more Stock Spinner Luck and 2 more plots on floors 3 and 4 (which only rebirths open). Each rebirth needs a company of a tier that rises gently (a Startup for the first). Companies, plots, floors, pets, upgrades and Gold are kept. (Changed by Reece, October 2026; it used to reset companies and base upgrades too.)
 8. Playtime milestones and a daily login streak give Cash, temporary income boosts and free pet spins.
 
 ## Companies

@@ -3,8 +3,10 @@
 -- functions: times are Unix seconds (UTC) passed in, so the server, the
 -- rewards screen and tests all share them.
 
+local Companies = require(script.Parent.Config.Companies)
 local Format = require(script.Parent.Format)
 local IndexConfig = require(script.Parent.Config.Index)
+local Tiers = require(script.Parent.Config.Tiers)
 local RewardsConfig = require(script.Parent.Config.Rewards)
 
 local DAY_SECONDS = 24 * 60 * 60
@@ -77,6 +79,60 @@ function RewardMath.readyIndex(discovered: number, claimed: { number }): { numbe
 	return ready
 end
 
+-- How far a player is through an Index challenge: what they have and what
+-- it needs. discovered and variants are sets of company and variant ids the
+-- player has owned.
+function RewardMath.challengeProgress(
+	challenge: IndexConfig.Challenge,
+	discovered: { [string]: boolean },
+	variants: { [string]: boolean }
+): (number, number)
+	if challenge.kind == "tier" then
+		local found = Companies.byTier[challenge.tier or ""]
+		local inTier: { Companies.Company } = if found then found else {}
+		local have = 0
+		for _, company in inTier do
+			if discovered[company.id] then
+				have += 1
+			end
+		end
+		return have, #inTier
+	end
+	local have = 0
+	for _ in variants do
+		have += 1
+	end
+	local need = challenge.count or 0
+	return math.min(have, need), need
+end
+
+-- Index challenges done but not claimed yet, by id.
+function RewardMath.readyChallenges(
+	discovered: { [string]: boolean },
+	variants: { [string]: boolean },
+	claimed: { string }
+): { string }
+	local ready = {}
+	for _, challenge in IndexConfig.Challenges do
+		local have, need = RewardMath.challengeProgress(challenge, discovered, variants)
+		if need > 0 and have >= need and not table.find(claimed, challenge.id) then
+			table.insert(ready, challenge.id)
+		end
+	end
+	return ready
+end
+
+-- What an Index challenge asks for, e.g. "Collect every Unicorn" or "Find 3
+-- different variants".
+function RewardMath.describeChallenge(challenge: IndexConfig.Challenge): string
+	if challenge.kind == "tier" then
+		local tier = Tiers.byId[challenge.tier or ""]
+		return `Collect every {if tier then tier.name else challenge.tier}`
+	end
+	local count = challenge.count or 0
+	return if count == 1 then "Find a variant" else `Find {count} different variants`
+end
+
 local function minutes(seconds: number): string
 	return `{math.floor(seconds / 60 + 0.5)} min`
 end
@@ -93,6 +149,8 @@ function RewardMath.describe(grant: RewardsConfig.Grant): string
 		return if minimum and minimum > 0 then `{text} (at least {Format.cash(minimum)})` else text
 	elseif grant.kind == "boost" then
 		return `{RewardsConfig.BoostMultiplier}x income for {minutes(grant.seconds or 0)}`
+	elseif grant.kind == "gold" then
+		return Format.gold(grant.count or 0)
 	end
 	local count = grant.count or 0
 	return if count == 1 then "1 free pet spin" else `{count} free pet spins`

@@ -1,12 +1,15 @@
 --!strict
 -- The Upgrades menu button and its window, with two tabs:
 --   Base: the next base upgrade (one more plot, or the next floor) and its
---     cost, from the NextUpgrade and NextUpgradeCost attributes. Bought from
---     anywhere.
+--     Cash cost, from the NextUpgrade and NextUpgradeCost attributes. Bought
+--     from anywhere. Once floors 1 and 2 are full, the floors above open with
+--     rebirths instead: it says which rebirth opens the next plot
+--     (NextUpgradeRebirth), and how many plots rebirths have earned that are
+--     waiting for the Cash floors to fill (PlotsWaiting).
 --   Station: the upgrade station's upgrades (Config/Perks) with their levels,
---     what they do now and next, and the next level's cost, from the
---     PerkLevels attribute. These are bought at the station, so away from it
---     the window offers a teleport there instead.
+--     what they do now and next, and the next level's cost in Gold, from the
+--     PerkLevels and Gold attributes. These are bought at the station, so
+--     away from it the window offers a teleport there instead.
 -- The station's prompt (Workspace.Map.Shops.UpgradeStation.ShopPrompt) opens
 -- the window on the Station tab. The menu button gets a dot while the next
 -- base upgrade is affordable. The server checks every purchase
@@ -16,6 +19,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Format = require(ReplicatedStorage.Shared.Format)
 local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local Perks = require(ReplicatedStorage.Shared.Config.Perks)
@@ -79,6 +83,11 @@ local function cashNow(): number?
 	return if cash and cash:IsA("IntValue") then cash.Value else nil
 end
 
+local function goldNow(): number
+	local gold = player:GetAttribute("Gold")
+	return if typeof(gold) == "number" then gold else 0
+end
+
 function UpgradeController:Start()
 	local pages: { [string]: Frame } = {}
 	local window = Menu.window({
@@ -125,13 +134,23 @@ function UpgradeController:Start()
 		Remotes.BuyUpgrade:FireServer()
 	end)
 	local baseNote = Make.label(baseList, {
-		text = "Each upgrade opens one more plot. Fill a floor and the next upgrade builds a whole new floor on your base.",
+		text = `Each upgrade opens one more plot. Fill a floor and the next upgrade builds a whole new floor on your base. Floors above {BaseConfig.CashFloors} open with rebirths instead: {BaseConfig.PlotsPerRebirth} plots every rebirth. Rebirth keeps every plot.`,
 		size = Theme.TextSize.Small,
 		colour = Theme.Colours.TextMuted,
 		wrapped = true,
 	})
+	baseNote.Name = "Note"
 	baseNote.LayoutOrder = 2
-	baseNote.Size = UDim2.new(1, 0, 0, 44)
+	baseNote.Size = UDim2.new(1, 0, 0, 64)
+	local waitingNote = Make.label(baseList, {
+		size = Theme.TextSize.Small,
+		colour = Theme.shade(Theme.Colours.Gold, 0.3),
+		wrapped = true,
+	})
+	waitingNote.Name = "Waiting"
+	waitingNote.LayoutOrder = 3
+	waitingNote.Size = UDim2.new(1, 0, 0, 40)
+	waitingNote.Visible = false
 
 	-- Station: a row per upgrade, with a teleport there when away from it.
 	local stationPage = page("Station")
@@ -170,7 +189,8 @@ function UpgradeController:Start()
 		row.Instance.Parent = stationList
 		local button = Button.new({
 			text = "",
-			colour = Theme.Colours.Cash,
+			icon = "Gold",
+			colour = Theme.Colours.Gold,
 			size = UDim2.fromScale(1, 1),
 			textSize = Theme.TextSize.Body,
 		})
@@ -209,9 +229,16 @@ function UpgradeController:Start()
 		-- The next base upgrade.
 		local label = player:GetAttribute("NextUpgrade")
 		local cost = player:GetAttribute("NextUpgradeCost")
+		local rebirth = player:GetAttribute("NextUpgradeRebirth")
 		local affordable = typeof(cost) == "number" and cash ~= nil and cash >= cost
 		menuButton.setDot(affordable)
-		if typeof(label) ~= "string" or label == FULLY_UPGRADED or typeof(cost) ~= "number" then
+		if typeof(rebirth) == "number" and typeof(cost) ~= "number" then
+			-- The Cash floors are full: the next plots come from rebirths.
+			nextRow.setTitle(if typeof(label) == "string" then `Next: {label}` else "Next plots")
+			nextRow.setDetail(`{BaseConfig.PlotsPerRebirth} more plots open at rebirth {rebirth}.`)
+			buyBase.setText(`Rebirth {rebirth}`)
+			buyBase.setEnabled(false)
+		elseif typeof(label) ~= "string" or label == FULLY_UPGRADED or typeof(cost) ~= "number" then
 			nextRow.setTitle(if typeof(label) == "string" then label else "Upgrade base")
 			nextRow.setDetail("Every plot and floor is open.")
 			buyBase.setText("Done")
@@ -226,10 +253,17 @@ function UpgradeController:Start()
 			buyBase.setText(Format.cash(cost))
 			buyBase.setEnabled(affordable)
 		end
+		local waiting = player:GetAttribute("PlotsWaiting")
+		waitingNote.Visible = typeof(waiting) == "number" and waiting > 0
+		if waitingNote.Visible then
+			waitingNote.Text =
+				`Your rebirths have earned {waiting} plots above floor {BaseConfig.CashFloors}: they open once floor {BaseConfig.CashFloors} is full.`
+		end
 
 		-- The station's upgrades.
 		local here = nearStation()
 		away.Instance.Visible = not here
+		local gold = goldNow()
 		local current = levels()
 		for _, entry in perkRows do
 			local perk = entry.perk
@@ -245,15 +279,15 @@ function UpgradeController:Start()
 				entry.button.setText("Maxed")
 				entry.button.setEnabled(false)
 			else
-				entry.button.setText(Format.cash(nextCost))
-				entry.button.setEnabled(here and (cash == nil or cash >= nextCost))
+				entry.button.setText(Format.number(nextCost))
+				entry.button.setEnabled(here and gold >= nextCost)
 			end
 		end
 	end
 
-	player:GetAttributeChangedSignal("NextUpgrade"):Connect(render)
-	player:GetAttributeChangedSignal("NextUpgradeCost"):Connect(render)
-	player:GetAttributeChangedSignal("PerkLevels"):Connect(render)
+	for _, name in { "NextUpgrade", "NextUpgradeCost", "NextUpgradeRebirth", "PlotsWaiting", "PerkLevels", "Gold" } do
+		player:GetAttributeChangedSignal(name):Connect(render)
+	end
 	render()
 
 	-- The station's prompt opens the window on the Station tab. The station

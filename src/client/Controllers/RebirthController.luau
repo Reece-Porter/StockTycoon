@@ -1,22 +1,26 @@
 --!strict
 -- The Rebirth menu button (with a dot once the player can rebirth) and its
--- window: the income multiplier, and the Stock Spinner Luck and odds, now and
--- after (before Spinner Luck, which a rebirth resets), what the next rebirth
--- needs (ticked once the player has it), what it resets and keeps, and a big
--- Rebirth button that takes two taps. The server sends Rebirths, RebirthCost
--- and RebirthHasTier and checks everything again.
+-- window: the income multiplier, and the Stock Spinner Luck (with the
+-- player's Spinner Luck upgrade) and odds, now and after, the plots it opens,
+-- what the next rebirth needs (ticked once the player has it: Cash and a
+-- company of the tier for that rebirth), what it takes and keeps, and a big
+-- Rebirth button that takes two taps. The server sends Rebirths, RebirthCost,
+-- RebirthTier and RebirthHasTier and checks everything again.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Format = require(ReplicatedStorage.Shared.Format)
-local RebirthConfig = require(ReplicatedStorage.Shared.Config.Rebirth)
+local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
 local SpinnerMath = require(ReplicatedStorage.Shared.SpinnerMath)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local Button = require(script.Parent.Parent.Ui.Kit.Button)
 local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
 local Make = require(script.Parent.Parent.Ui.Kit.Make)
@@ -35,10 +39,20 @@ type Need = { frame: Frame, label: TextLabel, tick: Frame, cross: Frame }
 
 local RebirthController = {}
 
+-- The player's Spinner Luck upgrade level (kept through rebirth).
+local function luckLevel(): number
+	local json = player:GetAttribute("PerkLevels")
+	if typeof(json) ~= "string" then
+		return 0
+	end
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, json)
+	return if ok and typeof(decoded) == "table" then PerkMath.level(decoded :: any, "ConveyorLuck") else 0
+end
+
 -- Each spinner tier's chance (0 to 100) with the Luck this many rebirths
--- give.
+-- give, with the player's Spinner Luck upgrade.
 local function oddsAfter(rebirths: number): { [string]: number }
-	return SpinnerMath.percents(SpinnerMath.weights(SpinnerConfig.Weights, RebirthMath.luck(rebirths)))
+	return SpinnerMath.percents(SpinnerMath.weights(SpinnerConfig.Weights, SpinnerMath.luck(rebirths, luckLevel())))
 end
 
 -- "1.8%", or "0.04%" for small chances.
@@ -127,29 +141,39 @@ function RebirthController:Start()
 		oddsLabels[entry.tier] = label
 	end
 	local after = 5 + #SpinnerConfig.Weights
-	Scroll.heading(list, "You need", after)
-	local cashNeed = need(list, after + 1)
-	local tierNeed = need(list, after + 2)
-	Scroll.heading(list, "Resets", after + 3)
+	Scroll.heading(list, "New plots", after)
+	local plotsLabel = Make.label(list, {
+		size = Theme.TextSize.Body,
+		colour = Theme.Colours.Text,
+		alignX = Enum.TextXAlignment.Left,
+		wrapped = true,
+	})
+	plotsLabel.Name = "Plots"
+	plotsLabel.LayoutOrder = after + 1
+	plotsLabel.Size = UDim2.new(1, 0, 0, 44)
+	Scroll.heading(list, "You need", after + 2)
+	local cashNeed = need(list, after + 3)
+	local tierNeed = need(list, after + 4)
+	Scroll.heading(list, "Takes", after + 5)
 	local resets = Make.label(list, {
-		text = "Cash, every company, plots and floors",
+		text = "Your Cash, and the Cash on your cash pads",
 		size = Theme.TextSize.Body,
 		colour = Theme.Colours.Text,
 		alignX = Enum.TextXAlignment.Left,
 		wrapped = true,
 	})
-	resets.LayoutOrder = after + 4
+	resets.LayoutOrder = after + 6
 	resets.Size = UDim2.new(1, 0, 0, 24)
-	Scroll.heading(list, "Keeps", after + 5)
+	Scroll.heading(list, "Keeps", after + 7)
 	local keeps = Make.label(list, {
-		text = "Rebirths, weapons and pets (pets go back to your Pets window)",
+		text = "Every company, plot and floor, your pets where they are, weapons, Gold and upgrade levels, and your Index",
 		size = Theme.TextSize.Body,
 		colour = Theme.Colours.Text,
 		alignX = Enum.TextXAlignment.Left,
 		wrapped = true,
 	})
-	keeps.LayoutOrder = after + 6
-	keeps.Size = UDim2.new(1, 0, 0, 44)
+	keeps.LayoutOrder = after + 8
+	keeps.Size = UDim2.new(1, 0, 0, 64)
 
 	local go = Button.new({
 		text = "Rebirth",
@@ -184,15 +208,29 @@ function RebirthController:Start()
 		local cost = numberAttribute("RebirthCost")
 		local have = if cash then cash.Value else 0
 		local hasTier = player:GetAttribute("RebirthHasTier") == true
-		local tier = Tiers.byId[RebirthConfig.RequiredTier]
+		local neededId = player:GetAttribute("RebirthTier")
+		local tier = Tiers.byId[if typeof(neededId) == "string" then neededId else RebirthMath.requiredTier(rebirths)]
+			or Tiers.list[1]
 		local ready = isReady()
 
 		window.setTitle(`Rebirth ({rebirths} so far)`)
 		multiplier.Text =
 			`x{RebirthMath.incomeMultiplier(rebirths)}  →  x{RebirthMath.incomeMultiplier(rebirths + 1)}`
-		luckLabel.Text = `Luck {SpinnerMath.luckText(RebirthMath.luck(rebirths))}  →  {SpinnerMath.luckText(
-			RebirthMath.luck(rebirths + 1)
+		local level = luckLevel()
+		luckLabel.Text = `Luck {SpinnerMath.luckText(SpinnerMath.luck(rebirths, level))}  →  {SpinnerMath.luckText(
+			SpinnerMath.luck(rebirths + 1, level)
 		)}`
+		local maxPlots = (BaseConfig.MaxFloors - BaseConfig.CashFloors) * BaseConfig.PlotsPerFloor
+		local earned = UpgradeMath.rebirthPlots(rebirths + 1)
+		local added = earned - UpgradeMath.rebirthPlots(rebirths)
+		-- The Cash floors are full once there's no Cash upgrade left.
+		local cashFull = typeof(player:GetAttribute("NextUpgradeCost")) ~= "number"
+		if added <= 0 then
+			plotsLabel.Text = `Every plot above floor {BaseConfig.CashFloors} is already yours.`
+		else
+			local whenOpen = if cashFull then "" else ` They open once floor {BaseConfig.CashFloors} is full.`
+			plotsLabel.Text = `+{added} plots above floor {BaseConfig.CashFloors} ({earned} of {maxPlots}).{whenOpen}`
+		end
 		local now, later = oddsAfter(rebirths), oddsAfter(rebirths + 1)
 		for tierId, label in oddsLabels do
 			label.Text = `{Tiers.byId[tierId].name}:  {percent(now[tierId])}  →  {percent(later[tierId])}`
@@ -232,7 +270,7 @@ function RebirthController:Start()
 		render()
 	end)
 
-	for _, name in { "Rebirths", "RebirthCost", "RebirthHasTier" } do
+	for _, name in { "Rebirths", "RebirthCost", "RebirthTier", "RebirthHasTier", "PerkLevels", "NextUpgradeCost" } do
 		player:GetAttributeChangedSignal(name):Connect(render)
 	end
 	render()

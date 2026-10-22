@@ -1,18 +1,35 @@
 --!strict
--- Rebirth: start again with Cash, companies and base upgrades wiped, for a
--- permanent income multiplier. Starting assumptions from docs/design.md.
+-- Rebirth: give up your Cash for a permanent income multiplier. Starting
+-- assumptions from docs/design.md.
 --
--- Kept through rebirth: the rebirth count, weapons and pets (pets go back to
--- the Pets window, ready to put in their slots again).
+-- Only Cash goes (and any Cash waiting on cash pads). Companies, plots and
+-- floors, pets (in their slots), weapons, upgrade station levels, Gold, the
+-- Index and the rebirth count are all kept. Every rebirth also opens
+-- Config/Base.PlotsPerRebirth more plots on the floors above the ones bought
+-- with Cash.
+
+export type TierStep = { from: number, tier: string }
 
 return {
 	-- Cash needed for the first rebirth; each rebirth after that needs this
-	-- many times more.
+	-- many times more. (Was 3 while rebirth also took every company and plot;
+	-- now that a base is kept, doubling keeps 10 rebirths within reach.)
 	BaseCashRequired = 1_000_000,
-	CashRequiredGrowth = 3,
+	CashRequiredGrowth = 2,
 
-	-- A company of this tier or better must be owned (placed or in storage).
-	RequiredTier = "BlueChip",
+	-- A company of this tier or better must be owned (placed or in storage)
+	-- for the rebirth with this number, from that rebirth on until the next
+	-- step: a Startup for the first two, then a little rarer every few
+	-- rebirths. Blue Chip covers rebirths 8 to 15 (any Stock Spinner can roll
+	-- one, more often with every rebirth), then a Conglomerate from the shared
+	-- conveyor. It isn't used up.
+	RequiredTiers = {
+		{ from = 1, tier = "Startup" },
+		{ from = 3, tier = "ScaleUp" },
+		{ from = 5, tier = "Unicorn" },
+		{ from = 8, tier = "BlueChip" },
+		{ from = 16, tier = "Conglomerate" },
+	} :: { TierStep },
 
 	-- Income multiplier: 1 + IncomePerRebirth x rebirths.
 	IncomePerRebirth = 0.5,

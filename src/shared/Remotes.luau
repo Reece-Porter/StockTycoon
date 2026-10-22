@@ -118,6 +118,9 @@ return {
 	-- Client to server: (count: number) claim an Index prize.
 	ClaimIndex = event("ClaimIndex"),
 
+	-- Client to server: (challengeId: string) claim an Index challenge's Gold.
+	ClaimChallenge = event("ClaimChallenge"),
+
 	-- Client to server: (code: string) redeem a code.
 	RedeemCode = event("RedeemCode"),
 

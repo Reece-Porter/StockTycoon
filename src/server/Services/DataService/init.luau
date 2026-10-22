@@ -17,6 +17,7 @@ local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local PerksConfig = require(ReplicatedStorage.Shared.Config.Perks)
 local PetsConfig = require(ReplicatedStorage.Shared.Config.Pets)
 local Types = require(ReplicatedStorage.Shared.Types)
+local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 
 local Migrations = require(script.Migrations)
 local Template = require(script.Template)
@@ -136,6 +137,15 @@ local function dataChanged(player: Player)
 	end
 end
 
+-- Call after a change to Gold.
+local function goldChanged(player: Player)
+	local profile = profiles[player]
+	if profile then
+		player:SetAttribute("Gold", profile.Data.Gold)
+	end
+	dataChanged(player)
+end
+
 local function onPlayerAdded(player: Player)
 	if loading[player] or profiles[player] then
 		return
@@ -181,6 +191,7 @@ local function onPlayerAdded(player: Player)
 
 	profiles[player] = profile
 	createLeaderstats(player, profile.Data.Cash)
+	player:SetAttribute("Gold", profile.Data.Gold)
 
 	for _, callback in loadedCallbacks do
 		task.spawn(callback, player)
@@ -291,6 +302,43 @@ function DataService:SetCash(player: Player, amount: number): boolean
 	end
 	profile.Data.Cash = amount
 	cashChanged(player)
+	return true
+end
+
+-- Gold, the currency rebirth never takes, is in whole amounts. The player's
+-- Gold attribute shows it to their screen.
+local function isValidGold(amount: number): boolean
+	return isValidCash(amount) and amount == math.floor(amount)
+end
+
+function DataService:AddGold(player: Player, amount: number): boolean
+	local profile = profiles[player]
+	if profile == nil or not isValidGold(amount) or not isValidGold(profile.Data.Gold + amount) then
+		return false
+	end
+	profile.Data.Gold += amount
+	goldChanged(player)
+	return true
+end
+
+-- Takes Gold only if the player has enough. Returns whether it was taken.
+function DataService:SpendGold(player: Player, amount: number): boolean
+	local profile = profiles[player]
+	if profile == nil or not isValidGold(amount) or profile.Data.Gold < amount then
+		return false
+	end
+	profile.Data.Gold -= amount
+	goldChanged(player)
+	return true
+end
+
+function DataService:SetGold(player: Player, amount: number): boolean
+	local profile = profiles[player]
+	if profile == nil or not isValidGold(amount) then
+		return false
+	end
+	profile.Data.Gold = amount
+	goldChanged(player)
 	return true
 end
 
@@ -626,6 +674,18 @@ function DataService:SetPerkLevel(player: Player, perkId: string, level: number)
 	return true
 end
 
+-- Records an Index challenge (Config/Index.Challenges id) as claimed. Fails
+-- if it already was.
+function DataService:ClaimChallenge(player: Player, challengeId: string): boolean
+	local profile = profiles[player]
+	if profile == nil or table.find(profile.Data.Index.Challenges, challengeId) then
+		return false
+	end
+	table.insert(profile.Data.Index.Challenges, challengeId)
+	dataChanged(player)
+	return true
+end
+
 -- Records an Index prize as claimed. Fails if it already was.
 function DataService:ClaimIndex(player: Player, count: number): boolean
 	local profile = profiles[player]
@@ -675,11 +735,13 @@ function DataService:RedeemCode(player: Player, code: string): boolean
 	return true
 end
 
--- Rebirth: Cash back to a new player's (cash pads emptied too), every company
--- and base upgrade gone,
--- upgrade station levels too (Config/Perks.ResetOnRebirth), pets back in the
--- inventory, and one more rebirth. Weapons, pets and the rebirth count are
--- kept. RebirthService checks the requirements first.
+-- Rebirth: Cash back to a new player's, with the Cash waiting on cash pads,
+-- and one more rebirth. Everything else is kept: companies (placed and in
+-- storage), plots and floors, pets in their slots, weapons, Gold, the Index,
+-- and upgrade station levels (unless Config/Perks.ResetOnRebirth). The new
+-- rebirth's plots open from the count (UpgradeMath.open). RebirthService
+-- checks the requirements first, including that nothing is in the player's
+-- hands or the Valuation Machine.
 function DataService:Rebirth(player: Player): boolean
 	local profile = profiles[player]
 	if profile == nil then
@@ -688,16 +750,8 @@ function DataService:Rebirth(player: Player): boolean
 	local data = profile.Data
 	data.Cash = Template.Cash
 	data.Uncollected = {}
-	data.Storage = {}
-	data.Placed = {}
-	data.Carrying = nil
-	data.Machine = nil
-	data.UnlockedPlots = deepCopy(Template.UnlockedPlots)
 	if PerksConfig.ResetOnRebirth then
 		data.Perks = {}
-	end
-	for _, pet in data.Pets do
-		pet.slotKey = nil
 	end
 	data.Rebirths += 1
 	cashChanged(player)
@@ -705,13 +759,35 @@ function DataService:Rebirth(player: Player): boolean
 	return true
 end
 
--- Admin testing: sets the rebirth count without resetting anything.
+-- Admin testing: sets the rebirth count without resetting anything. Fewer
+-- rebirths can close plots above the Cash floors (UpgradeMath.open): a
+-- company on one goes to storage, and a pet on a floor that closes goes back
+-- to the Pets window.
 function DataService:SetRebirths(player: Player, rebirths: number): boolean
 	local profile = profiles[player]
 	if profile == nil or rebirths < 0 or rebirths ~= math.floor(rebirths) then
 		return false
 	end
-	profile.Data.Rebirths = rebirths
+	local data = profile.Data
+	data.Rebirths = rebirths
+	local open = UpgradeMath.open(data.UnlockedPlots, rebirths)
+	local closed = {}
+	for key in data.Placed do
+		local floor, plot = string.match(key, "^Floor(%d+)/Plot(%d+)$")
+		if floor and plot and not UpgradeMath.isUnlocked(open, tonumber(floor) :: number, tonumber(plot) :: number) then
+			table.insert(closed, key)
+		end
+	end
+	for _, key in closed do
+		table.insert(data.Storage, data.Placed[key])
+		data.Placed[key] = nil
+	end
+	for _, pet in data.Pets do
+		local floor = if pet.slotKey then string.match(pet.slotKey, "^Floor(%d+)/") else nil
+		if floor and open[tonumber(floor) :: number] == nil then
+			pet.slotKey = nil
+		end
+	end
 	dataChanged(player)
 	return true
 end
@@ -724,7 +800,7 @@ function DataService:ResetData(player: Player): boolean
 	end
 	replaceData(profile, deepCopy(Template))
 	cashChanged(player)
-	dataChanged(player)
+	goldChanged(player)
 	return true
 end
 

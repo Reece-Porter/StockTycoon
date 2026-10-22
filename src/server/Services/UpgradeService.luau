@@ -1,15 +1,20 @@
 --!strict
 -- Base upgrades: one more plot on the top floor at a time, then the next floor
--- once it is full (see UpgradeMath). The client only asks; the server works
+-- once it is full, up to Config/Base.CashFloors (see UpgradeMath). The floors
+-- above open with rebirths, not Cash. The client only asks; the server works
 -- out the next upgrade, checks the player's Cash and that the plot or floor is
 -- built on their base, then charges for it and saves it.
 --
 -- Publishes the next upgrade in the NextUpgrade (text) and NextUpgradeCost
--- player attributes. Once the base is fully upgraded, NextUpgrade says so and
--- NextUpgradeCost is cleared.
+-- player attributes. Once the Cash floors are full, NextUpgradeCost is
+-- cleared and NextUpgradeRebirth is the rebirth count that opens the next
+-- plot (until they're all open, when NextUpgrade says the base is fully
+-- upgraded). PlotsWaiting is how many plots the player's rebirths have
+-- earned that wait for the Cash floors to be full.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
@@ -24,14 +29,35 @@ local limiter = RateLimiter.new(2, 4)
 
 local UpgradeService = {}
 
+-- The floor the next rebirth plot opens on.
+local function rebirthFloor(data: DataService.Data): number
+	local open = UpgradeMath.open(data.UnlockedPlots, data.Rebirths)
+	for floor = BaseConfig.CashFloors + 1, BaseConfig.MaxFloors do
+		if (open[floor] or 0) < BaseConfig.PlotsPerFloor then
+			return floor
+		end
+	end
+	return BaseConfig.MaxFloors
+end
+
 local function publish(player: Player)
 	local data = DataService:GetData(player)
 	if data == nil then
 		return
 	end
 	local upgrade = UpgradeMath.next(data.UnlockedPlots)
-	player:SetAttribute("NextUpgrade", if upgrade then UpgradeMath.describe(upgrade) else FULLY_UPGRADED)
+	local rebirth = if upgrade then nil else UpgradeMath.nextRebirthPlot(data.UnlockedPlots, data.Rebirths)
+	local label = if upgrade
+		then UpgradeMath.describe(upgrade)
+		elseif rebirth then `Floor {rebirthFloor(data)}`
+		else FULLY_UPGRADED
+	player:SetAttribute("NextUpgrade", label)
 	player:SetAttribute("NextUpgradeCost", if upgrade then upgrade.cost else nil)
+	player:SetAttribute("NextUpgradeRebirth", rebirth)
+	local waiting = if UpgradeMath.cashFloorsFull(data.UnlockedPlots)
+		then 0
+		else UpgradeMath.rebirthPlots(data.Rebirths)
+	player:SetAttribute("PlotsWaiting", waiting)
 end
 
 -- Whether the plot (or, for a new floor, its first plot) exists on the base.
@@ -53,7 +79,10 @@ local function buy(player: Player): string
 
 	local upgrade = UpgradeMath.next(data.UnlockedPlots)
 	if upgrade == nil then
-		return "Your base is fully upgraded."
+		local rebirth = UpgradeMath.nextRebirthPlot(data.UnlockedPlots, data.Rebirths)
+		return if rebirth
+			then `More plots open with rebirths now: the next at rebirth {rebirth}.`
+			else "Your base is fully upgraded."
 	end
 	if not isBuilt(base, upgrade) then
 		return if upgrade.kind == "floor"
@@ -64,11 +93,18 @@ local function buy(player: Player): string
 		return `You need {Format.cash(upgrade.cost)} for that upgrade.`
 	end
 
-	DataService:SetUnlockedPlots(player, UpgradeMath.apply(data.UnlockedPlots, upgrade))
+	local unlocked = UpgradeMath.apply(data.UnlockedPlots, upgrade)
+	DataService:SetUnlockedPlots(player, unlocked)
 	AnalyticsService:Spent(player, "Upgrade", upgrade.cost, upgrade.kind)
-	return if upgrade.kind == "floor"
+	local message = if upgrade.kind == "floor"
 		then `Opened floor {upgrade.floor}!`
 		else `Unlocked plot {upgrade.plot} on floor {upgrade.floor}!`
+	-- Filling the Cash floors opens the plots the player's rebirths earned.
+	local earned = UpgradeMath.rebirthPlots(data.Rebirths)
+	if UpgradeMath.cashFloorsFull(unlocked) and earned > 0 then
+		message ..= ` Your rebirths opened {earned} more plots above it.`
+	end
+	return message
 end
 
 function UpgradeService:Start()

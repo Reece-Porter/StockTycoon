@@ -56,6 +56,7 @@ export type Row = {
 	multiplier: number?,
 	final: number?,
 	reward: number?,
+	gold: number?,
 	left: boolean?,
 }
 
@@ -176,6 +177,18 @@ local function shortStatus(time: number): string
 	return statusText(time)
 end
 
+-- What a player won, e.g. "+$50K  ·  +25 Gold", or nil for nothing.
+local function rewardText(row: Row): string?
+	local parts = {}
+	if row.reward then
+		table.insert(parts, `+{Format.cash(row.reward)}`)
+	end
+	if row.gold then
+		table.insert(parts, `+{Format.gold(row.gold)}`)
+	end
+	return if #parts > 0 then table.concat(parts, "  ·  ") else nil
+end
+
 -- The panel at the top while the player is queued or playing.
 local function renderPanel(time: number)
 	local queued, inMatch = inLobby(), playing()
@@ -187,8 +200,9 @@ local function renderPanel(time: number)
 		local value = row.final or row.total
 		local place = if row.place then BattleMath.ordinal(row.place) else "-"
 		if state.phase == "Final" then
-			panelText.Text = if row.reward
-				then `You came {place}: {Format.cash(value)}  ·  +{Format.cash(row.reward)}`
+			local won = rewardText(row)
+			panelText.Text = if won
+				then `You came {place}: {Format.cash(value)}  ·  {won}`
 				else `You came {place}: {Format.cash(value)}`
 		else
 			panelText.Text = `{shortStatus(time)}  ·  {place}  ·  {Format.cash(value)}`
@@ -416,8 +430,9 @@ local function renderBoard(time: number)
 			if row.final and row.multiplier and row.choice == "machine" then
 				value = `{Format.cash(row.final)} ({string.format("%.2fx", row.multiplier)})`
 			end
-			if row.reward then
-				value ..= `  +{Format.cash(row.reward)}`
+			local won = rewardText(row)
+			if won then
+				value ..= `  {won}`
 			end
 			table.insert(lines, {
 				place = if row.place then BattleMath.ordinal(row.place) else "",
@@ -555,7 +570,7 @@ function BattleController.changed(newState: State)
 			Celebration.play(
 				playerGui,
 				"1ST PLACE!",
-				if row.reward then `+{Format.cash(row.reward)}` else "You won the battle!",
+				rewardText(row) or "You won the battle!",
 				{ colour = Theme.Colours.Gold }
 			)
 		end

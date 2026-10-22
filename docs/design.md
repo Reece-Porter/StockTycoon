@@ -4,7 +4,8 @@ Decisions marked "Decided" come from Reece and should not be changed without ask
 
 ## Decided
 - Stealing is in, Steal a Brainrot style.
-- Rebirth is in.
+- Rebirth is in. It only takes a player's Cash: their companies, plots and floors, pets, upgrades and Gold all stay (changed by Reece, October 2026; it used to take companies and base upgrades too). Each rebirth needs a company of a tier that gets a little rarer every few rebirths (a Startup for the first), and opens more plots on floors 3 and 4, which only rebirths open.
+- Gold is a second currency that rebirth never takes. It buys the upgrade station's upgrades, and comes from Index challenges and the battle arena (more Gold the more rebirths a player has).
 - Each base has a Stock Spinner instead of its own conveyor: a machine the owner walks up to and plays. A pop-up spins three reels, slot-machine style, which stop on 3 different companies rolled with the owner's Luck; those companies come out onto the base's belt and stay there, for only the owner to buy, until the machine is played again. The shared conveyor in the middle of the map stays, with better rarity odds and two tiers that only appear there.
 - Each player has a Luck that makes the spinner's rarer tiers more likely. It grows with every rebirth (and a little with the Spinner Luck upgrade), so rebirthing is the way up to better companies, and it shows next to the owner's name on their base's sign.
 - Stealing from bases only happens during a Hostile Takeover, an event once an hour, so players don't have to guard their base all the time.
@@ -58,7 +59,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - 5 rounds. Each round a pop-up spins three reels for 3 seconds onto 3 different random stocks, then the player has 12 seconds to pick one; whoever doesn't pick gets the most valuable. Everyone spins with the same odds (Luck x1 and the regular variant chance), so rebirths and upgrades don't decide it. A stock's value is its usual price times its variant's multiplier.
 - The board shows every player's place, name, latest pick (in its tier's colour) and total value, updated after each round. While a round is open it only ticks off who has picked.
 - After the last round each player has 12 seconds to keep their total or put it through the arena's Valuation Machine: the same kind of run as at home (0.5x to 5x), but 8 to 20 seconds long, and Take works the same way (the server decides from its own clock). Not choosing keeps the total.
-- Final standings by value (on a tie, whoever joined first). Cash by place, worth some of the player's own income per second without boosts: 1st 10 minutes' worth (at least 5,000), 2nd 6 minutes (3,000), 3rd 4 minutes (2,000), everyone else 2 minutes (1,000). The winner gets a 1ST PLACE! banner. The standings stay up for 15 seconds, then the arena is free again.
+- Final standings by value (on a tie, whoever joined first). Cash by place, worth some of the player's own income per second without boosts: 1st 10 minutes' worth (at least 5,000), 2nd 6 minutes (3,000), 3rd 4 minutes (2,000), everyone else 2 minutes (1,000). And Gold by place: 25, 15, 10, then 5, times 1 + 0.2 x the player's rebirths (so 1st place is 50 Gold after 5 rebirths, 75 after 10). The board shows both. The winner gets a 1ST PLACE! banner. The standings stay up for 15 seconds, then the arena is free again.
 - A player who leaves the game drops out of the match. Nothing about a match is saved, and nothing here is sold for Robux.
 
 ## Shared conveyor (starting assumption)
@@ -76,12 +77,12 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 ## Base, plots and floors (starting assumption)
 - Each player gets a base with a Stock Spinner at the start of a short belt, the Valuation Machine, floors of plots and a lock button on every floor.
 - Floor 1 starts with 6 plots. Plot upgrades add 1 plot at a time, up to 10 per floor.
-- Once a floor is full (10 plots), the player can buy the next floor, which starts with 6 plots and upgrades to 10.
+- Once floor 1 is full (10 plots), the player can buy floor 2, which starts with 6 plots and upgrades to 10. Floors 1 and 2 are bought with Cash (`Config/Base.CashFloors`); the cost rises with each plot and steeply with the floor.
+- Floors 3 and 4 open with rebirths instead: every rebirth opens 2 plots there (`PlotsPerRebirth`), filling floor 3 then floor 4, so 10 rebirths open all 20. The plots a player's rebirths have earned wait until floor 2 is full, then open at once (`UpgradeMath.open`). The Upgrades window says which rebirth opens the next ones. A save from before then that bought plots up there with Cash keeps them.
 - Maximum 4 floors (40 plots) at launch.
-- Upgrade cost rises with each plot and steeply with each floor. Exact curve in Config.
 - Each floor has 1 pet slot; a second pet slot per floor can be bought later.
 - Floors are reached by stairs or a lift pad; stealing works on every floor.
-- A new base is just the ground floor. Each upper floor (its platform, stairs, plots, pet slots, glass and trim) appears only once the owner opens it, and the whole base goes back to the ground floor on rebirth or when the owner leaves. Until the next floor is open, a rail closes off the landing where its stairs would start.
+- A new base is just the ground floor. Each upper floor (its platform, stairs, plots, pet slots, glass and trim) appears only once the owner opens it, and the base goes back to the ground floor when the owner leaves (it comes back as it was when they return). Rebirth keeps every floor. Until the next floor is open, a rail closes off the landing where its stairs would start.
 - Plots stand near the side walls, either side of the walkway, each with a cash pad in front of it.
 - Companies can be sold back for 50% of purchase price, and moved between plots and floors freely.
 - Overflow storage holds up to 5 unplaced companies.
@@ -167,21 +168,30 @@ Boost rules
 
 ## Index (starting assumption)
 - The Index lists every company and marks the ones a player has ever owned (bought, or stolen and placed). Ones not found yet show as "???".
-- Prizes for collecting different companies, claimed with a button like rewards:
-  - **5**: 120 seconds of income (minimum 500 Cash)
-  - **10**: free pet spin
-  - **15**: 300 seconds of income (minimum 2,500 Cash) and a 2x boost for 10 minutes
-  - **20**: 2 free pet spins
-  - **25**: 600 seconds of income (minimum 10,000 Cash) and a 2x boost for 20 minutes
-  - **30 (all of them)**: 3 free pet spins and a 2x boost for 30 minutes
+- Prizes for collecting different companies, claimed with a button like rewards (on the Index's Challenges tab):
+  - **5**: 10 Gold and 120 seconds of income (minimum 500 Cash)
+  - **10**: 20 Gold and a free pet spin
+  - **15**: 30 Gold, 300 seconds of income (minimum 2,500 Cash) and a 2x boost for 10 minutes
+  - **20**: 50 Gold and 2 free pet spins
+  - **25**: 75 Gold, 600 seconds of income (minimum 10,000 Cash) and a 2x boost for 20 minutes
+  - **30 (all of them)**: 150 Gold, 3 free pet spins and a 2x boost for 30 minutes
+- Challenges for Gold (`Config/Index.Challenges`), each claimed once, with its progress shown:
+  - Collect every company of a tier: Startup 15, Scale-up 25, Unicorn 50, Blue Chip 100, Conglomerate 200, Monopoly 400 Gold.
+  - Find different variants: 1 for 10 Gold, 3 for 30, all 6 for 100.
 - Kept through rebirth.
 
 ## Rebirth (starting assumption)
-- Requirement: 1,000,000 Cash and owning at least one Blue Chip company or better (placed or in storage). Not while carrying a company or with a Valuation Machine run going.
-- Resets: Cash, placed and stored companies, plot and floor upgrades, upgrade station levels.
-- Keeps: rebirth count, weapons, pets, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
-- Reward: income multiplier = 1 + 0.5 x rebirth count, plus more Stock Spinner Luck (see "Spawn weights"). The Rebirth window shows the Luck and odds now and after the next rebirth.
-- Rebirth requirements scale up each time (x3 Cash per rebirth).
+- Requirement: Cash (1,000,000 for the first, doubling each time: 512M for the tenth) and owning a company of the tier that rebirth needs, or better, placed or in storage (it isn't used up). Not while carrying a company or with a Valuation Machine run going.
+- The tier rises gently (`Config/Rebirth.RequiredTiers`): Startup for rebirths 1 and 2, Scale-up for 3 and 4, Unicorn for 5 to 7, Blue Chip for 8 to 15, then Conglomerate (from the shared conveyor). So the first 15 only need a tier any Stock Spinner can roll, which the Luck from earlier rebirths makes more likely.
+- Takes: Cash, including the Cash waiting on cash pads. Nothing else.
+- Keeps: every company (placed and in storage), every plot and floor, pets in their slots, weapons, Gold, upgrade station levels, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics and the rebirth count.
+- Reward: income multiplier = 1 + 0.5 x rebirth count, more Stock Spinner Luck (see "Spawn weights"), and 2 more plots on floors 3 and 4 (see "Base, plots and floors"). The Rebirth window shows the Luck and odds now and after the next rebirth (with the player's Spinner Luck upgrade), the plots it opens, what it needs and what it takes and keeps.
+- Cash needed doubles each rebirth (it was x3 while rebirth also took the base).
+
+## Gold (starting assumption)
+- A second currency, in whole amounts, saved and kept through rebirth (save version 15). Shown in a small pill with a gold coin beside the boost chip, above the Cash pill.
+- Earned from Index prizes and challenges (see "Index") and the battle arena (see "Battle arena"); admins can give it with `/givegold`.
+- Spent at the upgrade station (see "Upgrade station"). Nothing else costs Gold, and Gold is never sold for Robux.
 
 ## Variants (starting assumption)
 - Any company can turn up as a variant, in the Stock Spinner or on the shared conveyor. A variant earns a multiple of the company's normal income, and the more it earns, the rarer it is: Shiny 1.5x (1 in 20), Pixel 2x (1 in 50), Molten 3x (1 in 120), Galaxy 5x (1 in 300), Rainbow 7x (1 in 600), Glitched 10x (1 in 1,500). Values live in `Config/Variants.luau`.
@@ -197,14 +207,14 @@ Boost rules
 - Galaxy and rarer variants on the shared conveyor are announced to the server. The Variant Chance upgrade makes variants more likely in the player's own Stock Spinner only.
 
 ## Upgrade station (starting assumption)
-- A station at one end of the street sells upgrades for Cash only, one level at a time, 10 levels each (`Config/Perks.luau`):
+- A station at one end of the street sells upgrades for Gold only, one level at a time, 10 levels each (`Config/Perks.luau`):
   - Walk Speed: +6% a level.
   - Damage: +10% a level.
   - Spinner Luck (saved as `ConveyorLuck` from before the spinner): +5% Luck a level (up to x1.5), multiplying the Luck rebirths give.
   - Money Multiplier: +10% income a level.
   - Variant Chance: +15% a level in your Stock Spinner.
-- Each level costs the base cost times the growth to the power of levels owned: Walk Speed 300 x1.8, Damage 500 x1.8, Spinner Luck 1,000 x2, Money Multiplier 2,000 x2.1, Variant Chance 2,500 x2.1.
-- Levels reset on rebirth (`ResetOnRebirth`), like base upgrades. Nothing at the station is sold for Robux or touches the Valuation Machine.
+- Each level costs the base cost times the growth to the power of levels owned, in Gold: Walk Speed 5 x1.3, Damage 8 x1.3, Spinner Luck 10 x1.35, Money Multiplier 15 x1.4, Variant Chance 15 x1.4. Every level of every upgrade is about 3,200 Gold in all.
+- Levels are kept through rebirth, like the Gold they cost (`ResetOnRebirth` is false; they cost Cash and reset before Gold). Nothing at the station is sold for Robux or touches the Valuation Machine.
 
 ## Cash pads (starting assumption)
 - A placed company's income doesn't go straight into Cash: it builds up on the cash pad in front of its plot, and the owner collects it by stepping on the pad. The amount waiting shows above each pad, and a "+Cash" pops up when it's collected.
@@ -291,7 +301,7 @@ Boost rules
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
 ## Admin and debug tools (starting assumption)
-- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), add test bots to the next battle (`/battle bots [count]`) and skip ahead in one (`/battle skip`), grant pets and weapons, skip playtime, reset own data.
+- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), add test bots to the next battle (`/battle bots [count]`) and skip ahead in one (`/battle skip`), give or set Gold (`/givegold`, `/setgold`), grant pets and weapons, skip playtime, reset own data.
 - Debug panel (admins only) showing live economy values, active boosts and the current machine path.
 - A photo booth for store and marketing screenshots (visual pass Phase 10; `docs/ART_BRIEFS.md`): `Workspace.Map.PhotoBooth`, built by BuildMap far out past the city. Admins pose companies, pets and a copy of their base there with `/booth`, `/pose`, `/backdrop` and `/boothcam` (`Lib/PhotoBooth`, `PhotoBoothController`). Posed things are still copies in its Posed folder that nothing in the game looks at.
 - Build alongside slice 2 and extend with each slice, so every feature can be tested without grinding.
@@ -308,7 +318,7 @@ Boost rules
 - Custom events: machine Take multiplier and how many players let it run out, steals attempted vs completed, rebirth timings.
 - Built as: everything is reported by the server (`Services/AnalyticsService`, `server/Config/Analytics.luau`) and a failed report never affects play.
   - Funnel steps `Joined`, `BoughtCompany`, `PlacedCompany`, `UsedMachine`, `SharedPurchase`, `FirstSteal`, each once per player (saved). Players from before analytics count as past the funnel.
-  - Cash sources `Income` (added up and sent every 5 minutes and on leaving, not every second), `Offline`, `Playtime`, `Daily`, `Index`, `Code`. Sinks `Company` (by tier), `Upgrade` (plot or floor), `Weapon` (by weapon), `PetSpin` (Cash spins only), `Respin` (by tier). Battle rewards are the source `Battle`. Cash from admin commands isn't reported.
+  - Cash sources `Income` (added up and sent every 5 minutes and on leaving, not every second), `Offline`, `Playtime`, `Daily`, `Index`, `Code`. Sinks `Company` (by tier), `Upgrade` (plot or floor), `Weapon` (by weapon), `PetSpin` (Cash spins only), `Respin` (by tier). Battle rewards are the source `Battle`. Gold is reported as its own currency (`Gold`) with the same names: sources `Index` and `Battle`, sink `Upgrade` (by upgrade). Cash from admin commands isn't reported.
   - Custom events `MachineResult` (the multiplier; Taken, RanOut or Left; the tier), `StealStarted` (from a Plot or the Ground; the tier), `StealCompleted` (the tier) and `Rebirth` (minutes played since the last rebirth; the rebirth number).
 
 ## Map naming (to be built by hand in Studio)
@@ -384,5 +394,7 @@ Then cash pads and floors that appear as they're opened. Check: income only reac
 Then the Stock Spinner in place of each base's conveyor, Luck, and Hostile Takeovers (map version 8). Check: only the owner can play their machine, from close by, and not again for 10 seconds; the pop-up's reels stop on 3 different companies, which then come out onto the belt and stay until the next play; only the owner can buy them; the sign shows the owner's Luck, and after a rebirth the Luck and `/testodds` match the Rebirth window; Steal prompts only show during a takeover (`/takeover start 2`), the server refuses a steal outside one, and a thief can still finish a steal picked up just before it ended.
 
 Then the Stock Spinner beside the planter, the Valuation Machine's 0.5x floor and Cash respins, and the battle arena (map version 10). Check: the spinner works from beside the planter; a respin costs half its tier's company price, is refused without the Cash, and can come out below 1.0x but never below 0.5x; a gate in the street takes you to the arena and nowhere else does; at the arena, two players (or one with `/battle bots 3`) play 5 rounds picking one of 3 each round, the board shows picks, places and values after every round, Keep and Machine both work, places are by value, the Cash rewards match Config, practice gives nothing, and nobody can be hurt there.
+
+Then rebirth keeping the base, floors 3 and 4 from rebirths, a rising tier for each rebirth, and Gold (save version 15). Check: a rebirth takes only Cash (and the cash pads' Cash) and keeps every company, plot, floor, pet slot, upgrade level and the Gold; it needs a Startup at first and a Scale-up for the third (`/setrebirths 2`); with floor 2 full, each rebirth opens 2 plots on floor 3 then 4, and with floor 2 not full they wait and open the moment it fills; the upgrade station charges Gold and not Cash; Index challenges and prizes give Gold once; the arena gives Gold by place, more with more rebirths.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.
