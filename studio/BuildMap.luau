@@ -24,6 +24,16 @@ if themeModule == nil or not themeModule:IsA("ModuleScript") then
 	error("ReplicatedStorage.Shared.Theme is missing: connect Rojo to the Test place, then run this again.")
 end
 local Theme = require(themeModule :: ModuleScript) :: any
+-- Everything this script reads from Theme, checked before anything changes,
+-- so a Theme from older code (not pulled yet, or Rojo not synced) stops it
+-- here with the map untouched.
+for _, key in { "Base", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" } do
+	if Theme[key] == nil then
+		error(
+			`ReplicatedStorage.Shared.Theme is out of date (it has no {key}): pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again.`
+		)
+	end
+end
 local BASE = Theme.Base
 -- Parody company names for the billboards in the skyline, from
 -- ReplicatedStorage.Shared.Config.Companies (also synced by Rojo).
@@ -108,6 +118,13 @@ local BELT_LENGTH = 2 * (PLAY_HALF_Z + TUNNEL)
 -- station at the other, this far from the middle.
 local STATION_Z = PLAY_HALF_Z - 16
 
+-- Takes something out of the map. It's parented to nothing rather than
+-- destroyed, so if a run stops with an error part way, Studio can undo the
+-- whole run and the map goes back to how it was.
+local function remove(instance: Instance)
+	instance.Parent = nil
+end
+
 local function newPart(
 	parent: Instance,
 	name: string,
@@ -148,7 +165,7 @@ local function place(
 		return found
 	end
 	if found then
-		found:Destroy()
+		remove(found)
 	end
 	local part = newPart(parent, name, size, cframe, colour)
 	if material then
@@ -183,7 +200,7 @@ end
 local function freshModel(parent: Instance, name: string): Model
 	local old = parent:FindFirstChild(name)
 	if old then
-		old:Destroy()
+		remove(old)
 	end
 	local newModel = Instance.new("Model")
 	newModel.Name = name
@@ -270,7 +287,7 @@ end
 local function clearDecor(part: Instance)
 	for _, child in part:GetChildren() do
 		if child:IsA("BasePart") then
-			child:Destroy()
+			remove(child)
 		end
 	end
 end
@@ -292,7 +309,7 @@ if baseplate and baseplate:IsA("BasePart") then
 	baseplate.TopSurface = Enum.SurfaceType.Smooth
 	for _, child in baseplate:GetChildren() do
 		if child:IsA("Texture") then
-			child:Destroy()
+			remove(child)
 		end
 	end
 end
@@ -399,7 +416,7 @@ for index, spot in BASE_SPOTS do
 	pad.Transparency = 1
 	for _, child in machine:GetChildren() do
 		if child ~= pad then
-			child:Destroy()
+			remove(child)
 		end
 	end
 	local function onMachine(lx: number, ly: number, lz: number): CFrame
@@ -538,7 +555,7 @@ for index, spot in BASE_SPOTS do
 	-- The lock button used to stand in the yard; it's on every floor now.
 	local oldButton = base:FindFirstChild("LockButton")
 	if oldButton then
-		oldButton:Destroy()
+		remove(oldButton)
 	end
 
 	-- The hall: plots in pairs either side of the walkway from the front back
@@ -1148,7 +1165,7 @@ local shops = folder(map, "Shops")
 for name, style in shopStyles do
 	local old = shops:FindFirstChild(name)
 	if old then
-		old:Destroy()
+		remove(old)
 	end
 	local newShop = Instance.new("Model")
 	newShop.Name = name
@@ -1940,7 +1957,7 @@ end
 for _, base in bases:GetChildren() do
 	local quote = base:FindFirstChild("Quote")
 	if quote then
-		quote:Destroy()
+		remove(quote)
 	end
 end
 
