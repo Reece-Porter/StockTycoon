@@ -1,7 +1,8 @@
 --!strict
 -- The rebirth celebration on this player's screen (docs/visual-pass.md,
 -- Phase 9): a burst of light from the middle, confetti falling, and a big
--- banner with a title and a line under it. About three seconds. It sits
+-- banner with a title and a line under it. About three seconds. Also the
+-- start of a Hostile Takeover, in red and without the confetti. It sits
 -- under the menus, windows and notifications (a lower DisplayOrder), so it
 -- never covers the HUD, and it never takes a tap.
 
@@ -23,15 +24,21 @@ local FALL = TweenInfo.new(2.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 local AWAY_SECONDS = 0.3
 local AWAY = TweenInfo.new(AWAY_SECONDS, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 
+export type Style = {
+	-- The banner and burst colour; the rebirth colour if not given.
+	colour: Color3?,
+	confetti: boolean?,
+}
+
 local Celebration = {}
 
-local function burst(gui: ScreenGui)
+local function burst(gui: ScreenGui, colour: Color3)
 	local flash = Instance.new("Frame")
 	flash.Name = "Flash"
 	flash.AnchorPoint = Vector2.new(0.5, 0.5)
 	flash.Position = CENTRE
 	flash.Size = UDim2.fromOffset(60, 60)
-	flash.BackgroundColor3 = Theme.Colours.Gold
+	flash.BackgroundColor3 = colour
 	flash.BackgroundTransparency = 0.2
 	flash.BorderSizePixel = 0
 	Make.corner(flash, 999)
@@ -44,7 +51,7 @@ local function burst(gui: ScreenGui)
 		ray.Position = CENTRE
 		ray.Size = UDim2.fromOffset(10, 420)
 		ray.Rotation = index * 180 / RAYS
-		ray.BackgroundColor3 = Theme.tint(Theme.Colours.Gold, 0.4)
+		ray.BackgroundColor3 = Theme.tint(colour, 0.4)
 		ray.BackgroundTransparency = 0.4
 		ray.BorderSizePixel = 0
 		ray.Parent = gui
@@ -81,7 +88,8 @@ end
 
 -- Plays the celebration in playerGui with this title and line, and returns
 -- its ScreenGui (gone by itself after a few seconds).
-function Celebration.play(playerGui: Instance, title: string, line: string): ScreenGui
+function Celebration.play(playerGui: Instance, title: string, line: string, style: Style?): ScreenGui
+	local colour = if style and style.colour then style.colour else Theme.Menu.Rebirth
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "Celebration"
 	gui.DisplayOrder = DISPLAY_ORDER
@@ -89,8 +97,10 @@ function Celebration.play(playerGui: Instance, title: string, line: string): Scr
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	burst(gui)
-	confetti(gui)
+	burst(gui, if style and style.colour then colour else Theme.Colours.Gold)
+	if not style or style.confetti ~= false then
+		confetti(gui)
+	end
 
 	-- The banner: a ribbon with the title, and the line under it.
 	local banner = Instance.new("Frame")
@@ -98,7 +108,7 @@ function Celebration.play(playerGui: Instance, title: string, line: string): Scr
 	banner.AnchorPoint = Vector2.new(0.5, 0.5)
 	banner.Position = CENTRE
 	banner.Size = UDim2.fromOffset(420, 120)
-	banner.BackgroundColor3 = Theme.Menu.Rebirth
+	banner.BackgroundColor3 = colour
 	banner.ZIndex = 5
 	Make.corner(banner, Theme.Corner.Large)
 	Make.outline(banner, Theme.Colours.Ink, Theme.Stroke.Thick)

@@ -11,9 +11,10 @@
 -- works whatever state the map is in and is safe to run again. When the map
 -- needs to change, this file changes; never run old map scripts alongside it.
 --
--- It reads the game's colours from ReplicatedStorage.Shared.Theme (and the
--- parody company names for the billboards from Shared.Config.Companies), so
--- Rojo must be connected to the Test place when you run it.
+-- It reads the game's colours from ReplicatedStorage.Shared.Theme, where the
+-- Stock Spinner's companies stop from Shared.Config.Spinner (and the parody
+-- company names for the billboards from Shared.Config.Companies), so Rojo
+-- must be connected to the Test place when you run it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -35,9 +36,23 @@ for _, key in { "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Str
 	end
 end
 local BASE = Theme.Base
+if BASE.SpinnerScreen == nil then
+	error(
+		"ReplicatedStorage.Shared.Theme is out of date (it has no Base.SpinnerScreen): pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again."
+	)
+end
 -- Parody company names for the billboards in the skyline, from
 -- ReplicatedStorage.Shared.Config.Companies (also synced by Rojo).
 local configFolder = sharedFolder and sharedFolder:FindFirstChild("Config")
+-- Where along each base's belt the Stock Spinner's companies stop, from
+-- Shared.Config.Spinner, for the reels over them.
+local spinnerModule = configFolder and configFolder:FindFirstChild("Spinner")
+if spinnerModule == nil or not spinnerModule:IsA("ModuleScript") then
+	error(
+		"ReplicatedStorage.Shared.Config.Spinner is missing: pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again."
+	)
+end
+local SPINNER_STOPS: { number } = (require(spinnerModule :: ModuleScript) :: any).Stops
 local companiesModule = configFolder and configFolder:FindFirstChild("Companies")
 local companyNames: { string } = {}
 if companiesModule and companiesModule:IsA("ModuleScript") then
@@ -49,7 +64,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 6
+local MAP_VERSION = 7
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -103,6 +118,12 @@ local LANDING_Z = 10.5 -- where every staircase starts and ends
 local YARD_X = 31
 local MACHINE_Z = -12
 local BELT_X = BASE_DEPTH / 2 - 6
+local BELT_HALF = 16 -- the belt runs from z -16 (its Start) to 16 (its End)
+-- The Stock Spinner's board over the belt: its bottom and middle heights,
+-- and how wide each reel's screen is.
+local SPIN_LOW = 11
+local SPIN_MID = 14
+local REEL_WIDTH = 8.6
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
 local RUN = 2 * LANDING_Z -- length of every staircase
@@ -390,8 +411,9 @@ for index, spot in BASE_SPOTS do
 	local belt = place(conveyor, "Belt", Vector3.new(6, 1, 32), at(BELT_X, groundTop + 0.5, 0), BASE.Belt)
 	belt.Color = BASE.Belt
 	belt.Material = Enum.Material.SmoothPlastic
-	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), at(BELT_X, groundTop + 1.5, -16), Color3.fromRGB(0, 255, 0)))
-	hide(place(conveyor, "End", Vector3.new(1, 1, 1), at(BELT_X, groundTop + 1.5, 16), Color3.fromRGB(255, 0, 0)))
+	local startAt, endAt = at(BELT_X, groundTop + 1.5, -BELT_HALF), at(BELT_X, groundTop + 1.5, BELT_HALF)
+	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), startAt, Color3.fromRGB(0, 255, 0)))
+	hide(place(conveyor, "End", Vector3.new(1, 1, 1), endAt, Color3.fromRGB(255, 0, 0)))
 	local beltLook = freshModel(conveyor, "Look")
 	for _, side in { -1, 1 } do
 		decor(
@@ -421,6 +443,88 @@ for index, spot in BASE_SPOTS do
 	local stripeAt = at(BELT_X, groundTop + 6.5, -15.25)
 	decor(hatch, "Stripe", Vector3.new(7.3, 0.25, 0.2), stripeAt, accent, Enum.Material.Neon)
 	decor(hatch, "Door", Vector3.new(6.2, 5.6, 0.2), at(BELT_X, groundTop + 3.8, -15.3), Theme.shade(accent, 0.15))
+
+	-- The Stock Spinner: a board over the belt on posts either side of it,
+	-- framed in the accent colour, with a screen over each place a company
+	-- stops (Reel1 to Reel3, from Config/Spinner), a timer strip under them,
+	-- a header with its name and gold bulbs along the bottom. The client
+	-- draws the reels and the timer and chases the bulbs.
+	local spinner = freshModel(base, "Spinner")
+	local stopZ = {}
+	for _, stop in SPINNER_STOPS do
+		table.insert(stopZ, -BELT_HALF + 2 * BELT_HALF * stop)
+	end
+	local boardFrom = math.min(table.unpack(stopZ)) - REEL_WIDTH / 2 - 1.4
+	local boardTo = math.max(table.unpack(stopZ)) + REEL_WIDTH / 2 + 1.4
+	local boardLength = boardTo - boardFrom
+	local boardZ = (boardFrom + boardTo) / 2
+	local boardHeight = 2 * (SPIN_MID - SPIN_LOW)
+	decor(
+		spinner,
+		"Board",
+		Vector3.new(0.8, boardHeight, boardLength),
+		at(BELT_X, groundTop + SPIN_MID, boardZ),
+		BASE.Spinner
+	)
+	for _, y in { SPIN_LOW, 2 * SPIN_MID - SPIN_LOW } do
+		decor(spinner, "Trim", Vector3.new(1, 0.35, boardLength + 0.2), at(BELT_X, groundTop + y, boardZ), accent)
+	end
+	for reel, z in stopZ do
+		local reelAt = at(BELT_X, groundTop + SPIN_MID + 0.6, z)
+		decor(spinner, "Reel" .. reel, Vector3.new(1, 3.6, REEL_WIDTH), reelAt, BASE.SpinnerScreen)
+	end
+	local timerAt = at(BELT_X, groundTop + SPIN_LOW + 0.9, boardZ)
+	decor(spinner, "Timer", Vector3.new(1, 1, 14), timerAt, BASE.SpinnerScreen)
+	local spinHeader = decor(
+		spinner,
+		"Header",
+		Vector3.new(0.8, 1.8, 15),
+		at(BELT_X, groundTop + 2 * SPIN_MID - SPIN_LOW + 1.1, boardZ),
+		BASE.Spinner
+	)
+	for _, face in { Enum.NormalId.Right, Enum.NormalId.Left } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Name"
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 30
+		gui.LightInfluence = 0
+		gui.MaxDistance = 150
+		gui.Parent = spinHeader
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.fromScale(1, 1)
+		text.BackgroundTransparency = 1
+		text.Font = Theme.Fonts.Display
+		text.TextScaled = true
+		text.TextColor3 = Theme.Colours.Gold
+		text.Text = "STOCK SPINNER"
+		text.Parent = gui
+	end
+	-- Posts either side of the belt at each end, with a bar across under the
+	-- board.
+	for _, z in { boardFrom + 0.6, boardTo - 0.6 } do
+		for _, side in { -1, 1 } do
+			column(spinner, "Post", SPIN_LOW, 0.9, at(BELT_X + side * 3.9, groundTop + SPIN_LOW / 2, z), BASE.Spinner)
+		end
+		decor(spinner, "Crossbar", Vector3.new(8.7, 0.6, 0.9), at(BELT_X, groundTop + SPIN_LOW - 0.3, z), accent)
+	end
+	local bulbs = 12
+	for bulbIndex = 1, bulbs do
+		local z = boardFrom + 1.2 + (bulbIndex - 1) * (boardLength - 2.4) / (bulbs - 1)
+		local bulb = decor(
+			spinner,
+			"Bulb",
+			Vector3.new(0.55, 0.55, 0.55),
+			at(BELT_X, groundTop + SPIN_LOW - 0.1, z),
+			BASE.Bulb,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		bulb.CastShadow = false
+	end
+	if spinner:IsA("Model") then
+		spinner.WorldPivot = at(BELT_X, groundTop + SPIN_MID, boardZ)
+	end
 
 	-- The Valuation Machine, facing the walkway: a round stage under a glass
 	-- tube where the company stands (on the invisible Pad the game uses),

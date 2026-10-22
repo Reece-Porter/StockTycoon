@@ -16,6 +16,7 @@ local Admins = require(ReplicatedStorage.Shared.Config.Admins)
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
+local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
 local Monetisation = require(ReplicatedStorage.Shared.Config.Monetisation)
 local Perks = require(ReplicatedStorage.Shared.Config.Perks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -40,8 +41,10 @@ local PetService = require(script.Parent.PetService)
 local PetShopService = require(script.Parent.PetShopService)
 local PurchaseService = require(script.Parent.PurchaseService)
 local RewardsService = require(script.Parent.RewardsService)
+local SpinnerService = require(script.Parent.SpinnerService)
 local StealService = require(script.Parent.StealService)
 local StealConfig = require(ReplicatedStorage.Shared.Config.Steal)
+local TakeoverService = require(script.Parent.TakeoverService)
 local WeaponShopService = require(script.Parent.WeaponShopService)
 local PhotoBooth = require(script.Parent.Parent.Lib.PhotoBooth)
 
@@ -179,13 +182,14 @@ local function tierNames(): string
 	return table.concat(names, ", ")
 end
 
--- Rolls a conveyor's tier the given number of times, using the same function
--- as real spawns, and compares the results with Config/Conveyor (the personal
--- odds after this player's rebirths).
+-- Rolls a tier the given number of times, using the same function as real
+-- spawns, and compares the results with the odds: the shared conveyor's
+-- (Config/Conveyor) or this player's Stock Spinner's (Config/Spinner after
+-- their rebirths and Spinner Luck).
 local function oddsReport(player: Player, shared: boolean, rolls: number): string
-	local weights: { ConveyorConfig.WeightEntry } = if shared
+	local weights: { SpinnerConfig.WeightEntry } = if shared
 		then ConveyorConfig.Shared.Weights
-		else ConveyorService:GetPersonalWeights(player)
+		else SpinnerService:GetWeights(player)
 	local random = Random.new()
 	local counts: { [string]: number } = {}
 	for _ = 1, rolls do
@@ -198,8 +202,8 @@ local function oddsReport(player: Player, shared: boolean, rolls: number): strin
 		total += entry.weight
 	end
 
-	local conveyor = if shared then "Shared" else "Personal (with your rebirths)"
-	local lines = { `{conveyor} conveyor, {rolls} rolls (got / expected):` }
+	local where = if shared then "Shared conveyor" else "Your Stock Spinner (with your rebirths and Spinner Luck)"
+	local lines = { `{where}, {rolls} rolls (got / expected):` }
 	for _, entry in weights do
 		local got = (counts[entry.tier] or 0) / rolls * 100
 		local expected = entry.weight / total * 100
@@ -262,16 +266,58 @@ local commands: { Command } = {
 					return `Usage: /spawn <tier> [shared] [variant], where variant is regular or one of: {variantNames()}`
 				end
 			end
-			local base = if shared then nil else BaseService:GetBase(player)
-			if not shared and base == nil then
-				return "You don't have a base."
+			local what = if variantId and variantId ~= "regular" then `{variantId} {tier.name}` else tier.name
+			if not shared then
+				if tier.sharedOnly then
+					return `{tier.name} companies are only on the shared conveyor: /spawn {string.lower(tier.id)} shared`
+				end
+				if not SpinnerService:RollNow(player, tier.id, variantId) then
+					return "You don't have a base, or your data hasn't loaded yet."
+				end
+				return `Rolled your Stock Spinner: a {what} comes out first.`
 			end
-			local item = ConveyorService:SpawnNow(base, tier.id, variantId)
+			local item = ConveyorService:SpawnShared(tier.id, variantId)
 			if item == nil then
 				return "Couldn't spawn it. Check the console for a missing model or conveyor."
 			end
-			local what = if item.variant then `{item.variant} {tier.name}` else tier.name
-			return `Spawned a {what} on {if shared then "the shared" else "your"} conveyor.`
+			return `Spawned a {what} on the shared conveyor.`
+		end,
+	},
+	{
+		alias = "/roll",
+		usage = "/roll",
+		run = function(player)
+			if not SpinnerService:RollNow(player) then
+				return "You don't have a base, or your data hasn't loaded yet."
+			end
+			return "Rolled your Stock Spinner."
+		end,
+	},
+	{
+		alias = "/takeover",
+		usage = "/takeover [start [minutes] | stop]",
+		run = function(_player, args)
+			local action = string.lower(args[1] or "")
+			if action == "start" then
+				local minutes = if args[2] then tonumber(args[2]) else nil
+				if args[2] and (minutes == nil or minutes <= 0 or minutes > 60) then
+					return "Usage: /takeover start [minutes], up to 60 minutes"
+				end
+				local seconds = if minutes then minutes * 60 else StealConfig.Takeover.DurationSeconds
+				TakeoverService:StartNow(seconds)
+				return `Started a Hostile Takeover for {Format.longDuration(seconds)}.`
+			elseif action == "stop" then
+				TakeoverService:StopNow()
+				return "Stopped the Hostile Takeover."
+			elseif action ~= "" then
+				return "Usage: /takeover [start [minutes] | stop]"
+			end
+			local endsAt = TakeoverService:GetEndsAt()
+			local time = workspace:GetServerTimeNow()
+			if endsAt then
+				return `A Hostile Takeover is on for another {Format.duration(endsAt - time)}.`
+			end
+			return `The next Hostile Takeover starts in {Format.duration(TakeoverService:GetNextAt() - time)}.`
 		end,
 	},
 	{
@@ -282,8 +328,8 @@ local commands: { Command } = {
 			if rolls == nil or rolls < 1 or rolls > MAX_ODDS_ROLLS then
 				return `Usage: /testvariants [rolls], up to {MAX_ODDS_ROLLS} rolls`
 			end
-			-- With the player's own Variant Chance upgrade, as on their conveyor.
-			local chance = ConveyorService:GetVariantChance(player)
+			-- With the player's own Variant Chance upgrade, as in their spinner.
+			local chance = SpinnerService:GetVariantChance(player)
 			local counts: { [string]: number } = {}
 			local random = Random.new()
 			for _ = 1, rolls do
@@ -327,7 +373,7 @@ local commands: { Command } = {
 		alias = "/racetest",
 		usage = "/racetest",
 		run = function(player)
-			local item = ConveyorService:SpawnNow(nil, "Startup")
+			local item = ConveyorService:SpawnShared("Startup")
 			if item == nil then
 				return "Couldn't spawn on the shared conveyor. Check the console."
 			end

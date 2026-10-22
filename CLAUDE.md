@@ -1,18 +1,18 @@
 # Stock Tycoon (working title)
 
-Roblox tycoon game in the style of Steal a Brainrot. Parody companies travel along conveyors, players buy them, carry them back to their base, optionally run them through the Valuation Machine, then place them on plots where they generate Cash per second. Bases grow upwards: players upgrade to unlock more plots and new floors. A central weapon shop sells weapons for fighting other players, mainly over the shared conveyor. A pet shop next to it sells pet spins; pets are placed on a floor to give that floor a modifier. Other players can steal placed companies. Rebirth resets progress for a permanent income multiplier.
+Roblox tycoon game in the style of Steal a Brainrot. Parody companies come out of each base's Stock Spinner and along a shared conveyor, players buy them, carry them back to their base, optionally run them through the Valuation Machine, then place them on plots where they generate Cash per second. Bases grow upwards: players upgrade to unlock more plots and new floors. A central weapon shop sells weapons for fighting other players, mainly over the shared conveyor. A pet shop next to it sells pet spins; pets are placed on a floor to give that floor a modifier. During an hourly Hostile Takeover, other players can steal placed companies. Rebirth resets progress for a permanent income multiplier.
 
 Full game design, numbers and build order: `docs/design.md`. Read it before starting any feature. Values marked as starting assumptions are tunable and live in Config, never hard-coded.
 
 ## Core loop
-1. Companies spawn on two kinds of conveyor:
-   a. a personal conveyor at each player's base (only that player can buy), and
+1. Companies come from two places:
+   a. a Stock Spinner at each player's base, which rolls 3 different companies every 20 seconds onto the base's belt, where only that player can buy them until the next roll replaces them (rarer tiers get more likely with each rebirth), and
    b. one shared conveyor in the middle of the map (any player can buy) with better rarity odds and two tiers found nowhere else.
 2. Player buys a company; the character physically carries it back to their base.
 3. At the base, the player either places it straight onto a free plot, or puts it into the Valuation Machine first (once per company).
 4. Placed companies generate Cash per second. Cash buys more companies and plots.
 5. Cash also buys base upgrades (more plots, new floors), weapons and pet spins.
-6. Other players can enter a base, pick up a placed company and carry it to their own base. Owners defend with a timed base lock and by tagging thieves.
+6. During a Hostile Takeover (5 minutes at the start of every hour), other players can enter a base, pick up a placed company and carry it to their own base. Owners defend with a timed base lock and by tagging thieves. Outside a takeover, bases can't be stolen from.
 7. Rebirth resets cash, companies and base upgrades for a permanent income multiplier.
 8. Playtime milestones and a daily login streak give Cash, temporary income boosts and free pet spins.
 
@@ -75,7 +75,7 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
 ## Structure
 ```
 src/
-  server/      -- services: Data, Conveyor, Purchase, Carry, Base, Upgrade, Steal, Combat, WeaponShop, PetShop, Machine, Income, Rebirth, Rewards, Codes, Analytics, Admin, Monetisation
+  server/      -- services: Data, Conveyor, Spinner, Purchase, Carry, Base, Upgrade, Steal, Takeover, Combat, WeaponShop, PetShop, Machine, Income, Rebirth, Rewards, Codes, Analytics, Admin, Monetisation
   client/      -- controllers and UI
   shared/      -- Config, types, pure maths (machine path, prices, income, spawn rolls)
 docs/

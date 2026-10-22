@@ -1,8 +1,8 @@
 --!strict
 -- Upgrade station maths (Config/Perks). Pure functions.
 
-local ConveyorConfig = require(script.Parent.Config.Conveyor)
 local Perks = require(script.Parent.Config.Perks)
+local SpinnerConfig = require(script.Parent.Config.Spinner)
 
 export type Levels = { [string]: number }
 
@@ -28,9 +28,9 @@ function PerkMath.cost(perkId: Perks.PerkId, level: number): number?
 	return math.floor(perk.baseCost * perk.costGrowth ^ level + 0.5)
 end
 
--- Conveyor odds with Conveyor Luck: every tier but the first (most common)
--- weighs luck times more. Returns a new list.
-function PerkMath.luckyWeights(weights: { ConveyorConfig.WeightEntry }, luck: number): { ConveyorConfig.WeightEntry }
+-- Stock Spinner odds with Spinner Luck: every tier but the first (most
+-- common) weighs luck times more. Returns a new list.
+function PerkMath.luckyWeights(weights: { SpinnerConfig.WeightEntry }, luck: number): { SpinnerConfig.WeightEntry }
 	local result = {}
 	for index, entry in weights do
 		table.insert(result, { tier = entry.tier, weight = if index == 1 then entry.weight else entry.weight * luck })

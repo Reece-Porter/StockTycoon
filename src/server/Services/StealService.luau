@@ -1,11 +1,15 @@
 --!strict
 -- Stealing and base locks (docs/design.md, "Stealing").
 --
--- Any player can walk into someone else's base (through the front: nobody
--- can take a company through the glass walls) and hold the prompt on a placed
--- company to pick it up. The client reports when the hold starts (StealBegin)
--- and ends (StealFinish); the server times it itself and checks everything
--- else. While the thief carries it, the company stays in its owner's save
+-- Stealing from bases only happens during a Hostile Takeover
+-- (TakeoverService), once an hour for a few minutes, so nobody has to guard
+-- their base all the time. During one, any player can walk into someone
+-- else's base (through the front: nobody can take a company through the
+-- glass walls) and hold the prompt on a placed company to pick it up. A
+-- thief who picked one up can still get it home after the takeover ends.
+-- The client reports when the hold starts (StealBegin) and ends
+-- (StealFinish); the server times it itself and checks everything else.
+-- While the thief carries it, the company stays in its owner's save
 -- (CarryService holds it in memory only). The steal only completes when the
 -- thief places it on a free plot on their own base: then it moves to the
 -- thief's save, keeping its valuation, and both saves are written straight
@@ -13,8 +17,9 @@
 -- or leaves, or the owner leaves, it is simply back on its owner's plot.
 --
 -- A thief can also pick up a company knocked out of someone's hands
--- (DropService). If it came out of its owner's storage rather than off a plot,
--- the steal works the same way and it is back in their storage if it fails.
+-- (DropService), at any time: that's the fight over the shared conveyor. If
+-- it came out of its owner's storage rather than off a plot, the steal works
+-- the same way and it is back in their storage if it fails.
 --
 -- Owners lock their base from a LockButton (one on each floor) for
 -- Config/Steal.LockSeconds.
@@ -45,6 +50,7 @@ local CarryService = require(script.Parent.CarryService)
 local DataService = require(script.Parent.DataService)
 local IncomeService = require(script.Parent.IncomeService)
 local PlotService = require(script.Parent.PlotService)
+local TakeoverService = require(script.Parent.TakeoverService)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
 local MAX_NAME_LENGTH = 32
@@ -204,6 +210,9 @@ local function finish(thief: Player, baseName: string, plotKey: string): string?
 	local company = if plot and ownerData then ownerData.Placed[plot.key] else nil
 	if plot == nil or ownerData == nil or company == nil or CarryService:IsPlotBeingStolen(owner, plot.key) then
 		return "There's nothing there to take."
+	end
+	if not TakeoverService:IsActive() then
+		return TakeoverService:ClosedMessage()
 	end
 
 	local heldFor = if attempt

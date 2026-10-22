@@ -1,7 +1,8 @@
 --!strict
 -- The Rebirth menu button (with a dot once the player can rebirth) and its
--- window: the income multiplier now and after, what the next rebirth needs
--- (ticked once the player has it), what it resets and keeps, and a big
+-- window: the income multiplier and Stock Spinner odds now and after (the
+-- odds before Spinner Luck, which a rebirth resets), what the next rebirth
+-- needs (ticked once the player has it), what it resets and keeps, and a big
 -- Rebirth button that takes two taps. The server sends Rebirths, RebirthCost
 -- and RebirthHasTier and checks everything again.
 
@@ -12,6 +13,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local RebirthConfig = require(ReplicatedStorage.Shared.Config.Rebirth)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Button = require(script.Parent.Parent.Ui.Kit.Button)
@@ -23,6 +25,7 @@ local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
 -- How long "Tap again" stays up before the button resets.
 local CONFIRM_SECONDS = 3
 local NEED_HEIGHT = 40
+local ODDS_HEIGHT = 24
 local GO_HEIGHT = 64
 
 local player = Players.LocalPlayer
@@ -30,6 +33,25 @@ local player = Players.LocalPlayer
 type Need = { frame: Frame, label: TextLabel, tick: Frame, cross: Frame }
 
 local RebirthController = {}
+
+-- Each spinner tier's chance (0 to 100) after this many rebirths.
+local function oddsAfter(rebirths: number): { [string]: number }
+	local weights = RebirthMath.spinnerWeights(SpinnerConfig.Weights, rebirths)
+	local total = 0
+	for _, entry in weights do
+		total += entry.weight
+	end
+	local odds = {}
+	for _, entry in weights do
+		odds[entry.tier] = entry.weight / total * 100
+	end
+	return odds
+end
+
+-- "1.8%", or "0.04%" for small chances.
+local function percent(value: number): string
+	return if value < 0.1 then string.format("%.2f%%", value) else string.format("%.1f%%", value)
+end
 
 local function numberAttribute(name: string): number
 	local value = player:GetAttribute(name)
@@ -83,17 +105,30 @@ function RebirthController:Start()
 	multiplier.LayoutOrder = 1
 	multiplier.Size = UDim2.new(1, 0, 0, 48)
 	local multiplierNote = Make.label(list, {
-		text = "income, plus slightly better odds on your own conveyor",
+		text = "income, plus better odds in your Stock Spinner",
 		size = Theme.TextSize.Small,
 		colour = Theme.Colours.TextMuted,
 	})
 	multiplierNote.LayoutOrder = 2
 	multiplierNote.Size = UDim2.new(1, 0, 0, 20)
 
-	Scroll.heading(list, "You need", 3)
-	local cashNeed = need(list, 4)
-	local tierNeed = need(list, 5)
-	Scroll.heading(list, "Resets", 6)
+	Scroll.heading(list, "Stock Spinner odds", 3)
+	local oddsLabels: { [string]: TextLabel } = {}
+	for index, entry in SpinnerConfig.Weights do
+		local label = Make.label(list, {
+			size = Theme.TextSize.Body,
+			colour = Theme.Colours.Text,
+			alignX = Enum.TextXAlignment.Left,
+		})
+		label.LayoutOrder = 3 + index
+		label.Size = UDim2.new(1, 0, 0, ODDS_HEIGHT)
+		oddsLabels[entry.tier] = label
+	end
+	local after = 4 + #SpinnerConfig.Weights
+	Scroll.heading(list, "You need", after)
+	local cashNeed = need(list, after + 1)
+	local tierNeed = need(list, after + 2)
+	Scroll.heading(list, "Resets", after + 3)
 	local resets = Make.label(list, {
 		text = "Cash, every company, plots and floors",
 		size = Theme.TextSize.Body,
@@ -101,9 +136,9 @@ function RebirthController:Start()
 		alignX = Enum.TextXAlignment.Left,
 		wrapped = true,
 	})
-	resets.LayoutOrder = 7
+	resets.LayoutOrder = after + 4
 	resets.Size = UDim2.new(1, 0, 0, 24)
-	Scroll.heading(list, "Keeps", 8)
+	Scroll.heading(list, "Keeps", after + 5)
 	local keeps = Make.label(list, {
 		text = "Rebirths, weapons and pets (pets go back to your Pets window)",
 		size = Theme.TextSize.Body,
@@ -111,7 +146,7 @@ function RebirthController:Start()
 		alignX = Enum.TextXAlignment.Left,
 		wrapped = true,
 	})
-	keeps.LayoutOrder = 9
+	keeps.LayoutOrder = after + 6
 	keeps.Size = UDim2.new(1, 0, 0, 44)
 
 	local go = Button.new({
@@ -153,6 +188,10 @@ function RebirthController:Start()
 		window.setTitle(`Rebirth ({rebirths} so far)`)
 		multiplier.Text =
 			`x{RebirthMath.incomeMultiplier(rebirths)}  →  x{RebirthMath.incomeMultiplier(rebirths + 1)}`
+		local now, later = oddsAfter(rebirths), oddsAfter(rebirths + 1)
+		for tierId, label in oddsLabels do
+			label.Text = `{Tiers.byId[tierId].name}:  {percent(now[tierId])}  →  {percent(later[tierId])}`
+		end
 		cashNeed.label.Text = `{Format.cash(cost)} Cash (you have {Format.cash(have)})`
 		cashNeed.tick.Visible = have >= cost
 		cashNeed.cross.Visible = have < cost

@@ -3,9 +3,9 @@
 -- (RebirthMath.cashRequired, x3 each time) who owns a Blue Chip company or
 -- better can start again: Cash, companies and base upgrades are wiped, and
 -- they keep their weapons, their pets (back in the Pets window) and a
--- permanent income multiplier (RebirthMath.incomeMultiplier), with slightly
--- better personal conveyor odds. The client only asks; every requirement is
--- checked here, and the save is written straight away.
+-- permanent income multiplier (RebirthMath.incomeMultiplier), with better
+-- Stock Spinner odds (RebirthMath.spinnerWeights). The client only asks;
+-- every requirement is checked here, and the save is written straight away.
 --
 -- Players get Rebirths, RebirthCost and RebirthHasTier attributes for the
 -- rebirth screen, and a Rebirths column in the player list.

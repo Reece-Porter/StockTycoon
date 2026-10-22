@@ -6,8 +6,9 @@
 --   - Plots and pet slots the owner hasn't opened yet (the Locked attribute,
 --     set by LockedLook on the server) get a padlock over them.
 -- And for the bases near the camera:
---   - chevrons run along the personal conveyor at its speed, and the hatch
---     over its start swings open when a company comes out;
+--   - chevrons run along the belt while the Stock Spinner's companies come
+--     out along it, at their speed, and the hatch over its start swings open
+--     when a company comes out;
 --   - the spawn's glow gently breathes;
 --   - a VIP base's gold trim (the Vip attribute) has a slow shine running
 --     along it.
@@ -19,7 +20,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
-local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
+local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
+local SpinnerMath = require(ReplicatedStorage.Shared.SpinnerMath)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
 
@@ -56,6 +58,10 @@ type BaseFx = {
 	beltStart: Vector3?,
 	beltDirection: Vector3?,
 	beltLength: number,
+	-- How long the spinner's companies take to come out along it, and how
+	-- far the chevrons have run.
+	slideSeconds: number,
+	beltRun: number,
 	chevrons: { Chevron },
 	door: BasePart?,
 	doorClosed: CFrame?,
@@ -65,6 +71,7 @@ type BaseFx = {
 }
 
 local bases: { [Model]: BaseFx } = {}
+local lastStep: number? = nil
 
 local BaseFxController = {}
 
@@ -183,6 +190,11 @@ local function setUp(fx: BaseFx)
 					fx.beltStart = from
 					fx.beltDirection = (to - from).Unit
 					fx.beltLength = (to - from).Magnitude
+					local slide = 0
+					for _, exit in SpinnerMath.exits(0, SpinnerConfig.Results, fx.beltLength) do
+						slide = math.max(slide, exit.comesOutAt + exit.travelSeconds)
+					end
+					fx.slideSeconds = slide
 					makeChevrons(fx, conveyor)
 				end
 			end
@@ -216,6 +228,8 @@ local function track(base: Instance)
 		accent = if typeof(accent) == "Color3" then accent else Theme.Colours.Primary,
 		signLabels = {},
 		beltLength = 0,
+		slideSeconds = 0,
+		beltRun = 0,
 		chevrons = {},
 		doorOpen = false,
 		doorCloseAt = 0,
@@ -342,10 +356,23 @@ local function shineTrim(fx: BaseFx, now: number)
 	end
 end
 
--- Moves everything that moves, for this moment, on the near bases.
-function BaseFxController.step(now: number)
-	local speed = ConveyorConfig.Personal.StudsPerSecond
+-- Whether the spinner's companies are coming out along this base's belt at
+-- this moment (server time).
+local function sliding(fx: BaseFx, serverNow: number): boolean
+	local landsAt = fx.model:GetAttribute("SpinnerLandsAt")
+	return typeof(landsAt) == "number" and serverNow >= landsAt and serverNow < landsAt + fx.slideSeconds
+end
+
+-- Moves everything that moves, for this moment (now from os.clock, and the
+-- server's time), on the near bases.
+function BaseFxController.step(now: number, serverNow: number)
+	local speed = SpinnerConfig.SlideStudsPerSecond
+	local delta = if lastStep then math.clamp(now - lastStep, 0, 0.5) else 0
+	lastStep = now
 	for _, fx in bases do
+		if sliding(fx, serverNow) then
+			fx.beltRun += delta * speed
+		end
 		local from, direction = fx.beltStart, fx.beltDirection
 		for _, chevron in fx.chevrons do
 			chevron.left.Transparency = if fx.near then 0.15 else 1
@@ -358,7 +385,7 @@ function BaseFxController.step(now: number)
 			local spacing = fx.beltLength / CHEVRONS
 			local parts, cframes = {}, {}
 			for index, chevron in fx.chevrons do
-				local along = (now * speed + (index - 1) * spacing) % fx.beltLength
+				local along = (fx.beltRun + (index - 1) * spacing) % fx.beltLength
 				local basis = CFrame.lookAt(from + direction * along, from + direction * (along + 1))
 				for _, side in { -1, 1 } do
 					local arm = if side < 0 then chevron.left else chevron.right
@@ -407,7 +434,7 @@ function BaseFxController:Start()
 	end)
 
 	RunService.RenderStepped:Connect(function()
-		BaseFxController.step(os.clock())
+		BaseFxController.step(os.clock(), workspace:GetServerTimeNow())
 	end)
 
 	while true do

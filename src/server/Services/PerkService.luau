@@ -5,9 +5,9 @@
 -- station, has the Cash and isn't at the top level; the client only asks.
 --
 -- Each upgrade works where it matters, read from the save with PerkMath:
--- walk speed here (Lib/Movement), damage in CombatService, conveyor luck and
--- variant chance in ConveyorService, and the money multiplier in
--- IncomeService. Rebirth sets them back to 0 (DataService).
+-- walk speed here (Lib/Movement), damage in CombatService, Spinner Luck
+-- (saved as ConveyorLuck) and variant chance in SpinnerService, and the
+-- money multiplier in IncomeService. Rebirth sets them back to 0 (DataService).
 --
 -- Players get a PerkLevels attribute (JSON: upgrade id to level) for the
 -- Upgrades window.

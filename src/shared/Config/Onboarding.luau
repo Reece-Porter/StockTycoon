@@ -18,11 +18,11 @@ return {
 
 	-- What each step asks the player to do.
 	Hints = {
-		[Steps.Buy] = "Buy a company from your conveyor",
+		[Steps.Buy] = "Your Stock Spinner rolls new companies onto your belt. Buy one!",
 		[Steps.Place] = "Carry it to a free plot on your base and place it",
 		[Steps.Collect] = "Your company makes Cash on the green pad in front of it. Walk over the pad to collect it",
 		[Steps.Machine] = "Put your next company in the Valuation Machine before you place it",
-		[Steps.Lock] = "Press the red lock button on your base. While it's locked, nobody can steal from you",
+		[Steps.Lock] = "Press the red lock button on your base. In a Hostile Takeover, a locked base can't be stolen from",
 		[Steps.Middle] = "Rarer companies come down the middle conveyor. Anyone can buy them!",
 	} :: { [number]: string },
 

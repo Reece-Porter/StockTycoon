@@ -39,8 +39,10 @@ local list: { Perk } = {
 	},
 	{
 		id = "ConveyorLuck",
-		name = "Conveyor Luck",
-		description = "Rarer tiers turn up more often on your own conveyor.",
+		-- Saved as ConveyorLuck from before the Stock Spinner replaced each
+		-- base's own conveyor.
+		name = "Spinner Luck",
+		description = "Rarer tiers turn up more often in your Stock Spinner.",
 		perLevel = 0.1,
 		maxLevel = 10,
 		baseCost = 1_000,
@@ -58,7 +60,7 @@ local list: { Perk } = {
 	{
 		id = "VariantChance",
 		name = "Variant Chance",
-		description = "Shiny, Galaxy and other variants turn up more often on your own conveyor.",
+		description = "Shiny, Galaxy and other variants turn up more often in your Stock Spinner.",
 		perLevel = 0.15,
 		maxLevel = 10,
 		baseCost = 2_500,

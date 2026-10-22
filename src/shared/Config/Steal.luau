@@ -24,6 +24,17 @@ return {
 	-- is still to be confirmed (docs/design.md).
 	VeteranRebirths = 3,
 
+	-- Hostile Takeovers: the only time anyone can steal from a base. One
+	-- starts every EverySeconds, counted from OffsetSeconds past midnight UTC
+	-- (so on the hour, every hour, in every server at once), and lasts
+	-- DurationSeconds. Everyone is warned each of WarnSeconds before.
+	Takeover = {
+		EverySeconds = 3600,
+		OffsetSeconds = 0,
+		DurationSeconds = 300,
+		WarnSeconds = { 300, 60 } :: { number },
+	},
+
 	-- How long a base lock lasts. Owners press the button again to renew it.
 	LockSeconds = 60,
 	-- How close (in studs) the owner must be to the lock button.
