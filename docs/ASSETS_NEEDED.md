@@ -175,4 +175,15 @@ None are required: the game plays without them. Phase 7 would use these (short, 
 | Egg crack | The egg bursts | 0.4 s crack and pop. |
 | Pet reveal | The pet pops out | 1 s rising chime; a longer, brighter fanfare variant for Legendary and Mythic. |
 
-Later phases will add button clicks, collecting Cash, purchases, steals and the rebirth celebration here.
+Phase 9 would use these (short and cartoon, quiet enough to hear often):
+
+| Sound | Plays when | Spec |
+| --- | --- | --- |
+| Ka-ching | Someone buys a company ("SOLD!") | 0.4 s cash register ding. |
+| Yoink | Someone starts stealing ("YOINK!") | 0.3 s cartoon slide whistle up. |
+| Tagged | A thief is caught ("TAGGED!") | 0.4 s cartoon buzzer and boing. |
+| Coin tick | The small "+$" over a plot | 0.15 s soft coin tick, very quiet. |
+| Drop thud | A company bounces as it lands | 0.3 s soft cartoon thud with a small bounce. |
+| Rebirth fanfare | The rebirth celebration | 2 s bright fanfare with a confetti pop. |
+
+Button clicks are still to come.

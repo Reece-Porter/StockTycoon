@@ -360,6 +360,10 @@ local function checkTags()
 			if (thiefRoot.Position - ownerRoot.Position).Magnitude <= StealConfig.TagDistance then
 				CarryService:TakeStolen(thief)
 				refreshOwner(entry.owner)
+				-- Only for looks: every player's screen pops "TAGGED!" over the
+				-- thief when this goes up (FeedbackFxController).
+				local tags = thief:GetAttribute("TaggedCount")
+				thief:SetAttribute("TaggedCount", (if typeof(tags) == "number" then tags else 0) + 1)
 				local name = companyName(entry.company)
 				notify(thief, `{entry.owner.Name} tagged you! The {name} went back.`)
 				notify(entry.owner, `You got your {name} back!`)

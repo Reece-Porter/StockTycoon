@@ -302,6 +302,20 @@ Built when the server starts, the same way as company models, by `src/server/Lib
 - Combat effects (`CombatFxController`), looks only, the server still decides every hit: when the server flashes a hit target, a white puff with a cartoon word (BONK!, POW!, WHAM!, BOP!, THWACK!) and bursting stars over their head, and a small screen shake for the attacker only; stars circling the head while a character is stunned or knocked out; a dust puff where a knocked-back character lands. Cartoon only, no blood.
 - Budget for phones: at most 25 parts per pet and 12 per weapon (the Handle included); everything anchored (weapons welded to the Handle, massless) with no collisions, touches or raycast hits; small pieces cast no shadow; at most one light per pet, Legendary and Mythic only. Adding a pet or weapon means an entry in `Config/Pets` or `Config/Weapons` and one in `PetLooks` or `WeaponLooks` (without one, a pet is a plain round critter in its rarity colour and a weapon a plain stick). A new weapon also needs a `WeaponHook` added in BuildMap to be shown in the shop.
 
+## Feedback effects
+Short effects for the moments that matter (visual pass Phase 9), on each player's own screen, never over the HUD. Looks only: the server has already done each thing.
+- Carrying a company: the carrier holds it up over their head with both arms, and it glows softly in its tier's colour (`CarryFxController`, from the `CarriedCompany` model and the carrier's `CarryingCompanyId`).
+- A dropped company bounces as it lands and has a ring of glowing dots on the ground round it in its tier's colour, going out one by one as its return countdown runs down, under the label with the seconds left (`DropController`).
+- Pops in the world over the player (`FeedbackFxController`, `Ui/WorldPop`):
+  - "SOLD!" with cash flying out when anyone buys a company;
+  - "YOINK!" when anyone starts carrying off someone else's company;
+  - "TAGGED!" when a thief is caught;
+  - "REBIRTH!" over anyone else who rebirths.
+
+  The server says when someone bought or was tagged with two counters on the player, `BoughtCount` and `TaggedCount`, only for these pops.
+- Income: now and then a small "+$12" over a plot near the camera as its cash pad fills. Each plot pops at most every 8 seconds and only one pop is shown at a time, so a full base never spams.
+- Rebirth: on the player's own screen a burst of light, confetti and a big banner ("REBIRTH!", the rebirth number and the new income multiplier) for three seconds, under the menus and notifications and never taking a tap (`Ui/Celebration`).
+
 ## Build order
 Each slice ends when its checks pass in Studio with at least two test players (Studio's local server test).
 1. **Project setup**: Rojo, Wally, ProfileStore, lint and format working. Check: an empty place syncs and runs with no errors.
