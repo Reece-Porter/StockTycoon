@@ -194,7 +194,8 @@ The Stock Spinner and Hostile Takeovers would use these:
 
 | Sound | Plays when | Spec |
 | --- | --- | --- |
-| Reel ticks | The spinner's reels roll | Soft mechanical ticks that slow down with the reels, about 3 s, quiet (it plays every 20 seconds). Like a stock ticker board flipping, not an arcade machine. |
+| Lever pull | The owner presses Spin | 0.3 s chunky lever clunk. |
+| Reel ticks | The spinner's reels roll | Mechanical ticks that slow down with the reels, about 3 s. |
 | Reel stop | Each reel lands | 0.2 s soft clunk; a short sparkle on top for a Blue Chip or a variant. |
 | Takeover siren | A Hostile Takeover starts | 1.5 s cartoon alarm or trading-floor bell, played once for everyone. |
 | Takeover over | It ends | 1 s calm closing bell. |

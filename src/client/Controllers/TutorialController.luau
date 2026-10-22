@@ -67,7 +67,7 @@ local function nearest(parts: { BasePart }, from: Vector3): BasePart?
 end
 
 -- A company on this player's own belt (from their Stock Spinner), or else
--- the belt itself.
+-- the machine to spin (the belt on a map from before it).
 local function conveyorTarget(from: Vector3): BasePart?
 	local items = workspace:FindFirstChild("ConveyorItems")
 	local parts = {}
@@ -84,6 +84,11 @@ local function conveyorTarget(from: Vector3): BasePart?
 		return found
 	end
 	local base = myBase()
+	local machine = base and base:FindFirstChild("Spinner")
+	local console = machine and machine:FindFirstChild("Console")
+	if console and console:IsA("BasePart") then
+		return console
+	end
 	local conveyor = base and base:FindFirstChild("Conveyor")
 	local belt = conveyor and conveyor:FindFirstChild("Belt")
 	return if belt and belt:IsA("BasePart") then belt else nil

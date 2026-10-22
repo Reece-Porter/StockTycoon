@@ -1,9 +1,11 @@
 --!strict
--- The Stock Spinner's rolls and timing (Config/Spinner). Pure functions: the
--- caller passes in its source of random numbers (each from 0 up to, not
--- including, 1), so the same code runs in the game and in tests.
+-- The Stock Spinner's Luck, odds, rolls and timing (Config/Spinner). Pure
+-- functions: the caller passes in its source of random numbers (each from 0
+-- up to, not including, 1), so the same code runs in the game and in tests.
 
 local Companies = require(script.Parent.Config.Companies)
+local PerkMath = require(script.Parent.PerkMath)
+local RebirthMath = require(script.Parent.RebirthMath)
 local SpawnRoll = require(script.Parent.SpawnRoll)
 local SpinnerConfig = require(script.Parent.Config.Spinner)
 
@@ -14,6 +16,42 @@ export type Result = { companyId: string, tier: string }
 export type Exit = { comesOutAt: number, stop: number, travelSeconds: number }
 
 local SpinnerMath = {}
+
+-- A player's Luck: what their rebirths give, times their Spinner Luck
+-- upgrade (saved as ConveyorLuck).
+function SpinnerMath.luck(rebirths: number, luckLevel: number): number
+	return RebirthMath.luck(rebirths) * PerkMath.multiplier("ConveyorLuck", luckLevel)
+end
+
+-- "x1", "x1.25" or "x2.4": Luck as players see it.
+function SpinnerMath.luckText(luck: number): string
+	local text = string.format("%.2f", math.floor(luck * 100 + 0.5) / 100)
+	text = string.gsub(string.gsub(text, "0+$", ""), "%.$", "")
+	return `x{text}`
+end
+
+-- The spinner's odds at this Luck: each tier after the first weighs Luck to
+-- the power of its place after the first. Returns a new list.
+function SpinnerMath.weights(weights: { SpinnerConfig.WeightEntry }, luck: number): { SpinnerConfig.WeightEntry }
+	local result = {}
+	for index, entry in weights do
+		table.insert(result, { tier = entry.tier, weight = entry.weight * luck ^ (index - 1) })
+	end
+	return result
+end
+
+-- Each tier's chance (0 to 100) with these weights.
+function SpinnerMath.percents(weights: { SpinnerConfig.WeightEntry }): { [string]: number }
+	local total = 0
+	for _, entry in weights do
+		total += entry.weight
+	end
+	local percents = {}
+	for _, entry in weights do
+		percents[entry.tier] = if total > 0 then entry.weight / total * 100 else 0
+	end
+	return percents
+end
 
 -- Rolls count different companies: each one's tier with these odds (the
 -- first one's is firstTier instead, if given), then any company of that

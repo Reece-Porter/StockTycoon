@@ -2,7 +2,8 @@
 -- The player bases come alive on each player's device (docs/visual-pass.md,
 -- Phase 5). Looks only: the server owns the bases.
 --   - The headquarters sign over each base's way in shows its owner's
---     display name.
+--     display name, with their Stock Spinner Luck beside it (the base's
+--     OwnerLuck attribute, from SpinnerService).
 --   - Plots and pet slots the owner hasn't opened yet (the Locked attribute,
 --     set by LockedLook on the server) get a padlock over them.
 -- And for the bases near the camera:
@@ -24,6 +25,7 @@ local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
 local SpinnerMath = require(ReplicatedStorage.Shared.SpinnerMath)
 local Theme = require(ReplicatedStorage.Shared.Theme)
 local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
+local Make = require(script.Parent.Parent.Ui.Kit.Make)
 
 local CHECK_SECONDS = 0.5
 -- A base is near while the camera is this close to its spawn.
@@ -48,11 +50,14 @@ local FREE_BASE = "Free base"
 
 type Chevron = { left: Part, right: Part }
 
+-- One face of the sign: the owner's name and the Luck badge beside it.
+type SignFace = { name: TextLabel, luck: Frame, luckText: TextLabel }
+
 type BaseFx = {
 	model: Model,
 	near: boolean,
 	accent: Color3,
-	signLabels: { TextLabel },
+	signLabels: { SignFace },
 	-- The conveyor: where it starts (on top of the belt), which way it runs,
 	-- how long it is, and its chevrons.
 	beltStart: Vector3?,
@@ -91,8 +96,9 @@ local function lookPart(parent: Instance, name: string, size: Vector3, colour: C
 	return part
 end
 
--- The sign's two faces: the owner's name over "Headquarters".
-local function signFace(panel: BasePart, face: Enum.NormalId, accent: Color3): TextLabel
+-- The sign's two faces: the owner's name, with their Luck in a gold badge
+-- beside it, over "Headquarters".
+local function signFace(panel: BasePart, face: Enum.NormalId, accent: Color3): SignFace
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "SignText"
 	gui.Face = face
@@ -130,8 +136,28 @@ local function signFace(panel: BasePart, face: Enum.NormalId, accent: Color3): T
 	title.Text = "HEADQUARTERS"
 	title.Parent = gui
 
+	local luck = Instance.new("Frame")
+	luck.Name = "Luck"
+	luck.AnchorPoint = Vector2.new(1, 0)
+	luck.Position = UDim2.fromScale(0.97, 0.12)
+	luck.Size = UDim2.fromScale(0.25, 0.48)
+	luck.BackgroundColor3 = Theme.Colours.Gold
+	luck.Visible = false
+	Make.corner(luck)
+	Make.outline(luck, Theme.Colours.Ink, Theme.Stroke.Normal)
+	luck.Parent = gui
+	local luckText = Instance.new("TextLabel")
+	luckText.Name = "Text"
+	luckText.Position = UDim2.fromScale(0.06, 0.08)
+	luckText.Size = UDim2.fromScale(0.88, 0.84)
+	luckText.BackgroundTransparency = 1
+	luckText.Font = Theme.Fonts.Display
+	luckText.TextScaled = true
+	luckText.TextColor3 = Theme.Colours.Ink
+	luckText.Parent = luck
+
 	gui.Parent = panel
-	return name
+	return { name = name, luck = luck, luckText = luckText }
 end
 
 local function ownerName(base: Model): string
@@ -145,8 +171,15 @@ end
 
 local function showOwner(fx: BaseFx)
 	local text = ownerName(fx.model)
-	for _, label in fx.signLabels do
-		label.Text = text
+	local luck = fx.model:GetAttribute("OwnerLuck")
+	local hasLuck = typeof(luck) == "number" and text ~= FREE_BASE
+	for _, sign in fx.signLabels do
+		sign.name.Text = text
+		-- The name moves over to make room for the badge.
+		sign.name.Position = UDim2.fromScale(if hasLuck then 0.37 else 0.5, 0.06)
+		sign.name.Size = UDim2.fromScale(if hasLuck then 0.66 else 0.94, 0.62)
+		sign.luck.Visible = hasLuck
+		sign.luckText.Text = if typeof(luck) == "number" then `LUCK {SpinnerMath.luckText(luck)}` else ""
 	end
 end
 
@@ -237,6 +270,9 @@ local function track(base: Instance)
 	bases[base] = fx
 	setUp(fx)
 	base:GetAttributeChangedSignal("OwnerUserId"):Connect(function()
+		showOwner(fx)
+	end)
+	base:GetAttributeChangedSignal("OwnerLuck"):Connect(function()
 		showOwner(fx)
 	end)
 end

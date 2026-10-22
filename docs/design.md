@@ -5,8 +5,8 @@ Decisions marked "Decided" come from Reece and should not be changed without ask
 ## Decided
 - Stealing is in, Steal a Brainrot style.
 - Rebirth is in.
-- Each base has a Stock Spinner (a roll machine) instead of its own conveyor: it rolls 3 different companies at a time, they come out onto the base's belt and stop, and only the owner can buy them until the next roll replaces them. The shared conveyor in the middle of the map stays, with better rarity odds and two tiers that only appear there.
-- The spinner's rarer tiers get more likely with every rebirth, so rebirthing is the way up to better companies.
+- Each base has a Stock Spinner instead of its own conveyor: a machine the owner walks up to and plays. A pop-up spins three reels, slot-machine style, which stop on 3 different companies rolled with the owner's Luck; those companies come out onto the base's belt and stay there, for only the owner to buy, until the machine is played again. The shared conveyor in the middle of the map stays, with better rarity odds and two tiers that only appear there.
+- Each player has a Luck that makes the spinner's rarer tiers more likely. It grows with every rebirth (and a little with the Spinner Luck upgrade), so rebirthing is the way up to better companies, and it shows next to the owner's name on their base's sign.
 - Stealing from bases only happens during a Hostile Takeover, an event once an hour, so players don't have to guard their base all the time.
 - The Valuation Machine can never reduce a company below base income.
 - Bases are upgraded to unlock more plots, then new floors with more plots.
@@ -28,7 +28,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 ## Spawn weights (starting assumption)
 - **Stock Spinner**: Startup 70, Scale-up 22, Unicorn 7, Blue Chip 1.
 - **Shared conveyor**: Startup 55, Scale-up 28, Unicorn 12, Blue Chip 4, Conglomerate 0.9, Monopoly 0.1.
-- Spinner weights scale with rebirth count (`Config/Rebirth.luau`): the growth is 1 + 0.25 x rebirths (counted up to 20), and each tier after Startup weighs that growth to the power of its place after Startup, so the rarer the tier, the more it gains. Scale-up x1.25, Unicorn x1.56 and Blue Chip x1.95 after one rebirth; x2, x4 and x8 after four. As odds:
+- Spinner odds depend on the player's **Luck** (`SpinnerMath.luck`): 1 + 0.25 x rebirths (counted up to 20, `Config/Rebirth.luau`), times the Spinner Luck upgrade (up to x1.5). Each tier after Startup weighs Luck to the power of its place after Startup, so the rarer the tier, the more it gains: at Luck x2, Scale-up x2, Unicorn x4, Blue Chip x8. From rebirths alone, as odds:
   - 0 rebirths: Startup 70%, Scale-up 22%, Unicorn 7%, Blue Chip 1%
   - 1: 63.4%, 24.9%, 9.9%, 1.8%
   - 2: 57.3%, 27.0%, 12.9%, 2.8%
@@ -39,9 +39,11 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - The shared conveyor's odds are the same for everyone.
 
 ## Stock Spinner (starting assumption)
-- A board over each base's belt with three reels (`Config/Spinner.luau`, `Services/SpinnerService`, `SpinnerController`). Every 20 seconds while the base has an owner it rolls 3 different companies with the owner's odds (above, plus Spinner Luck) and their Variant Chance. Rolling is free and automatic; buying a company costs its usual price.
-- The reels spin for 3 seconds, slowing to a stop one after another on what was rolled. Then the roll lands: whatever the last roll brought that's still on the belt disappears, and the new companies come out of the hatch one after another (0.7 seconds apart, at 10 studs a second) and stop along the belt, each under its reel (84%, 52% and 20% of the way along). They wait there, and only the owner can buy them, until the next roll lands 20 seconds later. About 9 companies a minute, as the old conveyor gave.
-- The server picks every roll (when it starts) and puts the companies on the belt; the reels only show it. Under the reels a timer says ROLLING! while they spin, then the time to the next roll with a bar running down. Gold bulbs along the board chase while it spins. The owner gets a pop over a reel that lands a Blue Chip or a variant.
+- A machine at the start of each base's belt (`Config/Spinner.luau`, `Services/SpinnerService`, `SpinnerController`, `Ui/SpinnerPopup`). The owner walks up to it and presses Spin; nobody else can play it. Playing is free; buying a company costs its usual price. It can be played again 10 seconds after the last play.
+- The server rolls 3 different companies with the owner's Luck (and their Variant Chance) the moment they press Spin, and whatever the last play left on the belt disappears.
+- The owner's screen shows a pop-up: the machine's name, their Luck, a lever that pulls down, and three reels that roll and stop one by one (the last after 3 seconds), each flashing its tier's colour, with bulbs round the edge chasing while it spins. Then it says the companies are on the belt and closes itself.
+- As the reels stop, the companies come out of a door in the machine one after another (0.7 seconds apart, at 10 studs a second) and stop along the belt (86%, 56% and 26% of the way along). They stay there, and only the owner can buy them, until the machine is played again.
+- The machine's own screen shows the same reels to everyone near it, with SPINNING!, READY or the time until it's ready under them.
 - Conglomerate and Monopoly never come out of the spinner. Nothing about it is sold for Robux.
 
 ## Shared conveyor (starting assumption)
@@ -57,7 +59,7 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - A dropped company returns to its rightful place after 10 seconds.
 
 ## Base, plots and floors (starting assumption)
-- Each player gets a base with a Stock Spinner over a short belt, the Valuation Machine, floors of plots and a lock button on every floor.
+- Each player gets a base with a Stock Spinner at the start of a short belt, the Valuation Machine, floors of plots and a lock button on every floor.
 - Floor 1 starts with 6 plots. Plot upgrades add 1 plot at a time, up to 10 per floor.
 - Once a floor is full (10 plots), the player can buy the next floor, which starts with 6 plots and upgrades to 10.
 - Maximum 4 floors (40 plots) at launch.
@@ -163,7 +165,7 @@ Boost rules
 - Requirement: 1,000,000 Cash and owning at least one Blue Chip company or better (placed or in storage). Not while carrying a company or with a Valuation Machine run going.
 - Resets: Cash, placed and stored companies, plot and floor upgrades, upgrade station levels.
 - Keeps: rebirth count, weapons, pets, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics. Pets return to inventory and the player re-places them once floors are rebuilt.
-- Reward: income multiplier = 1 + 0.5 x rebirth count, plus better Stock Spinner odds (see "Spawn weights"). The Rebirth window shows the spinner's odds now and after the next rebirth.
+- Reward: income multiplier = 1 + 0.5 x rebirth count, plus more Stock Spinner Luck (see "Spawn weights"). The Rebirth window shows the Luck and odds now and after the next rebirth.
 - Rebirth requirements scale up each time (x3 Cash per rebirth).
 
 ## Variants (starting assumption)
@@ -183,7 +185,7 @@ Boost rules
 - A station at one end of the street sells upgrades for Cash only, one level at a time, 10 levels each (`Config/Perks.luau`):
   - Walk Speed: +6% a level.
   - Damage: +10% a level.
-  - Spinner Luck (saved as `ConveyorLuck` from before the spinner): tiers above Startup in your Stock Spinner weigh +10% more a level, on top of rebirth luck.
+  - Spinner Luck (saved as `ConveyorLuck` from before the spinner): +5% Luck a level (up to x1.5), multiplying the Luck rebirths give.
   - Money Multiplier: +10% income a level.
   - Variant Chance: +15% a level in your Stock Spinner.
 - Each level costs the base cost times the growth to the power of levels owned: Walk Speed 300 x1.8, Damage 500 x1.8, Spinner Luck 1,000 x2, Money Multiplier 2,000 x2.1, Variant Chance 2,500 x2.1.
@@ -227,7 +229,7 @@ Boost rules
 
 ## Onboarding (starting assumption)
 - New player spawns at their base with enough Cash for one Startup.
-- On-screen arrow guides them: buy a company their Stock Spinner rolled onto their belt, carry it home, place it, then collect its Cash from its pad.
+- On-screen arrow guides them: play their Stock Spinner and buy a company it puts on their belt, carry it home, place it, then collect its Cash from its pad.
 - After placing the first company, prompt them to try the Valuation Machine on their second one.
 - Then show them how to lock their base with the lock button on their ground floor.
 - After 2 minutes, point them at the shared conveyor.
@@ -237,7 +239,7 @@ Boost rules
 - 8 players per server, one base each. Set Max Players to 8 in the place's settings.
 - The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The weapon and pet shops stand side by side at one end of the street and the upgrade station at the other, all facing back along it, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
 - BuildMap stamps the map with its build (the `MapVersion` attribute on `Workspace.Map`). When it doesn't match `Config/Base.MapVersion`, the server warns in the Output and admins get a notice and a debug panel row saying to run BuildMap again. Bump both together whenever BuildMap changes what it builds.
-- Each base (42 wide, 96 deep) runs back from the street: a front yard with the Stock Spinner over its belt, the Valuation Machine and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), a lock button in the middle of the walkway, pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
+- Each base (42 wide, 96 deep) runs back from the street: a front yard with the Stock Spinner and its belt, the Valuation Machine and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), a lock button in the middle of the walkway, pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
 - Every floor has its own lock button; the owner can lock the base from any open floor's button. A floor that isn't open yet isn't in the world, so its button can't be used.
 - How a base looks (visual pass Phase 5), in its own accent colour from `Theme.Base` (stored on the base as an `Accent` attribute):
   - Floors with grout lines making large tiles, and a two-tone front edge on each upper floor.
@@ -247,11 +249,11 @@ Boost rules
   - Stairs with pale treads, and glass rails with rounded handrails on posts; landings with trim.
   - Glass walls framed in the accent colour.
   - Accent trim round the edge, gold for a VIP with a slow shine running along it.
-  - A headquarters sign over the way in with the owner's display name.
+  - A headquarters sign over the way in with the owner's display name, and their Stock Spinner Luck in a gold badge beside it.
   - While the base is locked, a shimmering force field across the way in with a padlock and the time left (and a new player's protection time, without the field). It stops nobody: the server moves people out. Nothing floats over the lock buttons.
   - The Valuation Machine, facing the walkway: a round stage under a glass tube where the company stands, between two pillars with gauges and chasing lights, under an arch with the machine's name and a ticker of parody companies sliding past, topped by a big screen with a little moving line chart (made-up numbers) and a beacon. While the owner's run is going, a scanner sweeps up and down the tube, the gauges swing, the lights chase faster and the beacon flashes.
-  - The base's belt: side rails, a roller at the end, chevrons running along it while the spinner's companies come out, and a hatch over the start that swings open when a company comes out.
-  - The Stock Spinner over the belt: a dark board on posts either side of the belt, framed in the accent colour, with a "STOCK SPINNER" header, a reel screen over each place a company stops (readable from the yard and the street), a timer strip under them and a row of gold bulbs. Everything on it is drawn by the client.
+  - The base's belt: side rails, a roller at the end, and chevrons running along it while the spinner's companies come out. Its start is inside the Stock Spinner.
+  - The Stock Spinner: a dark cabinet over the start of the belt, framed in the accent colour, with "STOCK SPINNER" on top. Its front, facing the yard, has the screen (drawn by the client), a ledge with a big red button over the invisible `Console` where the Spin prompt is, a lever, and gold bulbs that chase while it spins. The companies come out of a door on the side the belt runs out of, which swings open as they do.
   - The lock buttons: a round red button on a podium in the middle of each floor's walkway, labelled LOCK with a padlock on every side, which stays pressed down (and says LOCKED) while the base is locked.
   - A planter with a little tree in the front yard.
   - The spawn: a round pad with a glowing ring in the accent colour and a soft glow rising from it.
@@ -273,7 +275,7 @@ Boost rules
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
 ## Admin and debug tools (starting assumption)
-- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` rolls your Stock Spinner with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), roll your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), grant pets and weapons, skip playtime, reset own data.
+- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), grant pets and weapons, skip playtime, reset own data.
 - Debug panel (admins only) showing live economy values, active boosts and the current machine path.
 - A photo booth for store and marketing screenshots (visual pass Phase 10; `docs/ART_BRIEFS.md`): `Workspace.Map.PhotoBooth`, built by BuildMap far out past the city. Admins pose companies, pets and a copy of their base there with `/booth`, `/pose`, `/backdrop` and `/boothcam` (`Lib/PhotoBooth`, `PhotoBoothController`). Posed things are still copies in its Posed folder that nothing in the game looks at.
 - Build alongside slice 2 and extend with each slice, so every feature can be tested without grinding.
@@ -298,7 +300,7 @@ Boost rules
 - Each floor's `LockButton` (`Floors.Floor<n>.LockButton`) is a part the owner uses to lock the base; the time left on a lock shows on the force field at the way in (`Gate.Field`). A map built before the buttons moved onto the floors has one `LockButton` on the base itself, which still works.
 - Each base's `Machine` (the Valuation Machine) contains a part named `Pad`: companies being valued stand on it, and players use the machine there.
 - Each base's `Conveyor` model holds the belt plus two parts named `Start` and `End`. The Stock Spinner's companies come out at `Start` and stop along the line to `End` (at `Config/Spinner.Stops`), sitting on the bottom face of those parts, so place them on the belt surface. `Spawn` is a part the owner appears on.
-- Each base's `Spinner` model holds `Reel1` to `Reel3` (a screen over each place a company stops), `Timer`, `Header`, `Board`, `Post` and `Bulb` parts, all only for looks. The game works without it (the reels just aren't shown).
+- Each base's `Spinner` model is the machine: a `Console` part (invisible) where the owner plays it, a `Screen` (its Front face towards the yard) the reels are drawn on, `Bulb` parts, and the rest only for looks. The door the companies come out of is `Conveyor.Hatch.Door`. On a map without it, the spinner is played at the belt's `Start`.
 - `Floors.Floor1` to `Floor4`, each containing `Plots` (Plot1 to Plot10), `CollectPads` (Pad1 to Pad10, the cash pad in front of each plot), `PetSlots` (Slot1, Slot2), `LockButton` and `Access` (stairs or lift pad). Locked plots are greyed out by code. Everything belonging to an upper floor is inside its folder (`Platform`, `Railings`, `Trim`, `Glass` and so on), because the game takes the whole folder out of the world until the floor is opened. Each upper floor's `TopOnly` model is only shown while it's the highest open floor.
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
 - `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
@@ -361,6 +363,6 @@ After the build order: variants, the upgrade station, teleports, glass walls and
 
 Then cash pads and floors that appear as they're opened. Check: income only reaches Cash from the pads, only the owner can collect, the pads keep their Cash through a rejoin, a new base is just the ground floor, each floor appears when it's opened (and goes on rebirth), and the guide teaches collecting.
 
-Then the Stock Spinner in place of each base's conveyor, stronger rebirth odds, and Hostile Takeovers (map version 7). Check: each base's spinner rolls 3 different companies every 20 seconds, they come out and stop under their reels, only the owner can buy them, the next roll replaces what's left, the Rebirth window's odds match `/testodds` after a rebirth, Steal prompts only show during a takeover (`/takeover start 2`), the server refuses a steal outside one, and a thief can still finish a steal picked up just before it ended.
+Then the Stock Spinner in place of each base's conveyor, Luck, and Hostile Takeovers (map version 8). Check: only the owner can play their machine, from close by, and not again for 10 seconds; the pop-up's reels stop on 3 different companies, which then come out onto the belt and stay until the next play; only the owner can buy them; the sign shows the owner's Luck, and after a rebirth the Luck and `/testodds` match the Rebirth window; Steal prompts only show during a takeover (`/takeover start 2`), the server refuses a steal outside one, and a thief can still finish a steal picked up just before it ended.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.
