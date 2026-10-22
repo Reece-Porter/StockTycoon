@@ -21,7 +21,8 @@
 --      server works the multiplier out from its own clock, or they get the
 --      value when time runs out.
 --   3. Final standings by value, and Cash for each place (Config/Battle,
---      scaled to the player's income) when it wasn't a practice.
+--      scaled to the player's income) and Gold (more with more rebirths,
+--      BattleMath.gold) when it wasn't a practice.
 -- A player who leaves the game drops out. Everything is decided here; the
 -- client only asks. The board and every screen read the match from the
 -- State attribute (JSON) on ReplicatedStorage.Battle.
@@ -72,6 +73,7 @@ type Entry = {
 	final: number?,
 	place: number?,
 	reward: number?,
+	gold: number?,
 	left: boolean,
 	-- When a bot does its next thing.
 	botAt: number?,
@@ -170,6 +172,7 @@ local function publish()
 			multiplier = if revealRuns then entry.multiplier else nil,
 			final = if revealRuns then entry.final else nil,
 			reward = if revealRuns then entry.reward else nil,
+			gold = if revealRuns then entry.gold else nil,
 		})
 	end
 	for _, entry in entries do
@@ -348,7 +351,19 @@ local function finish()
 				AnalyticsService:Earned(player, "Battle", amount)
 				entry.reward = amount
 			end
-			notify(player, `You came {BattleMath.ordinal(place)} with {Format.cash(value)}! +{Format.cash(amount)}`)
+			-- And Gold, more for players with more rebirths.
+			local data = DataService:GetData(player)
+			local gold = BattleMath.gold(place, if data then data.Rebirths else 0)
+			if gold > 0 and DataService:AddGold(player, gold) then
+				AnalyticsService:EarnedGold(player, "Battle", gold)
+				entry.gold = gold
+			end
+			notify(
+				player,
+				`You came {BattleMath.ordinal(place)} with {Format.cash(value)}! +{Format.cash(amount)} and +{Format.gold(
+					gold
+				)}`
+			)
 		elseif player then
 			notify(player, `Practice over: you finished with {Format.cash(value)}.`)
 		end
@@ -414,6 +429,7 @@ local function newEntry(player: Player?, name: string, userId: number): Entry
 		final = nil,
 		place = nil,
 		reward = nil,
+		gold = nil,
 		left = false,
 		botAt = nil,
 	}

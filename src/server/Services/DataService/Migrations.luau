@@ -112,4 +112,15 @@ return {
 			data.TutorialStep += 1
 		end
 	end,
+
+	-- Version 15 adds Gold (nobody had any) and Index.Challenges (none
+	-- claimed). Rebirth stops taking companies and plots at the same time,
+	-- which needs nothing changed: plots above the Cash floors now come from
+	-- the rebirth count, and any bought up there before are kept.
+	[14] = function(data)
+		data.Gold = 0
+		if type(data.Index) == "table" then
+			data.Index.Challenges = {}
+		end
+	end,
 } :: { [number]: (data: { [string]: any }) -> () }

@@ -7,10 +7,12 @@
 --   cash: incomeSeconds of the player's income at claim time (not counting a
 --         boost), and at least minimum Cash;
 --   boost: seconds of 2x income, added to any boost already banked;
---   spins: free pet spin tokens, used at the pet shop.
+--   spins: free pet spin tokens, used at the pet shop;
+--   gold: an amount of Gold (kept through rebirth, spent at the upgrade
+--         station).
 
 export type Grant = {
-	kind: "cash" | "boost" | "spins",
+	kind: "cash" | "boost" | "spins" | "gold",
 	incomeSeconds: number?,
 	minimum: number?,
 	seconds: number?,
@@ -31,6 +33,9 @@ local function boost(minutes: number): Grant
 end
 local function spins(count: number): Grant
 	return { kind = "spins", count = count }
+end
+local function gold(amount: number): Grant
+	return { kind = "gold", count = amount }
 end
 
 return {
@@ -70,4 +75,5 @@ return {
 	fixedCash = fixedCash,
 	boost = boost,
 	spins = spins,
+	gold = gold,
 }

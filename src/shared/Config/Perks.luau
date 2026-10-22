@@ -2,10 +2,11 @@
 -- The upgrade station (docs/design.md, "Upgrade station"). Starting
 -- assumptions.
 --
--- Each upgrade has levels, bought one at a time with Cash at the station.
+-- Each upgrade has levels, bought one at a time with Gold at the station.
 -- Each level adds perLevel to a multiplier that starts at 1 (0.06 = +6%). The
--- next level costs baseCost x costGrowth ^ (levels already bought). Nothing
--- here is ever sold for Robux, and nothing touches the Valuation Machine.
+-- next level costs baseCost x costGrowth ^ (levels already bought), in Gold.
+-- Levels are kept through rebirth, like Gold itself. Nothing here is ever
+-- sold for Robux, and nothing touches the Valuation Machine.
 
 export type PerkId = "WalkSpeed" | "Damage" | "ConveyorLuck" | "Income" | "VariantChance"
 export type Perk = {
@@ -25,8 +26,8 @@ local list: { Perk } = {
 		description = "Walk and run faster.",
 		perLevel = 0.06,
 		maxLevel = 10,
-		baseCost = 300,
-		costGrowth = 1.8,
+		baseCost = 5,
+		costGrowth = 1.3,
 	},
 	{
 		id = "Damage",
@@ -34,8 +35,8 @@ local list: { Perk } = {
 		description = "Your weapons hit harder.",
 		perLevel = 0.1,
 		maxLevel = 10,
-		baseCost = 500,
-		costGrowth = 1.8,
+		baseCost = 8,
+		costGrowth = 1.3,
 	},
 	{
 		id = "ConveyorLuck",
@@ -46,8 +47,8 @@ local list: { Perk } = {
 		-- Multiplies the Luck rebirths give (SpinnerMath.luck), so up to x1.5.
 		perLevel = 0.05,
 		maxLevel = 10,
-		baseCost = 1_000,
-		costGrowth = 2,
+		baseCost = 10,
+		costGrowth = 1.35,
 	},
 	{
 		id = "Income",
@@ -55,8 +56,8 @@ local list: { Perk } = {
 		description = "All your companies earn more.",
 		perLevel = 0.1,
 		maxLevel = 10,
-		baseCost = 2_000,
-		costGrowth = 2.1,
+		baseCost = 15,
+		costGrowth = 1.4,
 	},
 	{
 		id = "VariantChance",
@@ -64,8 +65,8 @@ local list: { Perk } = {
 		description = "Shiny, Galaxy and other variants turn up more often in your Stock Spinner.",
 		perLevel = 0.15,
 		maxLevel = 10,
-		baseCost = 2_500,
-		costGrowth = 2.1,
+		baseCost = 15,
+		costGrowth = 1.4,
 	},
 }
 
@@ -77,8 +78,9 @@ end
 return {
 	list = list,
 	byId = byId,
-	-- Rebirth sets every upgrade back to level 0, like base upgrades.
-	ResetOnRebirth = true,
+	-- Levels are bought with Gold, which rebirth never takes, so rebirth keeps
+	-- them too. (They used to cost Cash and go back to 0.)
+	ResetOnRebirth = false,
 	-- How close (in studs) a player must be to the upgrade station, plus the
 	-- extra the server allows for lag.
 	StationDistance = 12,

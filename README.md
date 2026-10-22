@@ -29,6 +29,8 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `/givecash <amount> [player]`       | Adds Cash to you, or to another player (e.g. `/givecash 1000 Player2`)                                  |
 | `/setcash <amount>`                 | Sets Cash to an exact amount                                                                            |
+| `/givegold <amount> [player]`       | Adds Gold to you, or to another player (e.g. `/givegold 100`)                                           |
+| `/setgold <amount>`                 | Sets your Gold to an exact amount                                                                       |
 | `/spawn <tier> [shared] [variant]`  | Plays your Stock Spinner (from anywhere, no wait) with a company of that tier first, or puts one on the shared conveyor (e.g. `/spawn bluechip galaxy`, `/spawn monopoly shared`) |
 | `/roll`                             | Plays your Stock Spinner now, from anywhere and without waiting for it to be ready                      |
 | `/takeover [start [minutes] \| stop]` | Starts a Hostile Takeover now (5 minutes, or as many as you say), stops one, or (on its own) says when the next one is |
@@ -39,7 +41,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/racetest`                         | Every player tries to buy the same shared-conveyor company in the same instant; shows who got it        |
 | `/protect [player] [seconds]`       | Protects a player from stealing as if they were new (default 300 s; `0` removes it)                     |
 | `/giveweapon <weapon> [player]`     | Gives and equips a weapon for free (e.g. `/giveweapon gavel`, `/giveweapon goldencalculator Player2`)   |
-| `/setrebirths <count> [player]`     | Sets the rebirth count without resetting anything (e.g. `/setrebirths 3 Player2`)                       |
+| `/setrebirths <count> [player]`     | Sets the rebirth count without resetting anything (e.g. `/setrebirths 3 Player2`). Floors 3 and 4 open or close to match; a company on a plot that closes goes to storage |
 | `/givepet <pet or rarity> [player]` | Gives a pet for free (e.g. `/givepet coffeecat`, or `/givepet mythic` for a random Mythic)              |
 | `/testspins [rolls]`                | Simulates pet spins (default 10,000) and compares the odds with Config                                  |
 | `/skipplaytime <minutes>`           | Adds minutes to today's playtime (e.g. `/skipplaytime 60`)                                              |

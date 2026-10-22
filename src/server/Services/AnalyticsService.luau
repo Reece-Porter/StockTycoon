@@ -75,22 +75,26 @@ local function customFields(values: { string }?): { [string]: string }?
 	return result
 end
 
+-- One currency's flow: Cash, or Gold when gold is true.
 local function economy(
 	player: Player,
 	flow: Enum.AnalyticsEconomyFlowType,
 	transaction: string,
 	amount: number,
-	sku: string
+	sku: string,
+	gold: boolean?
 )
 	local data = DataService:GetData(player)
 	local rounded = math.round(amount)
 	if data == nil or rounded <= 0 then
 		return
 	end
-	local balance = math.round(data.Cash)
-	local text = `{flow.Name} {Format.cash(rounded)} {sku} (now {Format.cash(balance)})`
+	local balance = math.round(if gold then data.Gold else data.Cash)
+	local show: (number) -> string = if gold then Format.gold else Format.cash
+	local currency = if gold then AnalyticsConfig.GoldCurrency else AnalyticsConfig.Currency
+	local text = `{flow.Name} {show(rounded)} {sku} (now {show(balance)})`
 	send(player, "Economy", text, function()
-		RobloxAnalytics:LogEconomyEvent(player, flow, AnalyticsConfig.Currency, rounded, balance, transaction, sku)
+		RobloxAnalytics:LogEconomyEvent(player, flow, currency, rounded, balance, transaction, sku)
 	end)
 end
 
@@ -148,6 +152,18 @@ end
 function AnalyticsService:Spent(player: Player, sink: AnalyticsConfig.Sink, amount: number, item: string?)
 	local sku = if item then `{sink}_{item}` else sink
 	economy(player, Enum.AnalyticsEconomyFlowType.Sink, AnalyticsConfig.Sinks[sink], amount, sku)
+end
+
+-- Reports Gold the player has just been given (from the same sources as
+-- Cash, e.g. Index or Battle).
+function AnalyticsService:EarnedGold(player: Player, source: AnalyticsConfig.Source, amount: number)
+	economy(player, Enum.AnalyticsEconomyFlowType.Source, AnalyticsConfig.Sources[source], amount, source, true)
+end
+
+-- Reports Gold the player has just spent, e.g. on an upgrade station level.
+function AnalyticsService:SpentGold(player: Player, sink: AnalyticsConfig.Sink, amount: number, item: string?)
+	local sku = if item then `{sink}_{item}` else sink
+	economy(player, Enum.AnalyticsEconomyFlowType.Sink, AnalyticsConfig.Sinks[sink], amount, sku, true)
 end
 
 -- Reports a custom event with up to three labels, e.g. whether a machine run

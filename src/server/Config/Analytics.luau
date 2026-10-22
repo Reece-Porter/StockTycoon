@@ -46,8 +46,10 @@ return {
 		"FirstSteal",
 	} :: { FunnelStep },
 
-	-- The currency's name in the economy reports.
+	-- The currencies' names in the economy reports. Gold comes from the same
+	-- sources and goes to the same sinks, reported separately.
 	Currency = "Cash",
+	GoldCurrency = "Gold",
 	Sources = sources,
 	Sinks = sinks,
 

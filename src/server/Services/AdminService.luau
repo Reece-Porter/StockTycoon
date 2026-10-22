@@ -28,6 +28,7 @@ local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local Format = require(ReplicatedStorage.Shared.Format)
+local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local BattleService = require(script.Parent.BattleService)
@@ -230,6 +231,38 @@ local commands: { Command } = {
 				return `{target.Name}'s data hasn't loaded yet.`
 			end
 			return if target == player then `Gave you {amount} Cash.` else `Gave {target.Name} {amount} Cash.`
+		end,
+	},
+	{
+		alias = "/givegold",
+		usage = "/givegold <amount> [player]",
+		run = function(player, args)
+			local amount = parseAmount(args[1])
+			if amount == nil then
+				return "Usage: /givegold <amount> [player]"
+			end
+			local target = if args[2] then findPlayer(args[2]) else player
+			if target == nil then
+				return `No player called "{args[2]}" in this server.`
+			end
+			if not DataService:AddGold(target, amount) then
+				return `{target.Name}'s data hasn't loaded yet.`
+			end
+			return if target == player then `Gave you {amount} Gold.` else `Gave {target.Name} {amount} Gold.`
+		end,
+	},
+	{
+		alias = "/setgold",
+		usage = "/setgold <amount>",
+		run = function(player, args)
+			local amount = parseAmount(args[1])
+			if amount == nil then
+				return "Usage: /setgold <amount>"
+			end
+			if not DataService:SetGold(player, amount) then
+				return NOT_LOADED_MESSAGE
+			end
+			return `Set your Gold to {amount}.`
 		end,
 	},
 	{
@@ -817,7 +850,7 @@ local function onDataChanged(player: Player)
 	local carryingName = if carrying then Companies.byId[carrying.companyId].name else "nothing"
 
 	local floors = {}
-	for floor, open in data.UnlockedPlots do
+	for floor, open in UpgradeMath.open(data.UnlockedPlots, data.Rebirths) do
 		table.insert(floors, `Floor {floor}: {open}/{BaseConfig.PlotsPerFloor}`)
 	end
 
@@ -843,7 +876,13 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Upgrades", table.concat(levels, ", "))
 	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
 	local nextCost = RebirthMath.cashRequired(data.Rebirths)
-	AdminService:SetDebugValue(player, "Rebirths", `{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash)`)
+	local nextTier = Tiers.byId[RebirthMath.requiredTier(data.Rebirths)].name
+	AdminService:SetDebugValue(
+		player,
+		"Rebirths",
+		`{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash and a {nextTier})`
+	)
+	AdminService:SetDebugValue(player, "Gold", data.Gold)
 	AdminService:SetDebugValue(player, "FloorPets", PetService:DescribeFloors(player))
 end
 

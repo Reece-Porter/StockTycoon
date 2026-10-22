@@ -1,8 +1,9 @@
 --!strict
 -- Placing companies on plots and picking them up again. Shows each placed
 -- company standing on its plot, greys out plots (and their cash pads) the
--- owner hasn't unlocked (Data.UnlockedPlots, raised by UpgradeService), and
--- shows only the floors the owner has opened (BaseService:ShowFloors).
+-- owner hasn't unlocked (UpgradeMath.open: the plots bought with Cash, raised
+-- by UpgradeService, and the plots rebirths open above them), and shows only
+-- the floors the owner has opened (BaseService:ShowFloors).
 --
 -- Plot state reaches clients through attributes on the plot parts: PlotKey,
 -- Unlocked and HoldSeconds (how long a thief must hold to steal from it, with
@@ -46,7 +47,7 @@ local function companyName(company: Types.CompanyInstance): string
 end
 
 local function isUnlocked(plot: BaseService.Plot, data: DataService.Data): boolean
-	return UpgradeMath.isUnlocked(data.UnlockedPlots, plot.floor, plot.index)
+	return UpgradeMath.isUnlocked(UpgradeMath.open(data.UnlockedPlots, data.Rebirths), plot.floor, plot.index)
 end
 
 local function clearPlot(plot: BaseService.Plot)
@@ -101,7 +102,7 @@ local function sync(player: Player)
 	if base == nil or data == nil then
 		return
 	end
-	BaseService:ShowFloors(base, #data.UnlockedPlots)
+	BaseService:ShowFloors(base, #UpgradeMath.open(data.UnlockedPlots, data.Rebirths))
 	local multipliers = IncomeService:GetMultipliers(player)
 	for _, plot in base.plots do
 		local unlocked = isUnlocked(plot, data)

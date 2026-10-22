@@ -1,11 +1,12 @@
 --!strict
 -- The Cash pill in the bottom left corner of the screen: a cash icon, the
 -- player's Cash (counting up to each new amount) and their income per second
--- underneath, with a chip above it while a 2x income boost runs, its bar
--- running down. Stacked rather than side by side, so it stays narrow and
--- clear of the tool bar in the middle.
--- Reads leaderstats.Cash and the IncomePerSecond and BoostEndsAt attributes,
--- all set by the server.
+-- underneath. Above it, side by side, a smaller Gold pill (a coin and their
+-- Gold) and a chip while a 2x income boost runs, its bar running down.
+-- Stacked rather than all in a row, so it stays narrow and clear of the tool
+-- bar in the middle, and no taller than Cash and one chip.
+-- Reads leaderstats.Cash and the Gold, IncomePerSecond and BoostEndsAt
+-- attributes, all set by the server.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +20,7 @@ local Make = require(script.Parent.Parent.Ui.Kit.Make)
 local Menu = require(script.Parent.Parent.Ui.Menu)
 
 local PILL_HEIGHT = 58
+local GOLD_HEIGHT = 40
 local CHIP_HEIGHT = 40
 local BAR_HEIGHT = 5
 local UPDATE_SECONDS = 0.25
@@ -84,18 +86,54 @@ function HudController:Start()
 	incomeText.Size = UDim2.fromOffset(0, 18)
 	incomeText.AutomaticSize = Enum.AutomaticSize.X
 
-	-- The boost chip, above: 2x and the time left, with a bar that runs down
-	-- along its bottom edge.
+	-- Above Cash, a row: Gold, then the boost chip.
+	local chips = Instance.new("Frame")
+	chips.Name = "Chips"
+	chips.LayoutOrder = 1
+	chips.AutomaticSize = Enum.AutomaticSize.XY
+	chips.BackgroundTransparency = 1
+	local chipsLayout = Make.list(chips, Enum.FillDirection.Horizontal, Theme.Size.Gap)
+	chipsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	chips.Parent = stack
+
+	-- Gold: a coin and the amount.
+	local goldPill = pill(Theme.Colours.Card, GOLD_HEIGHT)
+	goldPill.Name = "Gold"
+	goldPill.LayoutOrder = 1
+	Make.padding(goldPill, 0, 8).PaddingRight = UDim.new(0, 16)
+	goldPill.Parent = chips
+	local coin = Icons.make("Gold", 28)
+	coin.LayoutOrder = 1
+	coin.Parent = goldPill
+	local goldText = Make.label(goldPill, {
+		font = Theme.Fonts.Display,
+		size = Theme.TextSize.Body,
+		colour = Theme.shade(Theme.Colours.Gold, 0.35),
+		alignX = Enum.TextXAlignment.Left,
+	})
+	goldText.Name = "Amount"
+	goldText.LayoutOrder = 2
+	goldText.Size = UDim2.fromScale(0, 1)
+	goldText.AutomaticSize = Enum.AutomaticSize.X
+	local function renderGold()
+		local gold = player:GetAttribute("Gold")
+		goldText.Text = Format.gold(if typeof(gold) == "number" then gold else 0)
+	end
+	player:GetAttributeChangedSignal("Gold"):Connect(renderGold)
+	renderGold()
+
+	-- The boost chip, beside Gold: 2x and the time left, with a bar that runs
+	-- down along its bottom edge.
 	local chip = Instance.new("Frame")
 	chip.Name = "Boost"
-	chip.LayoutOrder = 1
+	chip.LayoutOrder = 2
 	chip.Size = UDim2.fromOffset(0, CHIP_HEIGHT)
 	chip.AutomaticSize = Enum.AutomaticSize.X
 	chip.BackgroundColor3 = Theme.Colours.Gold
 	chip.Visible = false
 	Make.corner(chip)
 	Make.outline(chip, Theme.Colours.Ink, Theme.Stroke.Thick)
-	chip.Parent = stack
+	chip.Parent = chips
 	local content = Instance.new("Frame")
 	content.Name = "Content"
 	content.Size = UDim2.fromScale(0, 1)

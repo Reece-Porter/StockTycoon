@@ -118,6 +118,12 @@ function RewardsService:Grant(player: Player, grants: { RewardsConfig.Grant }, s
 				text ..= ` ({cap} min is the most you can bank)`
 			end
 			table.insert(given, text)
+		elseif grant.kind == "gold" then
+			local amount = grant.count or 0
+			if DataService:AddGold(player, amount) then
+				AnalyticsService:EarnedGold(player, source, amount)
+			end
+			table.insert(given, Format.gold(amount))
 		else
 			DataService:UpdateRewards(player, function(rewards)
 				rewards.SpinTokens += grant.count or 0

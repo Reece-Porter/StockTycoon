@@ -33,6 +33,14 @@ function BattleMath.reward(place: number): BattleConfig.Reward
 	return BattleConfig.Rewards[place] or BattleConfig.OtherReward
 end
 
+-- The Gold for finishing in this place, for a player with this many
+-- rebirths: Config/Battle's Gold for the place times 1 + GoldPerRebirth x
+-- rebirths, rounded to a whole amount.
+function BattleMath.gold(place: number, rebirths: number): number
+	local base = BattleConfig.GoldRewards[place] or BattleConfig.OtherGold
+	return math.floor(base * (1 + BattleConfig.GoldPerRebirth * math.max(0, rebirths)) + 0.5)
+end
+
 -- "1st", "2nd", "3rd", "4th" ... "11th", "12th", "13th", "21st".
 function BattleMath.ordinal(place: number): string
 	local lastTwo = place % 100
