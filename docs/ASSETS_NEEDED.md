@@ -92,7 +92,7 @@ Nothing is required: every base is built from parts and built-in materials (the 
 
 | Asset | Replaces | Spec |
 | --- | --- | --- |
-| Belt texture | The chevron parts on each personal conveyor | 256 x 256 PNG, tiles along its length: a dark rubber belt (#3A3A4A) with two faint lighter chevrons pointing one way. Opaque. |
+| Belt texture | The chevron parts on each base's belt | 256 x 256 PNG, tiles along its length: a dark rubber belt (#3A3A4A) with two faint lighter chevrons pointing one way. Opaque. |
 | Carpet pattern | The carpet's diamond parts | 256 x 256 PNG, tiles both ways: a soft fabric look, white so the accent colour tints it, with a small diamond every half tile. Opaque. |
 | Machine screen frame | The plain screen and ticker panels | 512 x 256 PNG: a rounded monitor bezel with a small antenna, dark grey (#2B2D42), transparent in the middle and outside. |
 | Gauge face | The plain white gauge discs on the machine's pillars | 128 x 128 PNG: a round dial, white with a thin dark rim, tick marks round the top two thirds and a green-to-red arc. Transparent outside the circle. The needle stays a part. |
@@ -189,5 +189,14 @@ Phase 9 would use these (short and cartoon, quiet enough to hear often):
 | Coin tick | The small "+$" over a plot | 0.15 s soft coin tick, very quiet. |
 | Drop thud | A company bounces as it lands | 0.3 s soft cartoon thud with a small bounce. |
 | Rebirth fanfare | The rebirth celebration | 2 s bright fanfare with a confetti pop. |
+
+The Stock Spinner and Hostile Takeovers would use these:
+
+| Sound | Plays when | Spec |
+| --- | --- | --- |
+| Reel ticks | The spinner's reels roll | Soft mechanical ticks that slow down with the reels, about 3 s, quiet (it plays every 20 seconds). Like a stock ticker board flipping, not an arcade machine. |
+| Reel stop | Each reel lands | 0.2 s soft clunk; a short sparkle on top for a Blue Chip or a variant. |
+| Takeover siren | A Hostile Takeover starts | 1.5 s cartoon alarm or trading-floor bell, played once for everyone. |
+| Takeover over | It ends | 1 s calm closing bell. |
 
 Button clicks are still to come.

@@ -2,8 +2,8 @@
 -- Rebirth requirements and rewards. Pure functions, so the server, the rebirth
 -- screen and tests share them.
 
-local ConveyorConfig = require(script.Parent.Config.Conveyor)
 local RebirthConfig = require(script.Parent.Config.Rebirth)
+local SpinnerConfig = require(script.Parent.Config.Spinner)
 local Tiers = require(script.Parent.Config.Tiers)
 local Types = require(script.Parent.Types)
 
@@ -38,17 +38,18 @@ function RebirthMath.hasRequiredTier(companies: { Types.CompanyInstance }): bool
 	return false
 end
 
--- Personal conveyor odds after this many rebirths: every tier but the first
--- (most common) weighs more. Returns a new list.
-function RebirthMath.personalWeights(
-	weights: { ConveyorConfig.WeightEntry },
+-- Stock Spinner odds after this many rebirths: each tier after the first
+-- weighs the growth (Config/Rebirth) to the power of its place after the
+-- first, so the rarer a tier, the more it gains. Returns a new list.
+function RebirthMath.spinnerWeights(
+	weights: { SpinnerConfig.WeightEntry },
 	rebirths: number
-): { ConveyorConfig.WeightEntry }
-	local boost = 1 + math.min(RebirthConfig.OddsBoostPerRebirth * rebirths, RebirthConfig.MaxOddsBoost)
+): { SpinnerConfig.WeightEntry }
+	local counted = math.clamp(rebirths, 0, RebirthConfig.MaxOddsRebirths)
+	local growth = 1 + RebirthConfig.OddsGrowthPerRebirth * counted
 	local result = {}
 	for index, entry in weights do
-		local weight = if index == 1 then entry.weight else entry.weight * boost
-		table.insert(result, { tier = entry.tier, weight = weight })
+		table.insert(result, { tier = entry.tier, weight = entry.weight * growth ^ (index - 1) })
 	end
 	return result
 end

@@ -66,7 +66,8 @@ local function nearest(parts: { BasePart }, from: Vector3): BasePart?
 	return best
 end
 
--- A company on this player's own conveyor, or else the belt itself.
+-- A company on this player's own belt (from their Stock Spinner), or else
+-- the belt itself.
 local function conveyorTarget(from: Vector3): BasePart?
 	local items = workspace:FindFirstChild("ConveyorItems")
 	local parts = {}

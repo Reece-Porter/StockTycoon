@@ -1,9 +1,10 @@
 --!strict
--- Buying companies off conveyors. The client only says which item it wants;
--- the server checks everything else: who may buy it, distance, Cash and that
--- the buyer's hands are free. A bought company goes into their hands to carry
--- home. Nothing between the checks and the purchase yields, so the first valid
--- request for an item wins and any later one finds it gone.
+-- Buying companies off belts: the shared conveyor, or a base's own belt that
+-- its Stock Spinner fills. The client only says which item it wants; the
+-- server checks everything else: who may buy it, distance, Cash and that the
+-- buyer's hands are free. A bought company goes into their hands to carry
+-- home. Nothing between the checks and the purchase yields, so the first
+-- valid request for an item wins and any later one finds it gone.
 
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -57,7 +58,7 @@ local function buy(player: Player, itemId: string, ignoreDistance: boolean?): st
 		return "Too slow! That company is gone."
 	end
 	if item.ownerUserId ~= 0 and item.ownerUserId ~= player.UserId then
-		return "That's not your conveyor."
+		return "Only that base's owner can buy that."
 	end
 	if not ignoreDistance and not isInRange(player, item) then
 		return "Get closer to buy that."

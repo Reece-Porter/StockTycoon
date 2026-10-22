@@ -1,27 +1,11 @@
 --!strict
--- Conveyor timing, odds and buying range. Starting assumptions from
--- docs/design.md.
+-- The shared conveyor's timing and odds, and the buying range for anything
+-- on a belt. Starting assumptions from docs/design.md. Each base's own belt
+-- is fed by its Stock Spinner instead (Config/Spinner).
 
 export type WeightEntry = { tier: string, weight: number }
 
 return {
-	-- Each base's own conveyor; only the owner can buy from it.
-	Personal = {
-		SpawnSeconds = 6,
-		-- How fast companies move along the belt. A company disappears at the
-		-- End if nobody bought it, so a belt's length sets how long that takes
-		-- (the 32-stud belts in studio/BuildMap.luau: 20 seconds).
-		StudsPerSecond = 1.6,
-		-- Out of 100, with no rebirths. Each rebirth makes the tiers above
-		-- Startup more likely (Config/Rebirth).
-		Weights = {
-			{ tier = "Startup", weight = 70 },
-			{ tier = "ScaleUp", weight = 22 },
-			{ tier = "Unicorn", weight = 7 },
-			{ tier = "BlueChip", weight = 1 },
-		} :: { WeightEntry },
-	},
-
 	-- The conveyor in the middle of the map; anyone can buy, first come first
 	-- served. Better odds, plus the two tiers found nowhere else.
 	Shared = {

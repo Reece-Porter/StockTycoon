@@ -159,6 +159,13 @@ Theme.Base = {
 	MachinePad = hex("#A66CFF"),
 	LockCap = hex("#FF4D5E"),
 	SignPanel = hex("#FFFFFF"),
+	-- The Stock Spinner over the belt: a dark board framed in the accent
+	-- colour, with dark screens for the reels and gold bulbs along it that
+	-- chase while it spins.
+	Spinner = hex("#2B2D42"),
+	SpinnerScreen = hex("#1B1B2F"),
+	Bulb = hex("#FFC83D"),
+	BulbOff = hex("#7A6230"),
 }
 
 -- The middle street (studio/BuildMap.luau, docs/visual-pass.md Phase 6).

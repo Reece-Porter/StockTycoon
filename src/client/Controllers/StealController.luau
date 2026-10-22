@@ -1,9 +1,11 @@
 --!strict
 -- "Steal" prompts on companies placed on other players' bases. Holding the
 -- prompt tells the server when the hold started and when it finished; the
--- server times it and decides. The prompt is hidden while the base is locked,
--- its owner is protected as a new player, this player's hands are full, or this
--- player has too many rebirths to steal from an owner who has none.
+-- server times it and decides. The prompt only shows during a Hostile
+-- Takeover (Workspace's TakeoverEndsAt attribute), and is hidden while the
+-- base is locked, its owner is protected as a new player, this player's hands
+-- are full, or this player has too many rebirths to steal from an owner who
+-- has none.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -62,6 +64,7 @@ local function setUpPlot(base: Instance, part: Instance)
 			and typeof(owner) == "number"
 			and owner ~= player.UserId
 			and not isVeteranBlocked(owner)
+			and isFuture(workspace:GetAttribute("TakeoverEndsAt"))
 			and player:GetAttribute("CarryingCompanyId") == nil
 			and not isFuture(base:GetAttribute("LockedUntil"))
 			and not isFuture(base:GetAttribute("ProtectedUntil"))
@@ -134,17 +137,17 @@ function StealController:Start()
 		task.spawn(watchBase, base)
 	end
 
-	player:GetAttributeChangedSignal("CarryingCompanyId"):Connect(function()
+	local function refreshAll()
 		for _, refresh in refreshers do
 			refresh()
 		end
-	end)
+	end
+	player:GetAttributeChangedSignal("CarryingCompanyId"):Connect(refreshAll)
+	workspace:GetAttributeChangedSignal("TakeoverEndsAt"):Connect(refreshAll)
 
 	while true do
 		task.wait(REFRESH_SECONDS)
-		for _, refresh in refreshers do
-			refresh()
-		end
+		refreshAll()
 	end
 end
 
