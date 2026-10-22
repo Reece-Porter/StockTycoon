@@ -27,7 +27,9 @@ local Theme = require(themeModule :: ModuleScript) :: any
 -- Everything this script reads from Theme, checked before anything changes,
 -- so a Theme from older code (not pulled yet, or Rojo not synced) stops it
 -- here with the map untouched.
-for _, key in { "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" } do
+for _, key in
+	{ "Arena", "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" }
+do
 	if Theme[key] == nil then
 		error(
 			`ReplicatedStorage.Shared.Theme is out of date (it has no {key}): pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again.`
@@ -54,7 +56,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 9
+local MAP_VERSION = 10
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -1080,8 +1082,10 @@ end
 -- run: a road lane each side with a dashed line, zebra crossings in front of
 -- each row of bases, kerbs, then the pavement with street lamps, benches and
 -- planters in the gaps between bases, ticker posts by the crossings and
--- little chart screens on stands (the client draws both), and a gold bull at
--- the far end of the street.
+-- little chart screens on stands (the client draws both), a teleporter gate
+-- to the battle arena on each pavement in the middle of the street (where the
+-- middle chart screens would be), and a gold bull at the far end of the
+-- street.
 local KERB_X = 12
 local ROAD_INNER = 4.6
 local CROSSINGS = { -BASE_STEP * 1.5, -BASE_STEP / 2, BASE_STEP / 2, BASE_STEP * 1.5 }
@@ -1203,7 +1207,10 @@ do
 				)
 			end
 			-- The screen faces the conveyor (its Right face, which the client
-			-- draws on).
+			-- draws on). The middle gap has the arena's gate instead.
+			if gap == 0 then
+				continue
+			end
 			local kiosk = Instance.new("Model")
 			kiosk.Name = "Kiosk"
 			kiosk.Parent = street
@@ -2412,6 +2419,248 @@ do
 	end
 	-- Where an admin stands, out of shot.
 	marker(booth, "Stand", at(-38, 3, -8))
+end
+
+-- 11. The battle arena (docs/design.md, "Battle arena"): a stadium far out
+-- past the city the other way from the photo booth, reached through a
+-- teleporter gate on each pavement in the middle of the street. The game
+-- looks for (Lib/Arena, BattleController):
+--   - Map.ArenaGates.Gate1 and Gate2, each with an invisible Pad in its
+--     portal (the Teleport prompt, and where players must stand to use it).
+--   - Map.Arena: Arrive (an invisible pad where players land, facing the
+--     board), Join (the podium in the middle: the Join battle prompt), Exit
+--     (the green pad in the corner: Go home) and Board (the big board the
+--     client draws on, its Front face towards the middle).
+-- The floor is walled all round, with invisible walls well above jumping
+-- height so nobody falls off; the seats, banners and signs are only for
+-- looks.
+progress("adding the battle arena")
+local ARENA_AT = Vector3.new(0, groundY + 300, -2600)
+local ARENA_HALF_X = 60
+local ARENA_HALF_Z = 55
+local ARENA_WALL = 4
+local ARENA_FENCE = 40
+local GATE_X = 22
+do
+	local ARENA = Theme.Arena
+	local function sign(part: BasePart, faces: { Enum.NormalId }, text: string, colour: Color3)
+		for _, face in faces do
+			local gui = Instance.new("SurfaceGui")
+			gui.Name = `Sign{face.Name}`
+			gui.Face = face
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 30
+			gui.LightInfluence = 0
+			gui.MaxDistance = 250
+			gui.Parent = part
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Font = Theme.Fonts.Display
+			label.TextScaled = true
+			label.TextColor3 = colour
+			label.TextStrokeTransparency = 0.4
+			label.Text = text
+			label.Parent = gui
+		end
+	end
+
+	-- The gates: on each pavement, a portal between two pillars under a
+	-- BATTLE ARENA sign, facing the conveyor.
+	local gates = freshModel(map, "ArenaGates")
+	local streetTop = groundY + 0.1
+	for index, side in { -1, 1 } do
+		local gate = Instance.new("Model")
+		gate.Name = `Gate{index}`
+		gate.Parent = gates
+		local x = side * GATE_X
+		local pad = newPart(gate, "Pad", Vector3.new(7, 0.2, 7), CFrame.new(x, streetTop + 0.1, 0), ARENA.Portal)
+		hide(pad)
+		pad.CanTouch = false
+		column(gate, "Base", 0.3, 7.4, CFrame.new(x, streetTop + 0.15, 0), ARENA.Gate)
+		column(gate, "Ring", 0.34, 6.6, CFrame.new(x, streetTop + 0.17, 0), ARENA.Portal, Enum.Material.Neon)
+		column(gate, "Disc", 0.38, 5.8, CFrame.new(x, streetTop + 0.19, 0), ARENA.Gate)
+		for _, along in { -1, 1 } do
+			local z = along * 3.6
+			column(gate, "Pillar", 10, 1.2, CFrame.new(x, streetTop + 5, z), ARENA.Gate)
+			column(gate, "PillarCap", 0.5, 1.6, CFrame.new(x, streetTop + 10.25, z), ARENA.Ring, Enum.Material.Metal)
+			column(gate, "PillarFoot", 0.5, 1.6, CFrame.new(x, streetTop + 0.25, z), ARENA.Ring, Enum.Material.Metal)
+		end
+		decor(gate, "Beam", Vector3.new(1.4, 1.2, 8.8), CFrame.new(x, streetTop + 11, 0), ARENA.Gate)
+		local portal = decor(
+			gate,
+			"Portal",
+			Vector3.new(0.2, 9.4, 6),
+			CFrame.new(x, streetTop + 5.2, 0),
+			ARENA.Portal,
+			Enum.Material.Neon
+		)
+		portal.Transparency = 0.45
+		portal.CastShadow = false
+		local header = decor(gate, "Header", Vector3.new(0.4, 2.2, 9), CFrame.new(x, streetTop + 12.7, 0), ARENA.Wall)
+		sign(header, { Enum.NormalId.Left, Enum.NormalId.Right }, "BATTLE ARENA", Theme.Colours.Gold)
+		decor(gate, "HeaderTrim", Vector3.new(0.5, 0.25, 9.2), CFrame.new(x, streetTop + 11.65, 0), ARENA.Ring)
+	end
+
+	-- The arena, in its own frame: x across, z from the entrance (-z) to the
+	-- board (+z), y up from the top of the floor.
+	local arena = freshModel(map, "Arena")
+	local origin = CFrame.new(ARENA_AT)
+	local function at(x: number, y: number, z: number): CFrame
+		return origin * CFrame.new(x, y, z)
+	end
+	local floor =
+		newPart(arena, "Floor", Vector3.new(2 * ARENA_HALF_X, 2, 2 * ARENA_HALF_Z), at(0, -1, 0), ARENA.Floor, nil)
+	floor.Material = Enum.Material.SmoothPlastic
+	-- A lighter band round the edge of the floor, and the gold ring round
+	-- the podium.
+	for _, along in { -1, 1 } do
+		local band = decor(
+			arena,
+			"Edge",
+			Vector3.new(2 * ARENA_HALF_X - 2, 0.06, 4),
+			at(0, 0.03, along * (ARENA_HALF_Z - 3)),
+			ARENA.FloorEdge
+		)
+		band.CastShadow = false
+		local side = decor(
+			arena,
+			"Edge",
+			Vector3.new(4, 0.06, 2 * ARENA_HALF_Z - 14),
+			at(along * (ARENA_HALF_X - 3), 0.03, 0),
+			ARENA.FloorEdge
+		)
+		side.CastShadow = false
+	end
+	column(arena, "Ring", 0.08, 36, at(0, 0.04, 0), ARENA.Ring, Enum.Material.Metal).CastShadow = false
+	column(arena, "RingInner", 0.12, 33, at(0, 0.06, 0), ARENA.FloorEdge).CastShadow = false
+
+	-- Walls round the floor with neon along the top, and invisible ones
+	-- above them.
+	local walls: { { size: Vector3, at: CFrame } } = {
+		{
+			size = Vector3.new(2 * ARENA_HALF_X + 2, ARENA_WALL, 1),
+			at = at(0, ARENA_WALL / 2, ARENA_HALF_Z + 0.5),
+		},
+		{
+			size = Vector3.new(2 * ARENA_HALF_X + 2, ARENA_WALL, 1),
+			at = at(0, ARENA_WALL / 2, -ARENA_HALF_Z - 0.5),
+		},
+		{
+			size = Vector3.new(1, ARENA_WALL, 2 * ARENA_HALF_Z),
+			at = at(ARENA_HALF_X + 0.5, ARENA_WALL / 2, 0),
+		},
+		{
+			size = Vector3.new(1, ARENA_WALL, 2 * ARENA_HALF_Z),
+			at = at(-ARENA_HALF_X - 0.5, ARENA_WALL / 2, 0),
+		},
+	}
+	for _, wall in walls do
+		newPart(arena, "Wall", wall.size, wall.at, ARENA.Wall)
+		local trim = Vector3.new(wall.size.X + 0.1, 0.3, wall.size.Z + 0.1)
+		decor(arena, "WallTrim", trim, wall.at * CFrame.new(0, ARENA_WALL / 2, 0), ARENA.WallTrim, Enum.Material.Neon)
+		local fence = Vector3.new(wall.size.X, ARENA_FENCE, wall.size.Z)
+		local invisible =
+			newPart(arena, "Fence", fence, wall.at * CFrame.new(0, (ARENA_WALL + ARENA_FENCE) / 2, 0), ARENA.Wall, 1)
+		invisible.CastShadow = false
+	end
+
+	-- Banks of seats up both sides, only for looks.
+	for _, side in { -1, 1 } do
+		for tier = 1, 4 do
+			local x = side * (ARENA_HALF_X + 1 + tier * 4 - 2)
+			local height = ARENA_WALL + tier * 3
+			decor(arena, "Stand", Vector3.new(4, height, 2 * ARENA_HALF_Z), at(x, height / 2 - 2, 0), ARENA.Stand)
+			for row = 1, 9 do
+				local z = (row - 5) * 11
+				local colour = ARENA.Seats[(row + tier) % #ARENA.Seats + 1]
+				decor(arena, "Seats", Vector3.new(2.6, 1, 9), at(x, height - 1.5, z), colour)
+			end
+		end
+	end
+
+	-- Banners on poles in the corners.
+	for index, corner in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local x, z = corner[1] * (ARENA_HALF_X - 2), corner[2] * (ARENA_HALF_Z - 2)
+		column(arena, "BannerPole", 22, 0.6, at(x, 11, z), ARENA.Gate)
+		column(arena, "BannerTop", 0.8, 1, at(x, 22.4, z), ARENA.Ring, Enum.Material.Metal)
+		local inward = CFrame.Angles(0, math.atan2(x, z), 0)
+		local banner = decor(
+			arena,
+			"Banner",
+			Vector3.new(4.5, 9, 0.2),
+			at(x, 16.5, z) * inward * CFrame.new(0, 0, -0.5),
+			ARENA.Banners[index]
+		)
+		banner.CastShadow = false
+	end
+
+	-- Where players arrive, at the entrance end, facing the board, under an
+	-- arch with a portal like the street's.
+	local arrive = newPart(
+		arena,
+		"Arrive",
+		Vector3.new(6, 0.2, 6),
+		at(0, 0.1, -ARENA_HALF_Z + 12) * CFrame.Angles(0, math.pi, 0),
+		ARENA.Portal
+	)
+	hide(arrive)
+	arrive.CanTouch = false
+	arrive.CanQuery = false
+	column(arena, "ArriveRing", 0.1, 7, at(0, 0.05, -ARENA_HALF_Z + 12), ARENA.Portal, Enum.Material.Neon).CastShadow =
+		false
+	local archZ = -ARENA_HALF_Z + 3
+	for _, along in { -1, 1 } do
+		column(arena, "ArchPillar", 14, 2, at(along * 6, 7, archZ), ARENA.Gate)
+		column(arena, "ArchCap", 0.6, 2.6, at(along * 6, 14.3, archZ), ARENA.Ring, Enum.Material.Metal)
+	end
+	decor(arena, "ArchBeam", Vector3.new(14.6, 1.6, 2.2), at(0, 15, archZ), ARENA.Gate)
+	local arrivalPortal =
+		decor(arena, "Portal", Vector3.new(10, 13, 0.2), at(0, 6.8, archZ), ARENA.Portal, Enum.Material.Neon)
+	arrivalPortal.Transparency = 0.45
+	arrivalPortal.CastShadow = false
+	local arenaSign = decor(arena, "Sign", Vector3.new(18, 3.4, 0.4), at(0, 17.6, archZ), ARENA.Wall)
+	sign(arenaSign, { Enum.NormalId.Back }, "BATTLE ARENA", Theme.Colours.Gold)
+
+	-- The podium in the middle: Join, a white pillar with a gold top and a
+	-- JOIN sign on each side, on a round step that glows.
+	column(arena, "PodiumStep", 0.3, 9, at(0, 0.15, 0), ARENA.Podium)
+	column(arena, "PodiumGlow", 0.34, 8, at(0, 0.17, 0), ARENA.WallTrim, Enum.Material.Neon).CastShadow = false
+	local join = newPart(arena, "Join", Vector3.new(3, 3.6, 3), at(0, 2.1, 0), ARENA.Podium)
+	decor(arena, "PodiumTop", Vector3.new(3.4, 0.4, 3.4), at(0, 4.1, 0), ARENA.Ring, Enum.Material.Metal)
+	sign(
+		join,
+		{ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right },
+		"JOIN",
+		Theme.Colours.Ink
+	)
+
+	-- The exit in a front corner: a green pad (Exit) under a GO HOME sign.
+	local exitAt = at(-ARENA_HALF_X + 8, 0, -ARENA_HALF_Z + 8)
+	local exit = newPart(arena, "Exit", Vector3.new(6, 0.2, 6), exitAt * CFrame.new(0, 0.1, 0), ARENA.Exit)
+	exit.Material = Enum.Material.Neon
+	exit.CanCollide = false
+	column(arena, "ExitPost", 8, 0.5, exitAt * CFrame.new(0, 4, 3.4), ARENA.Gate)
+	local exitSign = decor(arena, "ExitSign", Vector3.new(7, 2, 0.3), exitAt * CFrame.new(0, 8.6, 3.4), ARENA.Exit)
+	sign(exitSign, { Enum.NormalId.Front, Enum.NormalId.Back }, "GO HOME", Theme.Colours.TextOnColour)
+
+	-- The big board at the far end (the client draws the standings on its
+	-- Front face), in a frame on two legs.
+	local boardAt = at(0, ARENA_WALL + 16, ARENA_HALF_Z - 2)
+	local board = decor(arena, "Board", Vector3.new(64, 30, 0.6), boardAt, ARENA.Board)
+	board.CastShadow = false
+	decor(arena, "BoardFrame", Vector3.new(66, 32, 0.6), boardAt * CFrame.new(0, 0, 0.5), ARENA.BoardFrame)
+	decor(arena, "BoardTrim", Vector3.new(66.2, 0.4, 1), boardAt * CFrame.new(0, 16.1, 0.3), ARENA.Ring)
+	for _, along in { -1, 1 } do
+		column(
+			arena,
+			"BoardLeg",
+			ARENA_WALL + 2,
+			1.4,
+			at(along * 26, (ARENA_WALL + 2) / 2, ARENA_HALF_Z - 1.4),
+			ARENA.Gate
+		)
+	end
 end
 
 -- Set last, so a run that stops part way still counts as out of date.

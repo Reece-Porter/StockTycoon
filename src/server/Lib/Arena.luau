@@ -6,7 +6,9 @@
 
 local Arena = {}
 
-local box: { cframe: CFrame, half: Vector3 }? = nil
+type Box = { cframe: CFrame, half: Vector3 }
+
+local box: Box? = nil
 
 function Arena.model(): Instance?
 	local map = workspace:FindFirstChild("Map")
@@ -27,16 +29,17 @@ function Arena.contains(position: Vector3): boolean
 	if arena == nil or not arena:IsA("Model") then
 		return false
 	end
-	local found = box
-	if found == nil then
+	local found: Box
+	if box then
+		found = box
+	else
 		local cframe, size = arena:GetBoundingBox()
 		found = { cframe = cframe, half = size / 2 + Vector3.new(0, 20, 0) }
 		box = found
 	end
 	local offset = found.cframe:PointToObjectSpace(position)
-	return math.abs(offset.X) <= found.half.X
-		and math.abs(offset.Y) <= found.half.Y
-		and math.abs(offset.Z) <= found.half.Z
+	local half = found.half
+	return math.abs(offset.X) <= half.X and math.abs(offset.Y) <= half.Y and math.abs(offset.Z) <= half.Z
 end
 
 -- The pads of the teleporter gates to the arena.

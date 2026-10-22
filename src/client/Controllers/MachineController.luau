@@ -310,7 +310,7 @@ function MachineController:Start()
 		local size = screen.chart.AbsoluteSize
 
 		screen.par.Position =
-			UDim2.new(0, 0, 1 - (MachinePath.START - MachinePath.FLOOR) / (top - MachinePath.FLOOR), 0)
+			UDim2.fromScale(0, 1 - (MachinePath.START - MachinePath.FLOOR) / (top - MachinePath.FLOOR))
 
 		local function toPixels(index: number): Vector2
 			local x = times[index] / window * size.X

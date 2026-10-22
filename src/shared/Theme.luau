@@ -267,6 +267,27 @@ Theme.Booth = {
 	FillLight = hex("#DCE8FF"),
 }
 
+-- The battle arena (studio/BuildMap.luau), far from the map, and its
+-- teleporter gates in the middle of the street: a dark stadium floor with a
+-- gold ring round the podium, purple walls with neon trim, banks of seats
+-- in bright colours, banners, a big board, and glowing purple portals.
+Theme.Arena = {
+	Floor = hex("#2B2D42"),
+	FloorEdge = hex("#383B57"),
+	Ring = hex("#E1B93C"),
+	Wall = hex("#5B3FB8"),
+	WallTrim = hex("#A66CFF"),
+	Stand = hex("#22253A"),
+	Seats = { hex("#3D8BFF"), hex("#FF8A3D"), hex("#A66CFF"), hex("#2FBFA8") },
+	Banners = { hex("#FFC83D"), hex("#3D8BFF"), hex("#FF4D5E"), hex("#3CCB5A") },
+	Podium = hex("#F4F6FB"),
+	Board = hex("#141826"),
+	BoardFrame = hex("#2B2D42"),
+	Gate = hex("#22325A"),
+	Portal = hex("#A66CFF"),
+	Exit = hex("#3CCB5A"),
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),

@@ -5,7 +5,7 @@ return {
 	-- The build of the map the game expects (studio/BuildMap.luau sets it on
 	-- Workspace.Map as the MapVersion attribute). An older map gets a warning
 	-- in the Output and the admin debug panel, and a notice for admins.
-	MapVersion = 9,
+	MapVersion = 10,
 
 	-- Unplaced companies a player can keep.
 	StorageCapacity = 5,

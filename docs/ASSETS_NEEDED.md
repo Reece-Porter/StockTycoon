@@ -200,4 +200,14 @@ The Stock Spinner and Hostile Takeovers would use these:
 | Takeover siren | A Hostile Takeover starts | 1.5 s cartoon alarm or trading-floor bell, played once for everyone. |
 | Takeover over | It ends | 1 s calm closing bell. |
 
+The battle arena would use these:
+
+| Sound | Plays when | Spec |
+| --- | --- | --- |
+| Teleport whoosh | A player steps through a gate to or from the arena | 0.6 s airy cartoon whoosh. |
+| Countdown beeps | The last 5 seconds before a battle starts | Short rising beeps, the last one higher. |
+| Pick | A player picks a stock | 0.2 s bright click with a small coin chime. |
+| Round over | The board updates after a round | 0.5 s scoreboard flip. |
+| Winner fanfare | The 1ST PLACE! banner | 2 s trumpets and cheering crowd. |
+
 Button clicks are still to come.

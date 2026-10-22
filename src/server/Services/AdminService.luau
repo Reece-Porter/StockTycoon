@@ -30,6 +30,7 @@ local RewardMath = require(ReplicatedStorage.Shared.RewardMath)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local BattleService = require(script.Parent.BattleService)
 local BaseService = require(script.Parent.BaseService)
 local ConveyorService = require(script.Parent.ConveyorService)
 local DataService = require(script.Parent.DataService)
@@ -291,6 +292,24 @@ local commands: { Command } = {
 				return "You don't have a base, or your data hasn't loaded yet."
 			end
 			return "Rolled your Stock Spinner."
+		end,
+	},
+	{
+		alias = "/battle",
+		usage = "/battle <bots [count] | skip>",
+		run = function(_player, args)
+			local action = string.lower(args[1] or "")
+			if action == "bots" then
+				local count = if args[2] then parseAmount(args[2]) else 3
+				if count == nil or count < 1 then
+					return "Usage: /battle bots [count]"
+				end
+				local added = BattleService:AddBots(count)
+				return `Added {added} test bot(s) to the next battle.`
+			elseif action == "skip" then
+				return BattleService:Skip()
+			end
+			return "Usage: /battle bots [count] (test bots join the next battle), /battle skip (start now, or skip to the next part)"
 		end,
 	},
 	{

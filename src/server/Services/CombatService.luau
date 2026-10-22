@@ -12,7 +12,7 @@
 --     PerkMath), are pushed back and maybe stunned.
 --
 -- Nobody takes damage on their own base; anyone attacking them there can
--- still be hit by them. Players get Config/Combat.SpawnProtectionSeconds of
+-- still be hit by them. Nobody takes damage in the battle arena (Lib/Arena). Players get Config/Combat.SpawnProtectionSeconds of
 -- protection after respawning, which ends early if they attack. At 0 health
 -- they ragdoll, then respawn at their own base after RespawnSeconds.
 --
@@ -30,6 +30,7 @@ local AdminService = require(script.Parent.AdminService)
 local BaseService = require(script.Parent.BaseService)
 local DataService = require(script.Parent.DataService)
 local DropService = require(script.Parent.DropService)
+local Arena = require(script.Parent.Parent.Lib.Arena)
 local Movement = require(script.Parent.Parent.Lib.Movement)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
 
@@ -163,6 +164,9 @@ local function attack(attacker: Player, targetValue: unknown): string
 	end
 	if isOnOwnBase(target) then
 		return `Refused: {target.Name} is on their own base`
+	end
+	if Arena.contains(to.root.Position) then
+		return `Refused: {target.Name} is in the battle arena`
 	end
 
 	lastHit[attacker] = os.clock()

@@ -6,8 +6,6 @@ local BattleConfig = require(script.Parent.Config.Battle)
 local CompanyStats = require(script.Parent.CompanyStats)
 local VariantMath = require(script.Parent.VariantMath)
 
-export type Standing = { total: number, order: number }
-
 local BattleMath = {}
 
 -- What a stock is worth in a battle: its price, times its variant's
@@ -21,17 +19,13 @@ function BattleMath.afterMachine(total: number, multiplier: number): number
 	return math.floor(total * multiplier + 0.5)
 end
 
--- Sorts players by total, highest first; ties go to whoever joined first
--- (the lower order). Returns a new list.
-function BattleMath.rank<T>(standings: { T & Standing }): { T & Standing }
-	local sorted = table.clone(standings)
-	table.sort(sorted, function(a, b)
-		if a.total ~= b.total then
-			return a.total > b.total
-		end
-		return a.order < b.order
-	end)
-	return sorted
+-- Whether a player with total a (who joined order aOrder) is placed above
+-- one with total b: the higher total, and on a tie whoever joined first.
+function BattleMath.above(a: number, aOrder: number, b: number, bOrder: number): boolean
+	if a ~= b then
+		return a > b
+	end
+	return aOrder < bOrder
 end
 
 -- The reward for finishing in this place (1 for first).
