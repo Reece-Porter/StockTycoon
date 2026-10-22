@@ -2,7 +2,8 @@
 -- The Valuation Machine on this player's screen.
 --
 -- A "Put in machine" prompt sits on the machine's Pad at their own base while
--- they carry a company that hasn't been valued. While a run is going, the
+-- they carry a company; for one that has been valued before it's a respin,
+-- with its price and the multiplier it has now. While a run is going, the
 -- machine screen shows a live line chart that draws in as it goes (green
 -- where the value rises, red where it falls), the current multiplier very
 -- large with a gentle pulse, one huge Take button, and no countdown
@@ -21,6 +22,7 @@ local RunService = game:GetService("RunService")
 
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local MachineConfig = require(ReplicatedStorage.Shared.Config.Machine)
+local Format = require(ReplicatedStorage.Shared.Format)
 local MachinePath = require(ReplicatedStorage.Shared.MachinePath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Theme = require(ReplicatedStorage.Shared.Theme)
@@ -158,6 +160,26 @@ local function buildScreen()
 	floorLabel.Position = UDim2.new(0, 6, 1, -4)
 	floorLabel.Size = UDim2.fromOffset(60, 16)
 
+	-- A line at 1.0x, where every run starts: below it, the company is
+	-- worth less than before.
+	local par = Instance.new("Frame")
+	par.Name = "Par"
+	par.AnchorPoint = Vector2.new(0, 0.5)
+	par.Size = UDim2.new(1, 0, 0, 2)
+	par.BackgroundColor3 = Theme.Colours.Gold
+	par.BackgroundTransparency = 0.4
+	par.BorderSizePixel = 0
+	par.Parent = chart
+	local parLabel = Make.label(par, {
+		text = formatMultiplier(MachinePath.START),
+		size = Theme.TextSize.Small,
+		colour = Theme.Colours.Gold,
+		alignX = Enum.TextXAlignment.Right,
+	})
+	parLabel.AnchorPoint = Vector2.new(1, 1)
+	parLabel.Position = UDim2.new(1, -6, 0, -2)
+	parLabel.Size = UDim2.fromOffset(60, 16)
+
 	local take = Button.new({
 		text = "TAKE",
 		colour = Theme.Colours.Cash,
@@ -176,6 +198,7 @@ local function buildScreen()
 		pulse = pulse,
 		note = note,
 		chart = chart,
+		par = par,
 		take = take,
 	}
 end
@@ -196,15 +219,26 @@ local function setUpPrompt(pad: BasePart)
 		local carrying = player:GetAttribute("CarryingCompanyId")
 		local company = if typeof(carrying) == "string" then Companies.byId[carrying] else nil
 		local valued = player:GetAttribute("CarryingValued") == true
-		prompt.ObjectText = if company then company.name else ""
+		local multiplier = player:GetAttribute("CarryingMultiplier")
+		if company and valued then
+			-- Again, for Cash: the new multiplier replaces this one.
+			prompt.ActionText = `Respin {Format.cash(MachinePath.respinCost(company.tier))}`
+			prompt.ObjectText = if typeof(multiplier) == "number"
+				then `{company.name} ({formatMultiplier(multiplier)} now)`
+				else company.name
+		else
+			prompt.ActionText = "Put in machine"
+			prompt.ObjectText = if company then company.name else ""
+		end
 		local stolen = player:GetAttribute("CarryingStolen") == true
-		prompt.Enabled = company ~= nil and not valued and not stolen and player:GetAttribute("MachineRun") == nil
+		prompt.Enabled = company ~= nil and not stolen and player:GetAttribute("MachineRun") == nil
 	end
 	prompt.Triggered:Connect(function()
 		Remotes.StartValuation:FireServer()
 	end)
 	player:GetAttributeChangedSignal("CarryingCompanyId"):Connect(refresh)
 	player:GetAttributeChangedSignal("CarryingValued"):Connect(refresh)
+	player:GetAttributeChangedSignal("CarryingMultiplier"):Connect(refresh)
 	player:GetAttributeChangedSignal("CarryingStolen"):Connect(refresh)
 	player:GetAttributeChangedSignal("MachineRun"):Connect(refresh)
 	refresh()
@@ -256,7 +290,7 @@ function MachineController:Start()
 		end
 		local value = MachinePath.value(current, elapsed)
 		screen.multiplier.Text = formatMultiplier(value)
-		local previous = samples[#samples] or MachinePath.FLOOR
+		local previous = samples[#samples] or MachinePath.START
 		screen.multiplier.TextColor3 = if value >= previous then Theme.Chart.Rising else Theme.Chart.Falling
 
 		local points = table.clone(samples)
@@ -274,6 +308,9 @@ function MachineController:Start()
 		local top = math.max(1.5, MachinePath.FLOOR + (highest - MachinePath.FLOOR) * 1.25)
 		local window = math.max(elapsed, MIN_WINDOW_SECONDS)
 		local size = screen.chart.AbsoluteSize
+
+		screen.par.Position =
+			UDim2.fromScale(0, 1 - (MachinePath.START - MachinePath.FLOOR) / (top - MachinePath.FLOOR))
 
 		local function toPixels(index: number): Vector2
 			local x = times[index] / window * size.X
@@ -309,7 +346,7 @@ function MachineController:Start()
 		local company = Companies.byId[newRun.companyId]
 		screen.title.Text = `Valuation Machine  ·  {if company then company.name else newRun.companyId}`
 		screen.note.Text = "Press Take to lock in the multiplier."
-		screen.multiplier.Text = formatMultiplier(MachinePath.FLOOR)
+		screen.multiplier.Text = formatMultiplier(MachinePath.START)
 		screen.multiplier.TextColor3 = Theme.Chart.Rising
 		screen.take.Instance.Visible = true
 		screen.take.setEnabled(true)

@@ -27,7 +27,9 @@ local Theme = require(themeModule :: ModuleScript) :: any
 -- Everything this script reads from Theme, checked before anything changes,
 -- so a Theme from older code (not pulled yet, or Rojo not synced) stops it
 -- here with the map untouched.
-for _, key in { "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" } do
+for _, key in
+	{ "Arena", "Base", "Booth", "Colours", "Fonts", "Rarities", "Scenery", "Street", "World", "shade", "tint" }
+do
 	if Theme[key] == nil then
 		error(
 			`ReplicatedStorage.Shared.Theme is out of date (it has no {key}): pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again.`
@@ -54,7 +56,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 8
+local MAP_VERSION = 10
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -109,12 +111,14 @@ local YARD_X = 31
 local MACHINE_Z = -12
 local BELT_X = BASE_DEPTH / 2 - 6
 local BELT_HALF = 16 -- the belt runs from z -16 (its Start) to 16 (its End)
--- The Stock Spinner's cabinet over the start of the belt: its width (across
--- the belt), its back and the side with the door the belt runs out of, and
--- its height.
+-- The yard's planter, and the Stock Spinner's cabinet beside it (between it
+-- and the belt) facing the walkway: the middle of its front, how wide and
+-- deep it is, and how tall.
+local PLANTER_X, PLANTER_Z = 27.5, 13
+local CABINET_X = 34.3
+local CABINET_FRONT = 12.6
 local CABINET_WIDTH = 7.4
-local CABINET_BACK = -20.6
-local CABINET_DOOR = -12
+local CABINET_DEPTH = 4.4
 local CABINET_HEIGHT = 7.6
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
@@ -396,14 +400,15 @@ for index, spot in BASE_SPOTS do
 	spawnGlow.Transparency = 0.88
 	spawnGlow.CastShadow = false
 
-	-- The base's belt: between side rails with a roller at the far end. Its
-	-- start is inside the Stock Spinner (below), and the client opens the
-	-- machine's door when a company comes out and runs chevrons along it.
+	-- The base's belt: between side rails, from a hatch at the planter's
+	-- end (by the Stock Spinner) to a roller at the Valuation Machine's end.
+	-- The client opens the hatch's door when a company comes out and runs
+	-- chevrons along it.
 	local conveyor = model(base, "Conveyor")
 	local belt = place(conveyor, "Belt", Vector3.new(6, 1, 32), at(BELT_X, groundTop + 0.5, 0), BASE.Belt)
 	belt.Color = BASE.Belt
 	belt.Material = Enum.Material.SmoothPlastic
-	local startAt, endAt = at(BELT_X, groundTop + 1.5, -BELT_HALF), at(BELT_X, groundTop + 1.5, BELT_HALF)
+	local startAt, endAt = at(BELT_X, groundTop + 1.5, BELT_HALF), at(BELT_X, groundTop + 1.5, -BELT_HALF)
 	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), startAt, Color3.fromRGB(0, 255, 0)))
 	hide(place(conveyor, "End", Vector3.new(1, 1, 1), endAt, Color3.fromRGB(255, 0, 0)))
 	local beltLook = freshModel(conveyor, "Look")
@@ -420,54 +425,68 @@ for index, spot in BASE_SPOTS do
 		beltLook,
 		"Roller",
 		Vector3.new(6.4, 1.1, 1.1),
-		at(BELT_X, groundTop + 0.55, 16),
+		at(BELT_X, groundTop + 0.55, -BELT_HALF),
 		BASE.Roller,
 		nil,
 		Enum.PartType.Cylinder
 	)
-	-- The Stock Spinner: a cabinet over the start of the belt that the owner
-	-- walks up to from the yard. Its front has a screen (the client draws the
-	-- reels on it), a ledge with a big button over the invisible Console the
-	-- game uses for the Spin prompt, a lever, and gold bulbs; a header with
-	-- its name on top. The companies come out through a door on the side the
-	-- belt runs out of (Conveyor.Hatch.Door, which the client swings open).
+	-- The hatch over the start of the belt, where the companies come out,
+	-- with a door that swings out towards the belt.
+	local hatch = freshModel(conveyor, "Hatch")
+	local hatchBack = BELT_HALF + 1.8
+	decor(hatch, "Back", Vector3.new(7.2, 6.6, 0.4), at(BELT_X, groundTop + 3.3, hatchBack), BASE.Housing)
+	for _, side in { -1, 1 } do
+		local sideAt = at(BELT_X + side * 3.4, groundTop + 3.3, BELT_HALF + 0.6)
+		decor(hatch, "Side", Vector3.new(0.4, 6.6, 2.4), sideAt, BASE.Housing)
+	end
+	decor(hatch, "Roof", Vector3.new(7.2, 0.5, 2.8), at(BELT_X, groundTop + 6.85, BELT_HALF + 0.6), BASE.Housing)
+	local stripeAt = at(BELT_X, groundTop + 6.5, BELT_HALF - 0.75)
+	decor(hatch, "Stripe", Vector3.new(7.3, 0.25, 0.2), stripeAt, accent, Enum.Material.Neon)
+	-- Turned round, so it swings out along the belt.
+	local doorAt = at(BELT_X, groundTop + 3.8, BELT_HALF - 0.7) * CFrame.Angles(0, math.pi, 0)
+	decor(hatch, "Door", Vector3.new(6.2, 5.6, 0.2), doorAt, Theme.shade(accent, 0.15))
+
+	-- The Stock Spinner: a cabinet beside the planter, facing the walkway
+	-- across from the Valuation Machine. Its front has a screen (the client
+	-- draws the reels on it), a ledge with a big button over the invisible
+	-- Console the game uses for the Spin prompt, a lever, and gold bulbs; a
+	-- header with its name on top. Its companies come out of the hatch at the
+	-- start of the belt, just beside it.
 	local spinner = freshModel(base, "Spinner")
-	local cabinetFront = BELT_X - CABINET_WIDTH / 2
-	local cabinetZ = (CABINET_BACK + CABINET_DOOR) / 2
-	local cabinetDepth = CABINET_DOOR - CABINET_BACK
-	-- Turns a part so its Front face looks at the yard, for the screen and
-	-- the header.
-	local toYard = CFrame.Angles(0, math.pi / 2, 0)
+	local cabinetZ = CABINET_FRONT + CABINET_DEPTH / 2
+	local cabinetLeft, cabinetRight = CABINET_X - CABINET_WIDTH / 2, CABINET_X + CABINET_WIDTH / 2
 	decor(
 		spinner,
 		"Body",
-		Vector3.new(CABINET_WIDTH, CABINET_HEIGHT, cabinetDepth),
-		at(BELT_X, groundTop + CABINET_HEIGHT / 2, cabinetZ),
+		Vector3.new(CABINET_WIDTH, CABINET_HEIGHT, CABINET_DEPTH),
+		at(CABINET_X, groundTop + CABINET_HEIGHT / 2, cabinetZ),
 		BASE.Spinner
 	)
 	decor(
 		spinner,
 		"Top",
-		Vector3.new(CABINET_WIDTH + 0.3, 0.5, cabinetDepth + 0.3),
-		at(BELT_X, groundTop + CABINET_HEIGHT + 0.25, cabinetZ),
+		Vector3.new(CABINET_WIDTH + 0.3, 0.5, CABINET_DEPTH + 0.3),
+		at(CABINET_X, groundTop + CABINET_HEIGHT + 0.25, cabinetZ),
 		accent
 	)
 	decor(
 		spinner,
 		"Stripe",
-		Vector3.new(CABINET_WIDTH + 0.1, 0.3, cabinetDepth + 0.1),
-		at(BELT_X, groundTop + 1.2, cabinetZ),
+		Vector3.new(CABINET_WIDTH + 0.1, 0.3, CABINET_DEPTH + 0.1),
+		at(CABINET_X, groundTop + 1.2, cabinetZ),
 		accent,
 		Enum.Material.Neon
 	)
-	local screenAt = at(cabinetFront - 0.12, groundTop + 5.2, cabinetZ) * toYard
-	decor(spinner, "Bezel", Vector3.new(cabinetDepth - 0.6, 3.8, 0.2), screenAt * CFrame.new(0, 0, 0.06), accent)
-	decor(spinner, "Screen", Vector3.new(cabinetDepth - 1.2, 3.2, 0.15), screenAt, BASE.SpinnerScreen)
+	-- Parts in the base's own turn have their Front face towards the
+	-- walkway (-z), for the screen and the header.
+	local screenAt = at(CABINET_X, groundTop + 5.2, CABINET_FRONT - 0.12)
+	decor(spinner, "Bezel", Vector3.new(CABINET_WIDTH - 0.6, 3.8, 0.2), screenAt * CFrame.new(0, 0, 0.06), accent)
+	decor(spinner, "Screen", Vector3.new(CABINET_WIDTH - 1.2, 3.2, 0.15), screenAt, BASE.SpinnerScreen)
 	local spinHeader = decor(
 		spinner,
 		"Header",
-		Vector3.new(cabinetDepth, 1.5, 0.3),
-		at(cabinetFront + 0.4, groundTop + CABINET_HEIGHT + 1.25, cabinetZ) * toYard,
+		Vector3.new(CABINET_WIDTH, 1.5, 0.3),
+		at(CABINET_X, groundTop + CABINET_HEIGHT + 1.25, CABINET_FRONT + 0.4),
 		BASE.Spinner
 	)
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -489,16 +508,16 @@ for index, spot in BASE_SPOTS do
 		text.Parent = gui
 	end
 	-- The ledge with its button, over the Console.
-	local consoleAt = at(cabinetFront - 0.7, groundTop + 3, cabinetZ)
-	local console = place(spinner, "Console", Vector3.new(1.4, 2, 3), consoleAt, BASE.Spinner)
+	local consoleAt = at(CABINET_X, groundTop + 3, CABINET_FRONT - 0.7)
+	local console = place(spinner, "Console", Vector3.new(3, 2, 1.4), consoleAt, BASE.Spinner)
 	console.Transparency = 1
 	console.CanCollide = false
 	console.CanTouch = false
 	console.CanQuery = false
-	decor(spinner, "Ledge", Vector3.new(1.4, 0.4, 5), consoleAt * CFrame.new(0, 0.3, 0), accent)
+	decor(spinner, "Ledge", Vector3.new(5, 0.4, 1.4), consoleAt * CFrame.new(0, 0.3, 0), accent)
 	column(spinner, "Button", 0.35, 1.3, consoleAt * CFrame.new(0, 0.65, 0), Theme.Colours.Danger)
-	-- The lever, at the back corner of the front.
-	local leverAt = at(cabinetFront - 0.3, groundTop + 4.6, CABINET_BACK + 0.6)
+	-- The lever, at the belt end of the front.
+	local leverAt = at(cabinetRight - 1.1, groundTop + 4.6, CABINET_FRONT - 0.3)
 	column(spinner, "Lever", 2.6, 0.3, leverAt, BASE.Roller)
 	decor(
 		spinner,
@@ -514,12 +533,12 @@ for index, spot in BASE_SPOTS do
 	for bulbIndex = 1, 6 do
 		table.insert(
 			bulbSpots,
-			{ y = CABINET_HEIGHT - 0.35, z = CABINET_BACK + 0.5 + (bulbIndex - 1) * (cabinetDepth - 1) / 5 }
+			{ y = CABINET_HEIGHT - 0.35, x = cabinetLeft + 0.5 + (bulbIndex - 1) * (CABINET_WIDTH - 1) / 5 }
 		)
 	end
-	for _, z in { CABINET_BACK + 0.25, CABINET_DOOR - 0.25 } do
+	for _, x in { cabinetLeft + 0.25, cabinetRight - 0.25 } do
 		for _, y in { 2.4, 4.4, 6.4 } do
-			table.insert(bulbSpots, { y = y, z = z })
+			table.insert(bulbSpots, { y = y, x = x })
 		end
 	end
 	for _, bulbSpot in bulbSpots do
@@ -527,7 +546,7 @@ for index, spot in BASE_SPOTS do
 			spinner,
 			"Bulb",
 			Vector3.new(0.5, 0.5, 0.5),
-			at(cabinetFront - 0.1, groundTop + bulbSpot.y, bulbSpot.z),
+			at(bulbSpot.x, groundTop + bulbSpot.y, CABINET_FRONT - 0.1),
 			BASE.Bulb,
 			Enum.Material.Neon,
 			Enum.PartType.Ball
@@ -535,13 +554,8 @@ for index, spot in BASE_SPOTS do
 		bulb.CastShadow = false
 	end
 	if spinner:IsA("Model") then
-		spinner.WorldPivot = at(BELT_X, groundTop, cabinetZ)
+		spinner.WorldPivot = at(CABINET_X, groundTop, cabinetZ)
 	end
-	-- The door the companies come out of, on the side the belt runs out of.
-	local hatch = freshModel(conveyor, "Hatch")
-	local doorAt = at(BELT_X, groundTop + 3.4, CABINET_DOOR + 0.12)
-	decor(hatch, "Frame", Vector3.new(6.8, 5.6, 0.15), doorAt * CFrame.new(0, 0.1, -0.05), accent)
-	decor(hatch, "Door", Vector3.new(6.2, 4.8, 0.2), doorAt, Theme.shade(accent, 0.15))
 
 	-- The Valuation Machine, facing the walkway: a round stage under a glass
 	-- tube where the company stands (on the invisible Pad the game uses),
@@ -627,9 +641,10 @@ for index, spot in BASE_SPOTS do
 		Enum.PartType.Ball
 	)
 
-	-- Across the yard from the machine, a round planter with a little tree.
+	-- Across the yard from the machine, a round planter with a little tree,
+	-- the Stock Spinner beside it.
 	local planter = freshModel(base, "Planter")
-	local planterAt = at(YARD_X, groundTop, 13)
+	local planterAt = at(PLANTER_X, groundTop, PLANTER_Z)
 	column(planter, "Tub", 1.2, 4.6, planterAt * CFrame.new(0, 0.6, 0), BASE.Housing)
 	column(planter, "TubRim", 0.2, 4.9, planterAt * CFrame.new(0, 1.2, 0), accent)
 	column(
@@ -1067,8 +1082,10 @@ end
 -- run: a road lane each side with a dashed line, zebra crossings in front of
 -- each row of bases, kerbs, then the pavement with street lamps, benches and
 -- planters in the gaps between bases, ticker posts by the crossings and
--- little chart screens on stands (the client draws both), and a gold bull at
--- the far end of the street.
+-- little chart screens on stands (the client draws both), a teleporter gate
+-- to the battle arena on each pavement in the middle of the street (where the
+-- middle chart screens would be), and a gold bull at the far end of the
+-- street.
 local KERB_X = 12
 local ROAD_INNER = 4.6
 local CROSSINGS = { -BASE_STEP * 1.5, -BASE_STEP / 2, BASE_STEP / 2, BASE_STEP * 1.5 }
@@ -1190,7 +1207,10 @@ do
 				)
 			end
 			-- The screen faces the conveyor (its Right face, which the client
-			-- draws on).
+			-- draws on). The middle gap has the arena's gate instead.
+			if gap == 0 then
+				continue
+			end
 			local kiosk = Instance.new("Model")
 			kiosk.Name = "Kiosk"
 			kiosk.Parent = street
@@ -2399,6 +2419,248 @@ do
 	end
 	-- Where an admin stands, out of shot.
 	marker(booth, "Stand", at(-38, 3, -8))
+end
+
+-- 11. The battle arena (docs/design.md, "Battle arena"): a stadium far out
+-- past the city the other way from the photo booth, reached through a
+-- teleporter gate on each pavement in the middle of the street. The game
+-- looks for (Lib/Arena, BattleController):
+--   - Map.ArenaGates.Gate1 and Gate2, each with an invisible Pad in its
+--     portal (the Teleport prompt, and where players must stand to use it).
+--   - Map.Arena: Arrive (an invisible pad where players land, facing the
+--     board), Join (the podium in the middle: the Join battle prompt), Exit
+--     (the green pad in the corner: Go home) and Board (the big board the
+--     client draws on, its Front face towards the middle).
+-- The floor is walled all round, with invisible walls well above jumping
+-- height so nobody falls off; the seats, banners and signs are only for
+-- looks.
+progress("adding the battle arena")
+local ARENA_AT = Vector3.new(0, groundY + 300, -2600)
+local ARENA_HALF_X = 60
+local ARENA_HALF_Z = 55
+local ARENA_WALL = 4
+local ARENA_FENCE = 40
+local GATE_X = 22
+do
+	local ARENA = Theme.Arena
+	local function sign(part: BasePart, faces: { Enum.NormalId }, text: string, colour: Color3)
+		for _, face in faces do
+			local gui = Instance.new("SurfaceGui")
+			gui.Name = `Sign{face.Name}`
+			gui.Face = face
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 30
+			gui.LightInfluence = 0
+			gui.MaxDistance = 250
+			gui.Parent = part
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Font = Theme.Fonts.Display
+			label.TextScaled = true
+			label.TextColor3 = colour
+			label.TextStrokeTransparency = 0.4
+			label.Text = text
+			label.Parent = gui
+		end
+	end
+
+	-- The gates: on each pavement, a portal between two pillars under a
+	-- BATTLE ARENA sign, facing the conveyor.
+	local gates = freshModel(map, "ArenaGates")
+	local streetTop = groundY + 0.1
+	for index, side in { -1, 1 } do
+		local gate = Instance.new("Model")
+		gate.Name = `Gate{index}`
+		gate.Parent = gates
+		local x = side * GATE_X
+		local pad = newPart(gate, "Pad", Vector3.new(7, 0.2, 7), CFrame.new(x, streetTop + 0.1, 0), ARENA.Portal)
+		hide(pad)
+		pad.CanTouch = false
+		column(gate, "Base", 0.3, 7.4, CFrame.new(x, streetTop + 0.15, 0), ARENA.Gate)
+		column(gate, "Ring", 0.34, 6.6, CFrame.new(x, streetTop + 0.17, 0), ARENA.Portal, Enum.Material.Neon)
+		column(gate, "Disc", 0.38, 5.8, CFrame.new(x, streetTop + 0.19, 0), ARENA.Gate)
+		for _, along in { -1, 1 } do
+			local z = along * 3.6
+			column(gate, "Pillar", 10, 1.2, CFrame.new(x, streetTop + 5, z), ARENA.Gate)
+			column(gate, "PillarCap", 0.5, 1.6, CFrame.new(x, streetTop + 10.25, z), ARENA.Ring, Enum.Material.Metal)
+			column(gate, "PillarFoot", 0.5, 1.6, CFrame.new(x, streetTop + 0.25, z), ARENA.Ring, Enum.Material.Metal)
+		end
+		decor(gate, "Beam", Vector3.new(1.4, 1.2, 8.8), CFrame.new(x, streetTop + 11, 0), ARENA.Gate)
+		local portal = decor(
+			gate,
+			"Portal",
+			Vector3.new(0.2, 9.4, 6),
+			CFrame.new(x, streetTop + 5.2, 0),
+			ARENA.Portal,
+			Enum.Material.Neon
+		)
+		portal.Transparency = 0.45
+		portal.CastShadow = false
+		local header = decor(gate, "Header", Vector3.new(0.4, 2.2, 9), CFrame.new(x, streetTop + 12.7, 0), ARENA.Wall)
+		sign(header, { Enum.NormalId.Left, Enum.NormalId.Right }, "BATTLE ARENA", Theme.Colours.Gold)
+		decor(gate, "HeaderTrim", Vector3.new(0.5, 0.25, 9.2), CFrame.new(x, streetTop + 11.65, 0), ARENA.Ring)
+	end
+
+	-- The arena, in its own frame: x across, z from the entrance (-z) to the
+	-- board (+z), y up from the top of the floor.
+	local arena = freshModel(map, "Arena")
+	local origin = CFrame.new(ARENA_AT)
+	local function at(x: number, y: number, z: number): CFrame
+		return origin * CFrame.new(x, y, z)
+	end
+	local floor =
+		newPart(arena, "Floor", Vector3.new(2 * ARENA_HALF_X, 2, 2 * ARENA_HALF_Z), at(0, -1, 0), ARENA.Floor, nil)
+	floor.Material = Enum.Material.SmoothPlastic
+	-- A lighter band round the edge of the floor, and the gold ring round
+	-- the podium.
+	for _, along in { -1, 1 } do
+		local band = decor(
+			arena,
+			"Edge",
+			Vector3.new(2 * ARENA_HALF_X - 2, 0.06, 4),
+			at(0, 0.03, along * (ARENA_HALF_Z - 3)),
+			ARENA.FloorEdge
+		)
+		band.CastShadow = false
+		local side = decor(
+			arena,
+			"Edge",
+			Vector3.new(4, 0.06, 2 * ARENA_HALF_Z - 14),
+			at(along * (ARENA_HALF_X - 3), 0.03, 0),
+			ARENA.FloorEdge
+		)
+		side.CastShadow = false
+	end
+	column(arena, "Ring", 0.08, 36, at(0, 0.04, 0), ARENA.Ring, Enum.Material.Metal).CastShadow = false
+	column(arena, "RingInner", 0.12, 33, at(0, 0.06, 0), ARENA.FloorEdge).CastShadow = false
+
+	-- Walls round the floor with neon along the top, and invisible ones
+	-- above them.
+	local walls: { { size: Vector3, at: CFrame } } = {
+		{
+			size = Vector3.new(2 * ARENA_HALF_X + 2, ARENA_WALL, 1),
+			at = at(0, ARENA_WALL / 2, ARENA_HALF_Z + 0.5),
+		},
+		{
+			size = Vector3.new(2 * ARENA_HALF_X + 2, ARENA_WALL, 1),
+			at = at(0, ARENA_WALL / 2, -ARENA_HALF_Z - 0.5),
+		},
+		{
+			size = Vector3.new(1, ARENA_WALL, 2 * ARENA_HALF_Z),
+			at = at(ARENA_HALF_X + 0.5, ARENA_WALL / 2, 0),
+		},
+		{
+			size = Vector3.new(1, ARENA_WALL, 2 * ARENA_HALF_Z),
+			at = at(-ARENA_HALF_X - 0.5, ARENA_WALL / 2, 0),
+		},
+	}
+	for _, wall in walls do
+		newPart(arena, "Wall", wall.size, wall.at, ARENA.Wall)
+		local trim = Vector3.new(wall.size.X + 0.1, 0.3, wall.size.Z + 0.1)
+		decor(arena, "WallTrim", trim, wall.at * CFrame.new(0, ARENA_WALL / 2, 0), ARENA.WallTrim, Enum.Material.Neon)
+		local fence = Vector3.new(wall.size.X, ARENA_FENCE, wall.size.Z)
+		local invisible =
+			newPart(arena, "Fence", fence, wall.at * CFrame.new(0, (ARENA_WALL + ARENA_FENCE) / 2, 0), ARENA.Wall, 1)
+		invisible.CastShadow = false
+	end
+
+	-- Banks of seats up both sides, only for looks.
+	for _, side in { -1, 1 } do
+		for tier = 1, 4 do
+			local x = side * (ARENA_HALF_X + 1 + tier * 4 - 2)
+			local height = ARENA_WALL + tier * 3
+			decor(arena, "Stand", Vector3.new(4, height, 2 * ARENA_HALF_Z), at(x, height / 2 - 2, 0), ARENA.Stand)
+			for row = 1, 9 do
+				local z = (row - 5) * 11
+				local colour = ARENA.Seats[(row + tier) % #ARENA.Seats + 1]
+				decor(arena, "Seats", Vector3.new(2.6, 1, 9), at(x, height - 1.5, z), colour)
+			end
+		end
+	end
+
+	-- Banners on poles in the corners.
+	for index, corner in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local x, z = corner[1] * (ARENA_HALF_X - 2), corner[2] * (ARENA_HALF_Z - 2)
+		column(arena, "BannerPole", 22, 0.6, at(x, 11, z), ARENA.Gate)
+		column(arena, "BannerTop", 0.8, 1, at(x, 22.4, z), ARENA.Ring, Enum.Material.Metal)
+		local inward = CFrame.Angles(0, math.atan2(x, z), 0)
+		local banner = decor(
+			arena,
+			"Banner",
+			Vector3.new(4.5, 9, 0.2),
+			at(x, 16.5, z) * inward * CFrame.new(0, 0, -0.5),
+			ARENA.Banners[index]
+		)
+		banner.CastShadow = false
+	end
+
+	-- Where players arrive, at the entrance end, facing the board, under an
+	-- arch with a portal like the street's.
+	local arrive = newPart(
+		arena,
+		"Arrive",
+		Vector3.new(6, 0.2, 6),
+		at(0, 0.1, -ARENA_HALF_Z + 12) * CFrame.Angles(0, math.pi, 0),
+		ARENA.Portal
+	)
+	hide(arrive)
+	arrive.CanTouch = false
+	arrive.CanQuery = false
+	column(arena, "ArriveRing", 0.1, 7, at(0, 0.05, -ARENA_HALF_Z + 12), ARENA.Portal, Enum.Material.Neon).CastShadow =
+		false
+	local archZ = -ARENA_HALF_Z + 3
+	for _, along in { -1, 1 } do
+		column(arena, "ArchPillar", 14, 2, at(along * 6, 7, archZ), ARENA.Gate)
+		column(arena, "ArchCap", 0.6, 2.6, at(along * 6, 14.3, archZ), ARENA.Ring, Enum.Material.Metal)
+	end
+	decor(arena, "ArchBeam", Vector3.new(14.6, 1.6, 2.2), at(0, 15, archZ), ARENA.Gate)
+	local arrivalPortal =
+		decor(arena, "Portal", Vector3.new(10, 13, 0.2), at(0, 6.8, archZ), ARENA.Portal, Enum.Material.Neon)
+	arrivalPortal.Transparency = 0.45
+	arrivalPortal.CastShadow = false
+	local arenaSign = decor(arena, "Sign", Vector3.new(18, 3.4, 0.4), at(0, 17.6, archZ), ARENA.Wall)
+	sign(arenaSign, { Enum.NormalId.Back }, "BATTLE ARENA", Theme.Colours.Gold)
+
+	-- The podium in the middle: Join, a white pillar with a gold top and a
+	-- JOIN sign on each side, on a round step that glows.
+	column(arena, "PodiumStep", 0.3, 9, at(0, 0.15, 0), ARENA.Podium)
+	column(arena, "PodiumGlow", 0.34, 8, at(0, 0.17, 0), ARENA.WallTrim, Enum.Material.Neon).CastShadow = false
+	local join = newPart(arena, "Join", Vector3.new(3, 3.6, 3), at(0, 2.1, 0), ARENA.Podium)
+	decor(arena, "PodiumTop", Vector3.new(3.4, 0.4, 3.4), at(0, 4.1, 0), ARENA.Ring, Enum.Material.Metal)
+	sign(
+		join,
+		{ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right },
+		"JOIN",
+		Theme.Colours.Ink
+	)
+
+	-- The exit in a front corner: a green pad (Exit) under a GO HOME sign.
+	local exitAt = at(-ARENA_HALF_X + 8, 0, -ARENA_HALF_Z + 8)
+	local exit = newPart(arena, "Exit", Vector3.new(6, 0.2, 6), exitAt * CFrame.new(0, 0.1, 0), ARENA.Exit)
+	exit.Material = Enum.Material.Neon
+	exit.CanCollide = false
+	column(arena, "ExitPost", 8, 0.5, exitAt * CFrame.new(0, 4, 3.4), ARENA.Gate)
+	local exitSign = decor(arena, "ExitSign", Vector3.new(7, 2, 0.3), exitAt * CFrame.new(0, 8.6, 3.4), ARENA.Exit)
+	sign(exitSign, { Enum.NormalId.Front, Enum.NormalId.Back }, "GO HOME", Theme.Colours.TextOnColour)
+
+	-- The big board at the far end (the client draws the standings on its
+	-- Front face), in a frame on two legs.
+	local boardAt = at(0, ARENA_WALL + 16, ARENA_HALF_Z - 2)
+	local board = decor(arena, "Board", Vector3.new(64, 30, 0.6), boardAt, ARENA.Board)
+	board.CastShadow = false
+	decor(arena, "BoardFrame", Vector3.new(66, 32, 0.6), boardAt * CFrame.new(0, 0, 0.5), ARENA.BoardFrame)
+	decor(arena, "BoardTrim", Vector3.new(66.2, 0.4, 1), boardAt * CFrame.new(0, 16.1, 0.3), ARENA.Ring)
+	for _, along in { -1, 1 } do
+		column(
+			arena,
+			"BoardLeg",
+			ARENA_WALL + 2,
+			1.4,
+			at(along * 26, (ARENA_WALL + 2) / 2, ARENA_HALF_Z - 1.4),
+			ARENA.Gate
+		)
+	end
 end
 
 -- Set last, so a run that stops part way still counts as out of date.

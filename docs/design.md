@@ -8,7 +8,8 @@ Decisions marked "Decided" come from Reece and should not be changed without ask
 - Each base has a Stock Spinner instead of its own conveyor: a machine the owner walks up to and plays. A pop-up spins three reels, slot-machine style, which stop on 3 different companies rolled with the owner's Luck; those companies come out onto the base's belt and stay there, for only the owner to buy, until the machine is played again. The shared conveyor in the middle of the map stays, with better rarity odds and two tiers that only appear there.
 - Each player has a Luck that makes the spinner's rarer tiers more likely. It grows with every rebirth (and a little with the Spinner Luck upgrade), so rebirthing is the way up to better companies, and it shows next to the owner's name on their base's sign.
 - Stealing from bases only happens during a Hostile Takeover, an event once an hour, so players don't have to guard their base all the time.
-- The Valuation Machine can never reduce a company below base income.
+- The Valuation Machine can take a company as low as 0.5x its base income, never lower (changed by Reece, October 2026; it used to never go below 1.0x). A company's first run is free; after that the owner can pay Cash to run it again (a respin), priced by its tier, and the new multiplier replaces the old one.
+- A battle arena, reached through teleporter gates in the middle of the street: 2 to 8 players each spin 5 rounds of 3 random stocks, picking one each round, then keep their total value or put it through the arena's Valuation Machine, which can raise or lower it. The higher a player finishes, the more Cash they get. Everyone spins with the same odds. A player on their own can practise, for no reward.
 - Bases are upgraded to unlock more plots, then new floors with more plots.
 - A weapon shop in the middle of the map sells weapons that damage other players, mainly for fighting over the shared conveyor.
 - A pet shop next to the weapon shop sells pet spins. Pets are placed on a floor and give that floor a modifier.
@@ -39,12 +40,26 @@ Each tier has several parody companies (aim for 4 to 6 per tier at launch). Comp
 - The shared conveyor's odds are the same for everyone.
 
 ## Stock Spinner (starting assumption)
-- A machine at the start of each base's belt (`Config/Spinner.luau`, `Services/SpinnerService`, `SpinnerController`, `Ui/SpinnerPopup`). The owner walks up to it and presses Spin; nobody else can play it. Playing is free; buying a company costs its usual price. It can be played again 10 seconds after the last play.
+- A machine beside the planter in each base's front yard, facing the walkway, with the start of the belt just beside it (`Config/Spinner.luau`, `Services/SpinnerService`, `SpinnerController`, `Ui/SpinnerPopup`). The owner walks up to it and presses Spin; nobody else can play it. Playing is free; buying a company costs its usual price. It can be played again 10 seconds after the last play.
 - The server rolls 3 different companies with the owner's Luck (and their Variant Chance) the moment they press Spin, and whatever the last play left on the belt disappears.
 - The owner's screen shows a pop-up: the machine's name, their Luck, a lever that pulls down, and three reels that roll and stop one by one (the last after 3 seconds), each flashing its tier's colour, with bulbs round the edge chasing while it spins. Then it says the companies are on the belt and closes itself.
 - As the reels stop, the companies come out of a door in the machine one after another (0.7 seconds apart, at 10 studs a second) and stop along the belt (86%, 56% and 26% of the way along). They stay there, and only the owner can buy them, until the machine is played again.
 - The machine's own screen shows the same reels to everyone near it, with SPINNING!, READY or the time until it's ready under them.
 - Conglomerate and Monopoly never come out of the spinner. Nothing about it is sold for Robux.
+
+## Valuation Machine (starting assumption)
+- The rules are in CLAUDE.md; the numbers are in `Config/Machine.luau`. A run starts at 1.0x, rises to a hidden peak (1.2x to 5x) and falls back past 1.0x towards the 0.5x floor.
+- A company's first run is free. After that the owner can run it again (a respin) for Cash: half the price of a company of its tier (`RespinPriceShare`), shown on the machine's prompt. The new multiplier replaces the old one, higher or lower, and the Cash is given back if the run can't start. Respins are Cash only; nothing sold for Robux touches the machine.
+- The machine screen draws a gold line at 1.0x, so players can see when taking now would lose value.
+
+## Battle arena (starting assumption)
+- A teleporter gate on each pavement in the middle of the street (`Workspace.Map.ArenaGates`) takes players to the arena (`Workspace.Map.Arena`), far out past the city. It has a podium in the middle to join at, a big board at the far end, and a green Go home pad in a corner. Nobody can be hurt in the arena. (`Config/Battle.luau`, `Services/BattleService`, `Lib/Arena`, `BattleMath`, `BattleController`, `Ui/BattlePick`, `Ui/BattleMachine`.)
+- Players join at the podium and can leave again before it starts. Once 2 have joined, a 20 second countdown starts, and up to 8 play. A player on their own can press Practice for a match with no reward. A panel at the top of the screen shows the queue, the countdown, the round, their place and value, and how they finished.
+- 5 rounds. Each round a pop-up spins three reels for 3 seconds onto 3 different random stocks, then the player has 12 seconds to pick one; whoever doesn't pick gets the most valuable. Everyone spins with the same odds (Luck x1 and the regular variant chance), so rebirths and upgrades don't decide it. A stock's value is its usual price times its variant's multiplier.
+- The board shows every player's place, name, latest pick (in its tier's colour) and total value, updated after each round. While a round is open it only ticks off who has picked.
+- After the last round each player has 12 seconds to keep their total or put it through the arena's Valuation Machine: the same kind of run as at home (0.5x to 5x), but 8 to 20 seconds long, and Take works the same way (the server decides from its own clock). Not choosing keeps the total.
+- Final standings by value (on a tie, whoever joined first). Cash by place, worth some of the player's own income per second without boosts: 1st 10 minutes' worth (at least 5,000), 2nd 6 minutes (3,000), 3rd 4 minutes (2,000), everyone else 2 minutes (1,000). The winner gets a 1ST PLACE! banner. The standings stay up for 15 seconds, then the arena is free again.
+- A player who leaves the game drops out of the match. Nothing about a match is saved, and nothing here is sold for Robux.
 
 ## Shared conveyor (starting assumption)
 - Spawns one company every 8.8 seconds. (Shared went from 2 to 4, then 30% fewer when its belt was made 4 times longer, then 35% fewer again for more space between companies, at the same speed.)
@@ -208,6 +223,7 @@ Boost rules
 
 ## Teleports (starting assumption)
 - Buttons at the top of the screen teleport to Home (your base), Upgrades (the upgrade station) and Weapons (the weapon shop, beside the pet shop).
+- The battle arena has no button: players stand in one of its gates in the middle of the street and press Teleport, and come back with Go home on the arena's exit pad (or the Home button).
 - Not while carrying a company, which must still be carried home on foot, and at most once every 5 seconds (`Config/Travel.luau`).
 
 ## Offline earnings (starting assumption)
@@ -252,8 +268,8 @@ Boost rules
   - A headquarters sign over the way in with the owner's display name, and their Stock Spinner Luck in a gold badge beside it.
   - While the base is locked, a shimmering force field across the way in with a padlock and the time left (and a new player's protection time, without the field). It stops nobody: the server moves people out. Nothing floats over the lock buttons.
   - The Valuation Machine, facing the walkway: a round stage under a glass tube where the company stands, between two pillars with gauges and chasing lights, under an arch with the machine's name and a ticker of parody companies sliding past, topped by a big screen with a little moving line chart (made-up numbers) and a beacon. While the owner's run is going, a scanner sweeps up and down the tube, the gauges swing, the lights chase faster and the beacon flashes.
-  - The base's belt: side rails, a roller at the end, and chevrons running along it while the spinner's companies come out. Its start is inside the Stock Spinner.
-  - The Stock Spinner: a dark cabinet over the start of the belt, framed in the accent colour, with "STOCK SPINNER" on top. Its front, facing the yard, has the screen (drawn by the client), a ledge with a big red button over the invisible `Console` where the Spin prompt is, a lever, and gold bulbs that chase while it spins. The companies come out of a door on the side the belt runs out of, which swings open as they do.
+  - The base's belt: side rails, a roller at the end, and chevrons running along it while the spinner's companies come out. It starts at a hatch beside the Stock Spinner, whose door swings open as the companies come out.
+  - The Stock Spinner: a dark cabinet beside the planter, framed in the accent colour, with "STOCK SPINNER" on top. Its front, facing the walkway across from the Valuation Machine, has the screen (drawn by the client), a ledge with a big red button over the invisible `Console` where the Spin prompt is, a lever, and gold bulbs that chase while it spins.
   - The lock buttons: a round red button on a podium in the middle of each floor's walkway, labelled LOCK with a padlock on every side, which stays pressed down (and says LOCKED) while the base is locked.
   - A planter with a little tree in the front yard.
   - The spawn: a round pad with a glowing ring in the accent colour and a soft glow rising from it.
@@ -261,7 +277,7 @@ Boost rules
 - How the middle street looks (visual pass Phase 6), colours from `Theme.Street`:
   - The shared conveyor: a red carpet between gold rails, with roller ends and a row of small lights along each rail. Chevrons run along the carpet and the lights chase, near the camera.
   - A stock-exchange gateway at each tunnel: marble columns, a frieze with the game's name and a pediment with a gold medallion.
-  - The street: a road lane each side of the conveyor with a dashed line, zebra crossings in front of each row of bases, kerbs, street lamps (glowing bulbs, no lights), benches and planters in the gaps between bases, ticker posts by the crossings, little chart screens on stands, and a gold bull across from the upgrade station.
+  - The street: a road lane each side of the conveyor with a dashed line, zebra crossings in front of each row of bases, kerbs, street lamps (glowing bulbs, no lights), benches and planters in the gaps between bases, ticker posts by the crossings, little chart screens on stands, a teleporter gate to the battle arena on each pavement in the middle (a glowing purple portal between two pillars under a BATTLE ARENA sign), and a gold bull across from the upgrade station.
   - Storefronts: a striped awning, a sign with the shop's name and an emblem (a gavel, a paw, an arrow), a counter with the till (`ShopPrompt`), goods on display (the five real weapons on a pegboard, hung by the server on invisible `WeaponHook` parts; pet eggs on shelves and two real pets on the counter, stood by the server on invisible `PlushSeat` parts; glowing arrows and a level meter), and a shopkeeper behind the counter who breathes, looks around, blinks and waves now and then.
   - Leaderboards styled as stock-exchange boards: a coloured header with the title, ranked rows on alternating stripes with the top three in gold, silver and bronze, and a frame with a ticker strip and a soft glow behind.
 - The world round the bases (visual pass Phase 8, `Workspace.Map.Scenery`, colours in `Theme.Scenery`):
@@ -275,7 +291,7 @@ Boost rules
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
 ## Admin and debug tools (starting assumption)
-- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), grant pets and weapons, skip playtime, reset own data.
+- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), add test bots to the next battle (`/battle bots [count]`) and skip ahead in one (`/battle skip`), grant pets and weapons, skip playtime, reset own data.
 - Debug panel (admins only) showing live economy values, active boosts and the current machine path.
 - A photo booth for store and marketing screenshots (visual pass Phase 10; `docs/ART_BRIEFS.md`): `Workspace.Map.PhotoBooth`, built by BuildMap far out past the city. Admins pose companies, pets and a copy of their base there with `/booth`, `/pose`, `/backdrop` and `/boothcam` (`Lib/PhotoBooth`, `PhotoBoothController`). Posed things are still copies in its Posed folder that nothing in the game looks at.
 - Build alongside slice 2 and extend with each slice, so every feature can be tested without grinding.
@@ -292,7 +308,7 @@ Boost rules
 - Custom events: machine Take multiplier and how many players let it run out, steals attempted vs completed, rebirth timings.
 - Built as: everything is reported by the server (`Services/AnalyticsService`, `server/Config/Analytics.luau`) and a failed report never affects play.
   - Funnel steps `Joined`, `BoughtCompany`, `PlacedCompany`, `UsedMachine`, `SharedPurchase`, `FirstSteal`, each once per player (saved). Players from before analytics count as past the funnel.
-  - Cash sources `Income` (added up and sent every 5 minutes and on leaving, not every second), `Offline`, `Playtime`, `Daily`, `Index`, `Code`. Sinks `Company` (by tier), `Upgrade` (plot or floor), `Weapon` (by weapon), `PetSpin` (Cash spins only). Cash from admin commands isn't reported.
+  - Cash sources `Income` (added up and sent every 5 minutes and on leaving, not every second), `Offline`, `Playtime`, `Daily`, `Index`, `Code`. Sinks `Company` (by tier), `Upgrade` (plot or floor), `Weapon` (by weapon), `PetSpin` (Cash spins only), `Respin` (by tier). Battle rewards are the source `Battle`. Cash from admin commands isn't reported.
   - Custom events `MachineResult` (the multiplier; Taken, RanOut or Left; the tier), `StealStarted` (from a Plot or the Ground; the tier), `StealCompleted` (the tier) and `Rebirth` (minutes played since the last rebirth; the rebirth number).
 
 ## Map naming (to be built by hand in Studio)
@@ -305,6 +321,8 @@ Boost rules
 - `Workspace.Map.SharedConveyor`: a Model with the belt plus `Start` and `End` parts, set up the same way as a base's `Conveyor`.
 - `Workspace.Map.Shops.WeaponShop`, `Workspace.Map.Shops.PetShop` and `Workspace.Map.Shops.UpgradeStation`, each with a `ShopPrompt` part. Players open the shop and buy within a few studs of it. Teleports arrive in front of each one's pivot.
 - Each base's `Glass` model holds the ground floor's glass walls, and each upper floor's `Glass` holds its own; stealing is refused if any glass is between the thief and the plot.
+- `Workspace.Map.ArenaGates` with `Gate1` and `Gate2`, each holding an invisible `Pad` part in its portal: players teleport to the arena from beside it.
+- `Workspace.Map.Arena` (a Model): `Arrive` (an invisible pad where players land, facing the board), `Join` (the podium where players join a battle), `Exit` (the pad where players go home) and `Board` (the game draws the standings on its front face). The fighting check treats anywhere inside the arena's bounding box as the arena.
 - `Workspace.Map.Leaderboards` with four parts, `IncomeBoard`, `RebirthsBoard`, `StealsBoard` and `KnockoutsBoard`. The game writes each list on the part's front face.
 - Company models in `ReplicatedStorage.Assets.Companies`, named by companyId. The server builds one for every company when it starts, from its look in `src/shared/Config/CompanyLooks.luau` (see "Company models" below). A model built by hand in Studio and named by companyId is used instead and left alone. A model named `Default` is only used if a company somehow has neither.
 - Pet models in `ReplicatedStorage.Assets.Pets` and weapon Tools in `ReplicatedStorage.Assets.Weapons`, named by id. The server builds them all when it starts (see "Pet and weapon models" below). A pet model made by hand and named by its id is used instead and left alone. A weapon Tool made by hand is only kept if it has a `HandMade` attribute set to true, because earlier map scripts left plainer Tools there that should be replaced; each weapon is a Tool with a `Handle` part. The `Default` pet and Tool are only used if something somehow has neither; the Default pet's parts with a `RarityTint` attribute take the pet's rarity colour.
@@ -349,7 +367,7 @@ Each slice ends when its checks pass in Studio with at least two test players (S
 5. **Income**: Check: placed companies pay out per second and the amount matches Config.
 6. **Base upgrades and floors**: Check: plots unlock one at a time, next floor only unlocks when the current one is full, everything saves.
 7. **Shared conveyor**: Check: exclusive tiers only appear here, and two players buying the same company at once results in exactly one owner.
-8. **Valuation Machine**: Check: path matches on server and client, Take uses server time, multiplier never goes below 1.0x, never exceeds 45 seconds.
+8. **Valuation Machine**: Check: path matches on server and client, Take uses server time, multiplier never goes below the floor (1.0x then; 0.5x since October 2026), never exceeds 45 seconds.
 9. **Stealing and base lock**: Check: full steal works on every floor, owner tag returns the company, lock blocks entry, machine companies can't be stolen.
 10. **Combat and weapon shop**: Check: damage only applies after server validation, hitting a carrier drops the company, dropped companies return correctly, no damage in own base.
 11. **Pet shop and floor modifiers**: Check: spin odds match Config over 10,000 test rolls, pets modify only their floor, guard pets increase hold time, pets survive rebirth.
@@ -364,5 +382,7 @@ After the build order: variants, the upgrade station, teleports, glass walls and
 Then cash pads and floors that appear as they're opened. Check: income only reaches Cash from the pads, only the owner can collect, the pads keep their Cash through a rejoin, a new base is just the ground floor, each floor appears when it's opened (and goes on rebirth), and the guide teaches collecting.
 
 Then the Stock Spinner in place of each base's conveyor, Luck, and Hostile Takeovers (map version 8). Check: only the owner can play their machine, from close by, and not again for 10 seconds; the pop-up's reels stop on 3 different companies, which then come out onto the belt and stay until the next play; only the owner can buy them; the sign shows the owner's Luck, and after a rebirth the Luck and `/testodds` match the Rebirth window; Steal prompts only show during a takeover (`/takeover start 2`), the server refuses a steal outside one, and a thief can still finish a steal picked up just before it ended.
+
+Then the Stock Spinner beside the planter, the Valuation Machine's 0.5x floor and Cash respins, and the battle arena (map version 10). Check: the spinner works from beside the planter; a respin costs half its tier's company price, is refused without the Cash, and can come out below 1.0x but never below 0.5x; a gate in the street takes you to the arena and nowhere else does; at the arena, two players (or one with `/battle bots 3`) play 5 rounds picking one of 3 each round, the board shows picks, places and values after every round, Keep and Machine both work, places are by value, the Cash rewards match Config, practice gives nothing, and nobody can be hurt there.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.

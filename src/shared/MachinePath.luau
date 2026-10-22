@@ -4,15 +4,16 @@
 -- client's chart always agree. The server generates the parameters when a run
 -- starts and works out the result from its own clock.
 --
--- The path starts at 1.0x, rises to a hidden peak, then falls back towards the
--- 1.0x floor, with a small seeded wobble so the peak isn't obvious. It never
--- goes below 1.0x or above the peak, and a run never lasts more than 45
--- seconds (CLAUDE.md, non-negotiable).
+-- The path starts at 1.0x, rises to a hidden peak, then falls back past 1.0x
+-- towards the floor (0.5x), with a small seeded wobble so the peak isn't
+-- obvious. It never goes below the floor or above the peak, and a run never
+-- lasts more than 45 seconds (CLAUDE.md, non-negotiable).
 --
 -- The wobble uses integer hashing (bit32) rather than math.random, so every
 -- device produces exactly the same numbers from the same seed.
 
 local MachineConfig = require(script.Parent.Config.Machine)
+local Tiers = require(script.Parent.Config.Tiers)
 
 export type Params = {
 	seed: number,
@@ -22,8 +23,11 @@ export type Params = {
 }
 
 -- Hard limits from CLAUDE.md. Config can tune inside these, never past them.
-local FLOOR = 1
+local LOWEST = 0.5
 local MAX_DURATION = 45
+-- Every run starts here.
+local START = 1
+local FLOOR = math.clamp(MachineConfig.Floor, LOWEST, START)
 
 -- Seconds over which the wobble fades in at the start and out at the end.
 local NOISE_FADE = 1.5
@@ -33,7 +37,11 @@ local TWO_PI = 2 * math.pi
 local MachinePath = {}
 
 MachinePath.FLOOR = FLOOR
+MachinePath.START = START
 MachinePath.MAX_DURATION = MAX_DURATION
+
+-- Optional run lengths for generate (the battle arena's shorter runs).
+export type Limits = { minDuration: number, maxDuration: number }
 
 -- Multiplies two 32-bit unsigned integers modulo 2^32, exactly.
 local function mul32(a: number, b: number): number
@@ -69,10 +77,11 @@ local function smooth(x: number): number
 end
 
 -- A new run's parameters. roll returns a number from 0 up to 1 (the server
--- passes Random:NextNumber).
-function MachinePath.generate(roll: () -> number): Params
-	local maxDuration = math.min(MachineConfig.MaxDuration, MAX_DURATION)
-	local minDuration = math.min(MachineConfig.MinDuration, maxDuration)
+-- passes Random:NextNumber). limits sets the run's length instead of
+-- Config/Machine's (never past 45 seconds).
+function MachinePath.generate(roll: () -> number, limits: Limits?): Params
+	local maxDuration = math.min(if limits then limits.maxDuration else MachineConfig.MaxDuration, MAX_DURATION)
+	local minDuration = math.min(if limits then limits.minDuration else MachineConfig.MinDuration, maxDuration)
 	local duration = minDuration + (maxDuration - minDuration) * roll()
 
 	local peak = MachineConfig.MinPeak
@@ -83,20 +92,21 @@ function MachinePath.generate(roll: () -> number): Params
 	return {
 		seed = math.floor(roll() * 2147483647),
 		duration = duration,
-		peak = math.max(round3(peak), FLOOR),
+		peak = math.max(round3(peak), START),
 		peakTime = round3(duration * peakShare),
 	}
 end
 
--- The smooth rise and fall, before the wobble.
+-- The smooth rise from 1.0x to the peak and the fall towards the floor,
+-- before the wobble.
 local function shape(params: Params, t: number): number
-	local lift = params.peak - FLOOR
 	if t <= params.peakTime then
-		return FLOOR + lift * smooth(t / params.peakTime)
+		return START + (params.peak - START) * smooth(t / params.peakTime)
 	end
-	local endLift = lift * MachineConfig.EndShare
+	local drop = params.peak - FLOOR
+	local endValue = FLOOR + drop * MachineConfig.EndShare
 	local fall = smooth((t - params.peakTime) / (params.duration - params.peakTime))
-	return FLOOR + lift - (lift - endLift) * fall
+	return params.peak - (params.peak - endValue) * fall
 end
 
 -- The seeded wobble, between -1 and 1.
@@ -117,7 +127,7 @@ end
 function MachinePath.value(params: Params, t: number): number
 	t = math.clamp(t, 0, params.duration)
 	local fade = math.min(1, t / NOISE_FADE, (params.duration - t) / NOISE_FADE)
-	local noise = wobble(params.seed, t) * MachineConfig.NoiseShare * (params.peak - FLOOR) * fade
+	local noise = wobble(params.seed, t) * MachineConfig.NoiseShare * (params.peak - START) * fade
 	return math.clamp(shape(params, t) + noise, FLOOR, params.peak)
 end
 
@@ -125,6 +135,12 @@ end
 -- never above what the path reached and never below the floor.
 function MachinePath.lock(value: number): number
 	return math.max(FLOOR, math.floor(value * 100 + 1e-9) / 100)
+end
+
+-- What running an already-valued company through again costs, by its tier.
+function MachinePath.respinCost(tierId: string): number
+	local tier = Tiers.byId[tierId]
+	return if tier then math.floor(tier.price * MachineConfig.RespinPriceShare + 0.5) else 0
 end
 
 return MachinePath

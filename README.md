@@ -32,6 +32,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/spawn <tier> [shared] [variant]`  | Plays your Stock Spinner (from anywhere, no wait) with a company of that tier first, or puts one on the shared conveyor (e.g. `/spawn bluechip galaxy`, `/spawn monopoly shared`) |
 | `/roll`                             | Plays your Stock Spinner now, from anywhere and without waiting for it to be ready                      |
 | `/takeover [start [minutes] \| stop]` | Starts a Hostile Takeover now (5 minutes, or as many as you say), stops one, or (on its own) says when the next one is |
+| `/battle <bots [count] \| skip>`     | Adds test bots (which play by themselves) to the next battle at the arena, or skips ahead: starts the battle now, or ends the current part (a round, the choice, the machine) early |
 | `/testvariants [rolls]`             | Simulates variant rolls with your Variant Chance upgrade and compares them with Config                  |
 | `/setupgrade <upgrade> <level> [player]` | Sets an upgrade station level for free (e.g. `/setupgrade walkspeed 5`)                            |
 | `/testodds [shared] [rolls]`        | Simulates your Stock Spinner's rolls at your Luck (rebirths and Spinner Luck), or the shared conveyor's, and compares the odds with Config |
