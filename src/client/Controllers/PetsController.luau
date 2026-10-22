@@ -23,6 +23,7 @@ local Button = require(script.Parent.Parent.Ui.Kit.Button)
 local Card = require(script.Parent.Parent.Ui.Kit.Card)
 local Make = require(script.Parent.Parent.Ui.Kit.Make)
 local Menu = require(script.Parent.Parent.Ui.Menu)
+local Models = require(script.Parent.Parent.Ui.Models)
 local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
 
 local CARD_SIZE = UDim2.fromOffset(136, 220)
@@ -146,6 +147,7 @@ function PetsController:Start()
 			title = if pet then pet.name else entry.petId,
 			stat = if pet then PetMath.describe(pet) else "",
 			badge = Badge.rarity(rarityId),
+			model = Models.pet(entry.petId),
 			icon = "Paw",
 			footerHeight = FOOTER_HEIGHT,
 			layoutOrder = order,

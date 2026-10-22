@@ -4,7 +4,7 @@
 -- cost (which rises with rebirths, or free while the player has free spins
 -- from rewards), and a card for every pet with its chance, shown before anyone
 -- spins. The server rolls the spin and sends the pet back with PetSpun; this
--- only shows it.
+-- only shows it, with the egg reveal (Ui/PetReveal).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,16 +17,14 @@ local Theme = require(ReplicatedStorage.Shared.Theme)
 local Badge = require(script.Parent.Parent.Ui.Kit.Badge)
 local Button = require(script.Parent.Parent.Ui.Kit.Button)
 local Card = require(script.Parent.Parent.Ui.Kit.Card)
-local Icons = require(script.Parent.Parent.Ui.Kit.Icons)
 local Make = require(script.Parent.Parent.Ui.Kit.Make)
 local Menu = require(script.Parent.Parent.Ui.Menu)
+local Models = require(script.Parent.Parent.Ui.Models)
 local Scroll = require(script.Parent.Parent.Ui.Kit.Scroll)
+local PetReveal = require(script.Parent.Parent.Ui.PetReveal)
 
 local CARD_SIZE = UDim2.fromOffset(132, 176)
 local SPIN_HEIGHT = 60
--- How long the reveal flicks through pet names before showing the result.
-local REVEAL_SECONDS = 1
-local REVEAL_STEP = 0.08
 -- One spin is asked for at a time, so no reveal is missed. If the server says
 -- no (not enough Cash, say), the button works again after this long.
 local SPIN_WAIT_SECONDS = 2
@@ -100,6 +98,7 @@ function PetShopController:Start()
 				title = pet.name,
 				stat = `{percent(PetMath.chance(pet))}  ·  {PetMath.describe(pet)}`,
 				badge = Badge.new(`{rarity.name} {percent(rarity.weight / totalWeight)}`, Theme.Rarities[rarity.id]),
+				model = Models.pet(pet.id),
 				icon = "Paw",
 				size = CARD_SIZE,
 				layoutOrder = order,
@@ -120,34 +119,7 @@ function PetShopController:Start()
 	Make.corner(reveal, Theme.Corner.Large)
 	local revealOutline = Make.outline(reveal, Theme.Colours.Ink, Theme.Stroke.Thick)
 	reveal.Parent = window.Body
-	local paw = Icons.make("Paw", 64, Theme.Colours.Locked)
-	paw.AnchorPoint = Vector2.new(0.5, 0)
-	paw.Position = UDim2.fromScale(0.5, 0.08)
-	paw.ZIndex = 6
-	paw.Parent = reveal
-	local revealName = Make.label(reveal, {
-		font = Theme.Fonts.Display,
-		size = Theme.TextSize.Big,
-		colour = Theme.Colours.TextMuted,
-		outline = true,
-	})
-	revealName.Position = UDim2.new(0, 0, 0.08, 72)
-	revealName.Size = UDim2.new(1, 0, 0, 44)
-	revealName.ZIndex = 6
-	local revealDetail = Make.label(reveal, {
-		size = Theme.TextSize.Body,
-		colour = Theme.Colours.Text,
-	})
-	revealDetail.Position = UDim2.new(0, 0, 0.08, 120)
-	revealDetail.Size = UDim2.new(1, 0, 0, 24)
-	revealDetail.ZIndex = 6
-	local done = Button.new({ text = "Nice!", colour = Theme.Colours.Cash, size = UDim2.fromOffset(160, 56) })
-	done.Instance.AnchorPoint = Vector2.new(0.5, 1)
-	done.Instance.Position = UDim2.new(0.5, 0, 1, -12)
-	done.Instance.ZIndex = 6
-	done.Instance.Visible = false
-	done.Instance.Parent = reveal
-	done.Activated:Connect(function()
+	local petReveal = PetReveal.new(reveal, function()
 		reveal.Visible = false
 	end)
 
@@ -171,24 +143,8 @@ function PetShopController:Start()
 		revealing = true
 		Menu.open(window)
 		reveal.Visible = true
-		done.Instance.Visible = false
-		revealDetail.Text = ""
-		revealOutline.Color = Theme.Colours.Ink
-		local started = os.clock()
-		local index = 0
-		while os.clock() - started < REVEAL_SECONDS do
-			index = index % #Pets.list + 1
-			revealName.Text = Pets.list[index].name
-			revealName.TextColor3 = Theme.Colours.TextMuted
-			task.wait(REVEAL_STEP)
-		end
-		local rarity = Pets.rarityById[pet.rarity]
-		local colour = Theme.Rarities[pet.rarity] or Theme.Colours.Text
-		revealName.Text = pet.name
-		revealName.TextColor3 = colour
-		revealOutline.Color = colour
-		revealDetail.Text = `{rarity.name}  ·  {PetMath.describe(pet)}`
-		done.Instance.Visible = true
+		revealOutline.Color = Theme.Rarities[pet.rarity] or Theme.Colours.Ink
+		petReveal.play(pet.id)
 		revealing = false
 	end)
 

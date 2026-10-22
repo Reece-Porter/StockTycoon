@@ -96,6 +96,7 @@ Nothing is required: every base is built from parts and built-in materials (the 
 | Carpet pattern | The carpet's diamond parts | 256 x 256 PNG, tiles both ways: a soft fabric look, white so the accent colour tints it, with a small diamond every half tile. Opaque. |
 | Machine screen frame | The plain screen and ticker panels | 512 x 256 PNG: a rounded monitor bezel with a small antenna, dark grey (#2B2D42), transparent in the middle and outside. |
 | Gauge face | The plain white gauge discs on the machine's pillars | 128 x 128 PNG: a round dial, white with a thin dark rim, tick marks round the top two thirds and a green-to-red arc. Transparent outside the circle. The needle stays a part. |
+| Share price board frame | The plain quote screen frame in each base's yard | 512 x 288 PNG: a stock board bezel with rounded corners and a small "LIVE" light, dark grey (#2B2D42), transparent in the middle where the game draws the price. |
 
 ## Street
 
@@ -110,6 +111,33 @@ Nothing is required: the street, shops, gateways and boards are built from parts
 | Shopkeeper faces | The eye and smile parts | Three 256 x 256 PNG face decals on transparent: big friendly cartoon eyes and a smile, one each for the weapon, pet and upgrade shopkeepers. |
 | Board header icons | The plain header strip on each leaderboard | Four 128 x 128 PNG icons on transparent, white: a coin stack (Cash per second), a circular arrow (rebirths), a sneaking hand grabbing a box (steals), a cartoon star burst (knockouts). |
 
+| Skyline billboard frames | The plain dark billboard panels on the towers | 512 x 256 PNG: a billboard frame with lights along the top edge, dark navy (#22253A), transparent in the middle. The ads and charts are drawn in the middle by the game. |
+| Tower windows | The window band parts on the skyline towers | 256 x 256 PNG, tiles both ways: rows of small lit and unlit office windows, pale blue glass (#BFD7F0) with a few warm lit ones. Opaque. Keep it low detail; the towers are far away. |
+
+## Pets
+
+Nothing is required: every pet is built from parts. These would make them better:
+
+| Asset | Replaces | Spec |
+| --- | --- | --- |
+| Eye highlight decal | The small white ball on each glossy eye | 128 x 128 PNG on transparent: a round black eye with two white glints (a big one top right, a small one bottom left). |
+| Aura sparkle | Roblox's default particle on the Rare to Mythic aura | 64 x 64 PNG on transparent, white so the rarity colour tints it: a soft four-pointed star with a bright centre. |
+| Egg art for the reveal | The plain drawn egg, spots and cracks | 256 x 320 PNG on transparent: a cream cartoon egg with pastel spots and a thick dark outline, plus three overlay PNGs of the same size with one, two and three zigzag cracks. |
+
+## Weapons and combat effects
+
+Nothing is required: weapons are built from parts and the effects are drawn from frames. These would make them better:
+
+| Asset | Replaces | Spec |
+| --- | --- | --- |
+| Newspaper print | The plain paper colour and stripes on the Rolled-up Newspaper | 256 x 256 PNG, tiles round the roll: grey columns of squiggly fake text and a small made-up masthead "THE DAILY DIVIDEND". Opaque. No real newspaper names or logos. |
+| Calculator keys | The key parts on the Golden Calculator | 256 x 256 PNG on transparent: a 3 x 4 grid of rounded cream keys with dark digits, one orange key. |
+| Hit puff | The white circles behind the hit word | 256 x 256 PNG on transparent: a white cartoon cloud burst with a dark outline and a few speed lines. |
+| Hit star | The drawn star bursting from a hit and circling a stunned head | 64 x 64 PNG on transparent: a chunky five-pointed cartoon star, white so the game can tint it gold, with a dark outline. |
+| Dust puff | The grey ball parts where a knocked-back player lands | 64 x 64 PNG on transparent: a soft grey cloud puff for a ParticleEmitter, light in the middle and fading at the edges. |
+| Whoosh trail | The thin Neon streaks of a swing | 128 x 32 PNG on transparent: a white curved swoosh fading towards one end, for a Trail. |
+
+## Variant particles
 
 Small textures for company variant particles (`src/shared/Config/Variants.luau`). Each is a 64 x 64 PNG on a transparent background, white or light grey so the particle colours tint it, soft edges unless noted. Until each exists, the stand-in is Roblox's built-in sparkle, or a plain square for Pixel and Glitched.
 
@@ -126,4 +154,16 @@ None needed: the two fonts (FredokaOne and BuilderSans Bold) are built into Robl
 
 ## Sounds
 
-None requested yet. Later phases will list button clicks, collecting Cash, purchases, steals, hits and the rebirth celebration here.
+None are required: the game plays without them. Phase 7 would use these (short, cartoon, no realistic weapon sounds):
+
+| Sound | Plays when | Spec |
+| --- | --- | --- |
+| Whoosh | A melee weapon swings | 0.2 s soft air swish. |
+| Staple shot | The Stapler Gun fires | 0.2 s springy "ka-chunk". |
+| Bonk | A hit lands | 0.3 s cartoon bonk with a squeaky tail. |
+| Dizzy | A player is stunned | 1 s looping tweety birds or twinkles, quiet. |
+| Egg shake | The egg shakes in the reveal | 0.5 s looping wobble rattle. |
+| Egg crack | The egg bursts | 0.4 s crack and pop. |
+| Pet reveal | The pet pops out | 1 s rising chime; a longer, brighter fanfare variant for Legendary and Mythic. |
+
+Later phases will add button clicks, collecting Cash, purchases, steals and the rebirth celebration here.

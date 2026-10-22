@@ -212,6 +212,16 @@ Theme.Street = {
 	Ranks = { hex("#FFC83D"), hex("#C9D1DE"), hex("#D08A4E") },
 }
 
+-- The skyline beyond the hills (studio/BuildMap.luau): glass towers in
+-- deep blues and greys with warm lit floors.
+Theme.Skyline = {
+	Towers = { hex("#2B3A55"), hex("#34495E"), hex("#3D4F6B"), hex("#2E3B4E"), hex("#46566E"), hex("#283447") },
+	Windows = hex("#FFE9B0"),
+	Mast = hex("#8D99AE"),
+	Beacon = hex("#FF4D5E"),
+	Frame = hex("#2B2D42"),
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),

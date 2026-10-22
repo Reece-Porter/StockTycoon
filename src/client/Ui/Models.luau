@@ -42,4 +42,9 @@ function Models.weapon(weaponId: string): Instance?
 	return find("Weapons", weaponId)
 end
 
+-- A pet's model (built by the server from Config/PetLooks).
+function Models.pet(petId: string): Instance?
+	return find("Pets", petId)
+end
+
 return Models

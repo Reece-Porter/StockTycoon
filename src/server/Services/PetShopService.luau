@@ -5,19 +5,29 @@
 -- rebirths). There are no Robux spins. The server rolls every spin itself
 -- with PetMath, adds the pet to the player's inventory and tells their client
 -- which pet it was with PetSpun, for the reveal. The client only asks to spin.
+--
+-- When the server starts it also stands a couple of real pets (Config/PetLooks
+-- ShopDisplay) on the counter, on the PlushSeat parts studio/BuildMap.luau
+-- leaves in the shop's Goods.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Format = require(ReplicatedStorage.Shared.Format)
+local PetLooks = require(ReplicatedStorage.Shared.Config.PetLooks)
 local PetMath = require(ReplicatedStorage.Shared.PetMath)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local RewardsService = require(script.Parent.RewardsService)
+local CompanyModels = require(script.Parent.Parent.Lib.CompanyModels)
+local PetModels = require(script.Parent.Parent.Lib.PetModels)
 local RateLimiter = require(script.Parent.Parent.Lib.RateLimiter)
+
+-- The counter's pets are a little smaller than life.
+local DISPLAY_SCALE = 0.75
 
 local random = Random.new()
 local shopPrompt: BasePart? = nil
@@ -120,10 +130,50 @@ function PetShopService:GetProblems(): { string }
 	return problems
 end
 
+-- Real pets on the counter, one on each PlushSeat, left to right.
+local function dressCounter(shop: Instance)
+	local goods = shop:FindFirstChild("Goods")
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local models = assets and assets:FindFirstChild("Pets")
+	if goods == nil or models == nil then
+		return
+	end
+	local seats: { BasePart } = {}
+	for _, child in goods:GetChildren() do
+		if child.Name == "PlushSeat" and child:IsA("BasePart") then
+			table.insert(seats, child)
+		end
+	end
+	local function seatNumber(seat: BasePart): number
+		local number = seat:GetAttribute("Seat")
+		return if typeof(number) == "number" then number else 0
+	end
+	table.sort(seats, function(a, b)
+		return seatNumber(a) < seatNumber(b)
+	end)
+	for index, seat in seats do
+		local petId = PetLooks.ShopDisplay[index]
+		local template = petId and models:FindFirstChild(petId)
+		if template and template:IsA("Model") then
+			local plush = template:Clone()
+			plush.Name = "Plush"
+			-- Streams in whole, so it bobs as one (PetFxController).
+			plush.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+			plush:ScaleTo(DISPLAY_SCALE)
+			CompanyModels.standOn(plush, seat.Position + Vector3.new(0, seat.Size.Y / 2, 0), seat.CFrame)
+			plush.Parent = goods
+		end
+	end
+end
+
 function PetShopService:Init()
+	PetModels.prepare()
 	local map = workspace:FindFirstChild("Map")
 	local shops = map and map:FindFirstChild("Shops")
 	local shop = shops and shops:FindFirstChild("PetShop")
+	if shop then
+		dressCounter(shop)
+	end
 	local prompt = shop and shop:FindFirstChild("ShopPrompt")
 	if prompt and prompt:IsA("BasePart") then
 		shopPrompt = prompt

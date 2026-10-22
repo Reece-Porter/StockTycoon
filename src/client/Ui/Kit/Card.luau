@@ -46,7 +46,7 @@ local Card = {}
 
 -- The model in a viewport, framed so all of it shows. A Tool's parts are put
 -- in a model first.
-local function showModel(parent: Frame, model: Instance, silhouette: boolean)
+local function showModel(parent: GuiObject, model: Instance, silhouette: boolean): ViewportFrame
 	local viewport = Instance.new("ViewportFrame")
 	viewport.Size = UDim2.fromScale(1, 1)
 	viewport.BackgroundTransparency = 1
@@ -77,7 +77,11 @@ local function showModel(parent: Frame, model: Instance, silhouette: boolean)
 	local direction = (centre.LookVector + centre.RightVector * 0.6 + Vector3.new(0, 0.5, 0)).Unit
 	camera.CFrame = CFrame.lookAt(centre.Position + direction * distance, centre.Position)
 	viewport.Parent = parent
+	return viewport
 end
+
+-- The same, for other screens (the pet reveal).
+Card.showModel = showModel
 
 function Card.new(props: Props): Card
 	local footerHeight = props.footerHeight or 0

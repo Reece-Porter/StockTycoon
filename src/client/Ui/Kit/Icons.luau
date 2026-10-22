@@ -27,6 +27,7 @@ export type IconName =
 	| "Weapon"
 	| "Ticket"
 	| "Bolt"
+	| "Star"
 
 local Icons = {}
 
@@ -51,6 +52,7 @@ for _, name in
 		"Weapon",
 		"Ticket",
 		"Bolt",
+		"Star",
 	}
 do
 	table.insert(Icons.names, name :: any)
@@ -224,6 +226,14 @@ function Icons.make(name: IconName, pixels: number, colour: Color3?, outline: bo
 		bar(root, pixels, Vector2.new(0.62, 0.1), Vector2.new(0.36, 0.52), tint, lined, 0.18)
 		bar(root, pixels, Vector2.new(0.36, 0.52), Vector2.new(0.66, 0.48), tint, lined, 0.18)
 		bar(root, pixels, Vector2.new(0.66, 0.48), Vector2.new(0.4, 0.9), tint, lined, 0.18)
+	elseif name == "Star" then
+		-- A cartoon twinkle: two long thin points crossed, with a fat middle.
+		local tall = shape(root, Vector2.new(0.5, 0.5), Vector2.new(0.24, 0.96), tint, lined)
+		Make.corner(tall, math.max(2, math.floor(pixels * 0.12)))
+		local wide = shape(root, Vector2.new(0.5, 0.5), Vector2.new(0.96, 0.24), tint, lined)
+		Make.corner(wide, math.max(2, math.floor(pixels * 0.12)))
+		local middle = shape(root, Vector2.new(0.5, 0.5), Vector2.new(0.42, 0.42), tint, false)
+		middle.Rotation = 45
 	end
 	return root
 end
