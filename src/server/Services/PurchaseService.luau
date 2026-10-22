@@ -82,6 +82,10 @@ local function buy(player: Player, itemId: string, ignoreDistance: boolean?): st
 		return "Your hands are full. Place or store what you're carrying first."
 	end
 	ConveyorService:RemoveItem(item.id)
+	-- Only for looks: every player's screen pops "SOLD!" over the buyer when
+	-- this goes up (FeedbackFxController).
+	local bought = player:GetAttribute("BoughtCount")
+	player:SetAttribute("BoughtCount", (if typeof(bought) == "number" then bought else 0) + 1)
 	AnalyticsService:Spent(player, "Company", item.price, item.tier)
 	AnalyticsService:Funnel(player, "BoughtCompany")
 	if item.ownerUserId == 0 then
