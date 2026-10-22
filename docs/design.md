@@ -242,6 +242,13 @@ Boost rules
   - The street: a road lane each side of the conveyor with a dashed line, zebra crossings in front of each row of bases, kerbs, street lamps (glowing bulbs, no lights), benches and planters in the gaps between bases, ticker posts by the crossings, little chart screens on stands, and a gold bull across from the upgrade station.
   - Storefronts: a striped awning, a sign with the shop's name and an emblem (a gavel, a paw, an arrow), a counter with the till (`ShopPrompt`), goods on display (the five real weapons on a pegboard, hung by the server on invisible `WeaponHook` parts; pet eggs on shelves and two real pets on the counter, stood by the server on invisible `PlushSeat` parts; glowing arrows and a level meter), and a shopkeeper behind the counter who breathes, looks around, blinks and waves now and then.
   - Leaderboards styled as stock-exchange boards: a coloured header with the title, ranked rows on alternating stripes with the top three in gold, silver and bronze, and a frame with a ticker strip and a soft glow behind.
+- The world round the bases (visual pass Phase 8, `Workspace.Map.Scenery`, colours in `Theme.Scenery`):
+  - Patches of grass a little lighter and darker than the ground.
+  - In each gap between bases: a winding path of stepping stones from the street to the back, round cartoon trees either side and two flower patches. More trees and flowers between the last bases and the ends of the map, and bushes along the strip behind the bases.
+  - A wooden fence along the edge of the play area, in front of the hills, either side of the street at the ends.
+  - Pines up the hills, stood on the hills' grass (never their rock) and clear of the tunnels.
+  - Far behind the hills (`Workspace.Map.Skyline`), a low-detail city in pale blue-greys that sits back in the haze and peeks over the hills: plain towers turned to face the map, a few with an antenna, and a billboard on one tower along each side with a parody company's name (from `Config/Companies`) and a slogan. Original designs only.
+  - All of it is only for looks: anchored, never collides, gets touched or blocks a raycast, nothing on the street or a base, and nothing but the trees near the bases casts a shadow. About 900 parts for the scenery and 140 for the city.
 - Leaderboards: total Cash per second, rebirths, successful steals, knockouts.
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 

@@ -75,7 +75,7 @@ Purchases made in Studio are test purchases and cost nothing. Game passes bought
 The map and the models the game copies are made by one Studio script, [`studio/BuildMap.luau`](studio/BuildMap.luau). It puts every part in its exact place, so it fixes the map whatever state it is in, and it is safe to run again.
 
 1. Stop the game if it is playing (changes made while playing are thrown away).
-2. Make sure Rojo is connected to the Test place: the map reads the game's colours from `ReplicatedStorage.Shared.Theme`, which Rojo syncs. Without it, the script stops with a message saying so.
+2. Make sure Rojo is connected to the Test place: the map reads the game's colours from `ReplicatedStorage.Shared.Theme` and the parody company names for the billboards from `ReplicatedStorage.Shared.Config.Companies`, which Rojo syncs. Without Theme, the script stops with a message saying so.
 3. Clear the Command Bar completely (Cmd+A or Ctrl+A, then Delete).
 4. Paste the whole of `studio/BuildMap.luau` and press Run. The Output says `Map built`.
 5. Save the place.

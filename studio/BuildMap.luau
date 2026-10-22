@@ -11,8 +11,9 @@
 -- works whatever state the map is in and is safe to run again. When the map
 -- needs to change, this file changes; never run old map scripts alongside it.
 --
--- It reads the game's colours from ReplicatedStorage.Shared.Theme, so Rojo
--- must be connected to the Test place when you run it.
+-- It reads the game's colours from ReplicatedStorage.Shared.Theme (and the
+-- parody company names for the billboards from Shared.Config.Companies), so
+-- Rojo must be connected to the Test place when you run it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -24,11 +25,21 @@ if themeModule == nil or not themeModule:IsA("ModuleScript") then
 end
 local Theme = require(themeModule :: ModuleScript) :: any
 local BASE = Theme.Base
+-- Parody company names for the billboards in the skyline, from
+-- ReplicatedStorage.Shared.Config.Companies (also synced by Rojo).
+local configFolder = sharedFolder and sharedFolder:FindFirstChild("Config")
+local companiesModule = configFolder and configFolder:FindFirstChild("Companies")
+local companyNames: { string } = {}
+if companiesModule and companiesModule:IsA("ModuleScript") then
+	for _, company in (require(companiesModule) :: any).list do
+		table.insert(companyNames, company.name)
+	end
+end
 
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 4
+local MAP_VERSION = 5
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -1492,6 +1503,10 @@ for _, side in { -1, 1 } do
 	newPart(border, "TunnelBack", Vector3.new(16, 12, 1), CFrame.new(0, groundY + 6, backZ), Color3.fromRGB(15, 15, 18))
 end
 
+-- Every ball of terrain the hills are made of, so the scenery can stand
+-- trees on them (section 7b).
+type HillBall = { centre: Vector3, radius: number, rock: boolean }
+local hillBalls: { HillBall } = {}
 local terrain = Workspace:FindFirstChildOfClass("Terrain")
 if terrain then
 	local bottom, height = groundY - 4, 90
@@ -1524,10 +1539,12 @@ if terrain then
 		local reach = away + random:NextNumber(-4, 8)
 		local centre = Vector3.new(x, groundY - radius * 0.35, z) + outward * (radius + reach)
 		terrain:FillBall(centre, radius, Enum.Material.Grass)
+		table.insert(hillBalls, { centre = centre, radius = radius, rock = false })
 		if random:NextNumber() < 0.4 then
 			local rockRadius = radius * random:NextNumber(0.3, 0.5)
 			local offset = Vector3.new(random:NextNumber(-4, 4), radius * 0.55, random:NextNumber(-4, 4))
 			terrain:FillBall(centre + offset, rockRadius, Enum.Material.Rock)
+			table.insert(hillBalls, { centre = centre + offset, radius = rockRadius, rock = true })
 		end
 	end
 	local SPACING = 16
@@ -1549,19 +1566,381 @@ if terrain then
 	end
 end
 
--- 7b. Take away what an earlier build of this script added that this one
--- doesn't make: the skyline round the map and the share price boards in the
--- base yards (the rest is rebuilt above).
+-- 7b. The world round the bases (visual pass Phase 8, colours in
+-- Theme.Scenery), only for looks and out of everyone's way: patches of
+-- lighter and darker grass, a winding path of stepping stones down each gap
+-- between the bases, round trees and flower patches in the gaps and at the
+-- ends of the map, bushes behind the bases, a wooden fence along the edge,
+-- and pines up the hills. Seeded, so it comes out the same every time.
+-- Nothing here collides, gets touched or blocks a raycast; only the trees
+-- near the bases cast a shadow.
+local WORLD = Theme.Scenery
 do
-	local skyline = map:FindFirstChild("Skyline")
-	if skyline then
-		skyline:Destroy()
+	local scenery = freshModel(map, "Scenery")
+	local random = Random.new(808)
+	local function pick(list: { Color3 }): Color3
+		return list[math.floor(random:NextNumber(1, #list + 0.999))]
 	end
-	for _, base in bases:GetChildren() do
-		local quote = base:FindFirstChild("Quote")
-		if quote then
-			quote:Destroy()
+	local function noShadow(part: BasePart): BasePart
+		part.CastShadow = false
+		return part
+	end
+
+	-- A round cartoon tree with its foot at foot: a trunk under three leafy
+	-- balls.
+	local function roundTree(parent: Instance, foot: Vector3, size: number)
+		local tree = Instance.new("Model")
+		tree.Name = "Tree"
+		tree.Parent = parent
+		local trunkHeight = 3.4 * size
+		local trunkAt = CFrame.new(foot + Vector3.new(0, trunkHeight / 2 - 0.25, 0))
+		noShadow(column(tree, "Trunk", trunkHeight + 0.5, 0.9 * size, trunkAt, WORLD.Trunk, Enum.Material.Wood))
+		local crown = foot + Vector3.new(0, trunkHeight + 1.4 * size, 0)
+		local turn = CFrame.Angles(0, random:NextNumber(0, 2 * math.pi), 0)
+		for index, leaf in { { 0, 0.4, 0, 4.6 }, { 1.5, -0.5, 0.5, 3.4 }, { -1.3, -0.3, -0.9, 3.2 } } do
+			local offset = turn * Vector3.new(leaf[1], leaf[2], leaf[3]) * size
+			local diameter = leaf[4] * size
+			decor(
+				tree,
+				"Leaves",
+				Vector3.new(diameter, diameter, diameter),
+				CFrame.new(crown + offset),
+				WORLD.Leaves[index],
+				Enum.Material.Grass,
+				Enum.PartType.Ball
+			)
 		end
+	end
+
+	-- A pine on a hill: a trunk sunk into the slope under three stacked
+	-- layers of needles.
+	local function pine(parent: Instance, foot: Vector3, size: number)
+		local tree = Instance.new("Model")
+		tree.Name = "Pine"
+		tree.Parent = parent
+		local trunkHeight = 2.4 * size
+		local trunkAt = CFrame.new(foot + Vector3.new(0, trunkHeight / 2 - 0.75, 0))
+		noShadow(column(tree, "Trunk", trunkHeight + 1.5, 0.8 * size, trunkAt, WORLD.Trunk, Enum.Material.Wood))
+		local colour = pick(WORLD.Pine)
+		local y = trunkHeight
+		for _, layer in { { 6, 3.6 }, { 4.6, 3.4 }, { 3, 3.2 } } do
+			local width, height = layer[1] * size, layer[2] * size
+			local layerAt = CFrame.new(foot + Vector3.new(0, y + height / 2, 0))
+			noShadow(
+				ellipsoid(tree, "Needles", Vector3.new(width, height, width), layerAt, colour, Enum.Material.Grass)
+			)
+			y += height * 0.55
+		end
+	end
+
+	-- A low leafy mound dotted with flowers.
+	local function flowerPatch(parent: Instance, x: number, z: number)
+		local patch = Instance.new("Model")
+		patch.Name = "FlowerPatch"
+		patch.Parent = parent
+		local half = Vector3.new(3, 0.6, 2.2)
+		noShadow(ellipsoid(patch, "Mound", half * 2, CFrame.new(x, groundY, z), WORLD.Mound, Enum.Material.Grass))
+		for index = 1, 7 do
+			local angle = index / 7 * 2 * math.pi + random:NextNumber(-0.3, 0.3)
+			local reach = random:NextNumber(0.25, 0.7)
+			local dx, dz = math.cos(angle) * reach * half.X, math.sin(angle) * reach * half.Z
+			local surface = half.Y * math.sqrt(1 - reach * reach)
+			local flowerAt = CFrame.new(x + dx, groundY + surface + 0.15, z + dz)
+			noShadow(
+				decor(
+					patch,
+					"Flower",
+					Vector3.new(0.75, 0.75, 0.75),
+					flowerAt,
+					pick(WORLD.Flowers),
+					nil,
+					Enum.PartType.Ball
+				)
+			)
+		end
+	end
+
+	-- A flat patch of grass a little lighter or darker than the ground. Each
+	-- sits a hair higher than the last so overlapping ones never flicker.
+	local grass = model(scenery, "Grass")
+	local patches = 0
+	local function grassPatch(x: number, z: number, diameter: number)
+		patches += 1
+		local patchAt = CFrame.new(x, groundY + 0.02 + patches * 0.002, z)
+		noShadow(column(grass, "GrassPatch", 0.04, diameter, patchAt, pick(WORLD.Grass), Enum.Material.Grass))
+	end
+
+	-- Down each gap between the bases: a path of stepping stones winding
+	-- from the street to the back, with trees either side and two flower
+	-- patches. The middle gaps' paths start behind the leaderboards.
+	local paths = model(scenery, "Paths")
+	local trees = model(scenery, "Trees")
+	local flowers = model(scenery, "Flowers")
+	local backX = BASE_X + BASE_DEPTH / 2
+	for gapIndex, gap in GAPS do
+		for _, side in { -1, 1 } do
+			local startX = if gap == 0 then STREET_HALF + 18 else STREET_HALF + 4
+			local stone = 0
+			for x = startX, PLAY_HALF_X - 4, 3.3 do
+				stone += 1
+				local z = gap + 3 * math.sin(x / 11 + gapIndex)
+				local diameter = random:NextNumber(2.1, 2.8)
+				local colour = if stone % 2 == 0 then WORLD.Stone else WORLD.StoneShade
+				local stoneAt = CFrame.new(side * x, groundY + 0.15, z)
+				noShadow(column(paths, "Stone", 0.3, diameter, stoneAt, colour, Enum.Material.Slate))
+			end
+			local flip = if (gapIndex + side) % 2 == 0 then 1 else -1
+			for index, x in { 70, 100, 128 } do
+				local across = if index % 2 == 0 then -flip else flip
+				local foot = Vector3.new(side * (x + random:NextNumber(-3, 3)), groundY, gap + across * 11)
+				roundTree(trees, foot, random:NextNumber(1.5, 1.9))
+			end
+			for index, x in { 85, 114 } do
+				local across = if index % 2 == 0 then flip else -flip
+				flowerPatch(flowers, side * x, gap + across * 10)
+			end
+			for _ = 1, 5 do
+				local diameter = random:NextNumber(5, 10)
+				local x = random:NextNumber(STREET_HALF + 16, backX - 4)
+				local z = gap + random:NextNumber(-1, 1) * (BASE_GAP / 2 - 2 - diameter / 2)
+				grassPatch(side * x, z, diameter)
+			end
+		end
+	end
+
+	-- Between the last bases and the ends of the map.
+	local lastEdge = BASE_STEP * 1.5 + BASE_WIDTH / 2
+	local endZ = (lastEdge + PLAY_HALF_Z) / 2
+	for _, ends in { -1, 1 } do
+		for _, side in { -1, 1 } do
+			for _, x in { 64, 98, 132 } do
+				local foot = Vector3.new(side * x, groundY, ends * (endZ + random:NextNumber(-2, 2)))
+				roundTree(trees, foot, random:NextNumber(1.4, 1.7))
+			end
+			for _, x in { 81, 115 } do
+				flowerPatch(flowers, side * x, ends * (endZ + random:NextNumber(-2, 2)))
+			end
+			for _ = 1, 3 do
+				local diameter = random:NextNumber(5, 9)
+				grassPatch(side * random:NextNumber(STREET_HALF + 8, PLAY_HALF_X - 8), ends * endZ, diameter)
+			end
+		end
+	end
+
+	-- Bushes along the strip behind the bases.
+	local bushes = model(scenery, "Bushes")
+	for _, side in { -1, 1 } do
+		for z = -PLAY_HALF_Z + 8, PLAY_HALF_Z - 8, 13 do
+			local scale = random:NextNumber(0.8, 1.2)
+			local bushAt = CFrame.new(side * (PLAY_HALF_X - 6), groundY + 0.9, z + random:NextNumber(-3, 3))
+			noShadow(
+				ellipsoid(bushes, "Bush", Vector3.new(3.4, 2.6, 3.4) * scale, bushAt, WORLD.Bush, Enum.Material.Grass)
+			)
+		end
+	end
+
+	-- A wooden fence along the edge, in front of the hills: posts with two
+	-- rails, down both sides and across both ends either side of the street.
+	local fence = model(scenery, "Fence")
+	local fenceX, fenceZ = PLAY_HALF_X - 1.2, PLAY_HALF_Z - 1.2
+	local endFrom = STREET_HALF + 4
+	local function post(x: number, z: number)
+		decor(fence, "Post", Vector3.new(0.5, 3, 0.5), CFrame.new(x, groundY + 1.5, z), WORLD.Fence)
+	end
+	local function rail(size: Vector3, x: number, y: number, z: number)
+		noShadow(decor(fence, "Rail", size, CFrame.new(x, groundY + y, z), WORLD.FenceShade))
+	end
+	for _, side in { -1, 1 } do
+		for z = -fenceZ, fenceZ, 10 do
+			post(side * fenceX, z)
+		end
+		for _, ends in { -1, 1 } do
+			post(side * fenceX, ends * fenceZ)
+			for x = endFrom, fenceX - 5, 10 do
+				post(side * x, ends * fenceZ)
+			end
+		end
+		for _, y in { 1.1, 2.3 } do
+			rail(Vector3.new(0.25, 0.3, 2 * fenceZ), side * fenceX, y, 0)
+			for _, ends in { -1, 1 } do
+				local length = fenceX - endFrom
+				rail(Vector3.new(length, 0.3, 0.25), side * (endFrom + length / 2), y, ends * fenceZ)
+			end
+		end
+	end
+
+	-- Pines up the hills all round, standing on the hills' grass (never on
+	-- their rock), clear of the tunnels.
+	local hillTrees = model(scenery, "HillTrees")
+	local function hillHeight(x: number, z: number): (number, boolean)
+		local height, rock = groundY + 2, false
+		for _, ball in hillBalls do
+			local dx, dz = x - ball.centre.X, z - ball.centre.Z
+			local across = dx * dx + dz * dz
+			if across < ball.radius * ball.radius then
+				local top = ball.centre.Y + math.sqrt(ball.radius * ball.radius - across)
+				if top > height then
+					height, rock = top, ball.rock
+				end
+			end
+		end
+		return height, rock
+	end
+	local function hillPine(x: number, z: number)
+		local height, rock = hillHeight(x, z)
+		if not rock then
+			pine(hillTrees, Vector3.new(x, height, z), random:NextNumber(1.1, 1.8))
+		end
+	end
+	if #hillBalls > 0 then
+		for _, side in { -1, 1 } do
+			for z = -PLAY_HALF_Z - 30, PLAY_HALF_Z + 30, 26 do
+				hillPine(side * (PLAY_HALF_X + random:NextNumber(10, 70)), z + random:NextNumber(-6, 6))
+			end
+			for x = -PLAY_HALF_X - 30, PLAY_HALF_X + 30, 26 do
+				local out = random:NextNumber(10, 70)
+				if math.abs(x) > 30 then
+					hillPine(x + random:NextNumber(-6, 6), side * (PLAY_HALF_Z + out))
+				end
+			end
+		end
+	end
+	for _, part in hillTrees:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
+	end
+end
+
+-- 7c. A city far behind the hills, low detail: plain towers in pale
+-- blue-greys (Theme.Scenery) that sit back in the haze, a few with an
+-- antenna, turned to face the map, and a billboard for a parody company on
+-- one tower along each side. Tall enough to peek over the hills, never close
+-- enough to loom. Nothing there collides, gets touched or casts a shadow.
+local SLOGANS =
+	{ "Now with extra synergy", "Disrupting your lunch break", "Trusted by at least one cat", "Going up, probably" }
+do
+	local skyline = freshModel(map, "Skyline")
+	local random = Random.new(1929)
+	local function pick(list: { Color3 }): Color3
+		return list[math.floor(random:NextNumber(1, #list + 0.999))]
+	end
+	local function tower(position: Vector3, width: number, depth: number, height: number): CFrame
+		local towerModel = Instance.new("Model")
+		towerModel.Name = "Tower"
+		towerModel.Parent = skyline
+		-- Turned so its front (-z) faces the middle of the map.
+		local facing = CFrame.Angles(0, math.atan2(position.X, position.Z), 0)
+		local function at(y: number): CFrame
+			return CFrame.new(position.X, y, position.Z) * facing
+		end
+		local sunk = 20
+		local body = decor(
+			towerModel,
+			"Body",
+			Vector3.new(width, height + sunk, depth),
+			at(groundY + (height - sunk) / 2),
+			pick(WORLD.Towers)
+		)
+		body.CastShadow = false
+		local topHeight = 2 + height * 0.08
+		local top = decor(
+			towerModel,
+			"Top",
+			Vector3.new(width * 0.7, topHeight, depth * 0.7),
+			at(groundY + height + topHeight / 2),
+			WORLD.TowerTop
+		)
+		top.CastShadow = false
+		if random:NextNumber() < 0.3 then
+			local antennaAt = at(groundY + height + topHeight + 6)
+			decor(towerModel, "Antenna", Vector3.new(0.8, 12, 0.8), antennaAt, WORLD.Antenna).CastShadow = false
+		end
+		return at(0)
+	end
+	-- A billboard on a tower's face towards the map: a parody company's name
+	-- and a slogan on the board's own colour, in a pale frame.
+	local function billboard(face: CFrame, frontOffset: number, y: number, index: number)
+		local board = decor(
+			skyline,
+			"Billboard",
+			Vector3.new(34, 14, 1),
+			face * CFrame.new(0, y, -frontOffset - 0.6),
+			WORLD.Billboards[index]
+		)
+		board.CastShadow = false
+		local frame = decor(
+			skyline,
+			"BillboardFrame",
+			Vector3.new(36, 16, 0.8),
+			face * CFrame.new(0, y, -frontOffset - 0.1),
+			WORLD.BillboardFrame
+		)
+		frame.CastShadow = false
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Ad"
+		gui.Face = Enum.NormalId.Front
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 8
+		gui.LightInfluence = 0
+		gui.MaxDistance = 3000
+		gui.Parent = board
+		local name = Instance.new("TextLabel")
+		name.Name = "Company"
+		name.Position = UDim2.fromScale(0.05, 0.08)
+		name.Size = UDim2.fromScale(0.9, 0.55)
+		name.BackgroundTransparency = 1
+		name.Font = Theme.Fonts.Display
+		name.TextScaled = true
+		name.TextColor3 = Theme.Colours.TextOnColour
+		local count = #companyNames
+		name.Text = if count > 0 then companyNames[(index * 7) % count + 1] else "STOCK TYCOON"
+		name.Parent = gui
+		local line = Instance.new("TextLabel")
+		line.Name = "Slogan"
+		line.Position = UDim2.fromScale(0.05, 0.66)
+		line.Size = UDim2.fromScale(0.9, 0.24)
+		line.BackgroundTransparency = 1
+		line.Font = Theme.Fonts.Body
+		line.TextScaled = true
+		line.TextColor3 = Theme.Colours.TextOnColour
+		line.Text = SLOGANS[(index - 1) % #SLOGANS + 1]
+		line.Parent = gui
+	end
+
+	-- A row of towers every 48 studs along each side and across each end, the
+	-- one at adAt with a billboard.
+	local away = 190
+	local ads = 0
+	local function row(alongSide: boolean, side: number, from: number, to: number, adAt: number)
+		for along = from, to, 48 do
+			local isAd = along == adAt
+			local width = random:NextNumber(20, 34)
+			local depth = random:NextNumber(20, 32)
+			local height = if isAd then 100 else random:NextNumber(50, 110)
+			local out = away + random:NextNumber(0, 60)
+			local position = if alongSide
+				then Vector3.new(side * (PLAY_HALF_X + out), 0, along)
+				else Vector3.new(along, 0, side * (PLAY_HALF_Z + out))
+			local face = tower(position, width, depth, height)
+			if isAd then
+				ads += 1
+				billboard(face, depth / 2, groundY + height - 16, ads)
+			end
+		end
+	end
+	for _, side in { -1, 1 } do
+		row(true, side, -330, 330, if side < 0 then -42 else 54)
+		row(false, side, -300, 300, if side < 0 then 36 else -60)
+	end
+end
+
+-- 7d. Take away what an earlier build of this script added that this one
+-- doesn't make: the share price boards in the base yards.
+for _, base in bases:GetChildren() do
+	local quote = base:FindFirstChild("Quote")
+	if quote then
+		quote:Destroy()
 	end
 end
 

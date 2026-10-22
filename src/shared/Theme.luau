@@ -212,6 +212,31 @@ Theme.Street = {
 	Ranks = { hex("#FFC83D"), hex("#C9D1DE"), hex("#D08A4E") },
 }
 
+-- The world round the bases (studio/BuildMap.luau, visual pass Phase 8):
+-- patches of grass a little lighter and darker than the ground, stepping
+-- stones, round trees between the bases and pines on the hills, flower
+-- patches, a wooden fence along the edge, and a hazy city far behind the
+-- hills in pale blue-greys so it sits back in the distance.
+Theme.Scenery = {
+	Grass = { hex("#6DAF50"), hex("#5A9844"), hex("#7CBA5A") },
+	Stone = hex("#CFC9BC"),
+	StoneShade = hex("#B4AD9F"),
+	Trunk = hex("#8A5A36"),
+	Leaves = { hex("#58AA52"), hex("#4C9A49"), hex("#6BBE5E") },
+	Pine = { hex("#2F7D4A"), hex("#3A8F55"), hex("#2A6F43") },
+	Bush = hex("#4F9E4A"),
+	Mound = hex("#4A9446"),
+	Flowers = { hex("#FF6FA8"), hex("#FFD84D"), hex("#FFFFFF"), hex("#B07CFF"), hex("#FF8A3D") },
+	Fence = hex("#F2E8D5"),
+	FenceShade = hex("#D9CCB2"),
+	Towers = { hex("#AEBBD0"), hex("#B9C5D8"), hex("#A3B2C9"), hex("#C3CCDC") },
+	TowerTop = hex("#97A7C0"),
+	Antenna = hex("#8D99AE"),
+	BillboardFrame = hex("#EEF1F7"),
+	-- A billboard's own colour, one each.
+	Billboards = { hex("#3D8BFF"), hex("#FF8A3D"), hex("#A66CFF"), hex("#2FBFA8") },
+}
+
 -- The Valuation Machine's chart.
 Theme.Chart = {
 	Rising = hex("#3CCB5A"),
