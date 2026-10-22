@@ -111,6 +111,18 @@ Nothing is required: the street, shops, gateways and boards are built from parts
 | Board header icons | The plain header strip on each leaderboard | Four 128 x 128 PNG icons on transparent, white: a coin stack (Cash per second), a circular arrow (rebirths), a sneaking hand grabbing a box (steals), a cartoon star burst (knockouts). |
 
 
+## Scenery
+
+Nothing is required: the trees, flowers, fence and city are built from parts and built-in materials. These would make them better:
+
+| Asset | Replaces | Spec |
+| --- | --- | --- |
+| Leaf clump texture | The plain Grass material on the round trees' leaf balls | 256 x 256 PNG, tiles: soft cartoon leaf clusters in light and mid greens (#6BBE5E, #58AA52) with darker gaps. Opaque. |
+| Flower decal | The ball flowers in the flower patches | 128 x 128 PNG on transparent: a simple five-petal cartoon flower, white with a yellow centre, so the game can tint the petals. |
+| Stepping stone | The plain slate discs on the paths | 256 x 256 PNG on transparent: a rounded flat stone, pale warm grey (#CFC9BC), a few small cracks. |
+| Skyline billboards | The plain coloured boards with the company name and slogan | Four 512 x 216 PNGs: an advert for a parody company from `Config/Companies` (its own logo badge from `Config/CompanyLooks`, its name and a silly slogan) on a bright background. Original artwork only, no real brands. |
+| Distant towers | The plain pale tower blocks | 256 x 512 PNG, tiles up: rows of faint windows in pale blue-grey (#B9C5D8), very low contrast so the city stays in the background. |
+
 ## Pets
 
 Nothing is required: every pet is built from parts. These would make them better:
