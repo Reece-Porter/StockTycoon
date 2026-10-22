@@ -96,7 +96,6 @@ Nothing is required: every base is built from parts and built-in materials (the 
 | Carpet pattern | The carpet's diamond parts | 256 x 256 PNG, tiles both ways: a soft fabric look, white so the accent colour tints it, with a small diamond every half tile. Opaque. |
 | Machine screen frame | The plain screen and ticker panels | 512 x 256 PNG: a rounded monitor bezel with a small antenna, dark grey (#2B2D42), transparent in the middle and outside. |
 | Gauge face | The plain white gauge discs on the machine's pillars | 128 x 128 PNG: a round dial, white with a thin dark rim, tick marks round the top two thirds and a green-to-red arc. Transparent outside the circle. The needle stays a part. |
-| Share price board frame | The plain quote screen frame in each base's yard | 512 x 288 PNG: a stock board bezel with rounded corners and a small "LIVE" light, dark grey (#2B2D42), transparent in the middle where the game draws the price. |
 
 ## Street
 
@@ -111,8 +110,6 @@ Nothing is required: the street, shops, gateways and boards are built from parts
 | Shopkeeper faces | The eye and smile parts | Three 256 x 256 PNG face decals on transparent: big friendly cartoon eyes and a smile, one each for the weapon, pet and upgrade shopkeepers. |
 | Board header icons | The plain header strip on each leaderboard | Four 128 x 128 PNG icons on transparent, white: a coin stack (Cash per second), a circular arrow (rebirths), a sneaking hand grabbing a box (steals), a cartoon star burst (knockouts). |
 
-| Skyline billboard frames | The plain dark billboard panels on the towers | 512 x 256 PNG: a billboard frame with lights along the top edge, dark navy (#22253A), transparent in the middle. The ads and charts are drawn in the middle by the game. |
-| Tower windows | The window band parts on the skyline towers | 256 x 256 PNG, tiles both ways: rows of small lit and unlit office windows, pale blue glass (#BFD7F0) with a few warm lit ones. Opaque. Keep it low detail; the towers are far away. |
 
 ## Pets
 
