@@ -141,4 +141,34 @@ return {
 	-- (with ":" and its variant's id for a variant), comma separated, and
 	-- when (server time) the reels started and when they stop.
 	SpinnerRolled = event("SpinnerRolled"),
+
+	-- Client to server: () join (or, with BattleLeave, leave) the next battle
+	-- at the arena's podium.
+	BattleJoin = event("BattleJoin"),
+	BattleLeave = event("BattleLeave"),
+
+	-- Client to server: () start a practice battle alone, no reward.
+	BattlePractice = event("BattlePractice"),
+
+	-- Server to client: (round: number, results: string, rolledAt: number,
+	-- landsAt: number, pickBy: number) this round's three stocks for this
+	-- player (as SpinnerRolled's results), when the reels stop and when the
+	-- pick closes, in server time.
+	BattleOffer = event("BattleOffer"),
+
+	-- Client to server: (choice: number) pick one of this round's stocks, 1
+	-- to 3.
+	BattlePick = event("BattlePick"),
+
+	-- Client to server: (choice: string) "keep" the total or put it through
+	-- the "machine".
+	BattleChoose = event("BattleChoose"),
+
+	-- Server to client: (run: string) this player's machine run as JSON
+	-- (MachinePath params and startedAt), to draw.
+	BattleMachine = event("BattleMachine"),
+
+	-- Client to server: () lock the battle machine's multiplier. Nothing else
+	-- is sent; the server works it out from its own clock.
+	BattleTake = event("BattleTake"),
 }

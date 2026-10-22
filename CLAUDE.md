@@ -9,7 +9,7 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
    a. a Stock Spinner machine at each player's base: the player walks up to it and plays it, a slot-style pop-up rolls 3 different companies with the player's Luck (which grows with each rebirth and shows on their base's sign), and those companies come out onto the base's belt, where only that player can buy them, until the machine is played again, and
    b. one shared conveyor in the middle of the map (any player can buy) with better rarity odds and two tiers found nowhere else.
 2. Player buys a company; the character physically carries it back to their base.
-3. At the base, the player either places it straight onto a free plot, or puts it into the Valuation Machine first (once per company).
+3. At the base, the player either places it straight onto a free plot, or puts it into the Valuation Machine first (free the first time, Cash to run it again).
 4. Placed companies generate Cash per second. Cash buys more companies and plots.
 5. Cash also buys base upgrades (more plots, new floors), weapons and pet spins.
 6. During a Hostile Takeover (5 minutes at the start of every hour), other players can enter a base, pick up a placed company and carry it to their own base. Owners defend with a timed base lock and by tagging thieves. Outside a takeover, bases can't be stolen from.
@@ -22,17 +22,17 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
 - A stolen company keeps its valuationMultiplier and hasBeenValued.
 
 ## Valuation Machine rules (non-negotiable)
-- Optional. Free to use. Costs nothing to start.
-- Each company can go through the machine ONCE, ever, including after being stolen.
-- Multiplier starts at 1.0x, rises to a hidden peak, then falls back towards the floor.
-- Floor = 1.0x. The machine can NEVER reduce a company below its base income.
+- Optional. A company's first run is free and costs nothing to start.
+- After that (including after being stolen), the owner can pay Cash to run it again (a respin), priced by the company's tier. The new multiplier replaces the old one, higher or lower. (Changed by Reece, October 2026; it used to be once per company, ever.)
+- Multiplier starts at 1.0x, rises to a hidden peak, then falls back past 1.0x towards the floor.
+- Floor = 0.5x: the machine can reduce a company to as little as half its base income, never lower. (Changed by Reece, October 2026; it used to be 1.0x.) The battle arena's machine works the same way.
 - Peak multiplier: random, 1.2x to 5x, weighted towards the low end (tunable).
 - Duration: random, 10 to 45 seconds. Never longer than 45.
 - Peak time: random, between 20% and 70% of duration.
 - Small random noise on the path so the peak is not obvious.
 - Player presses Take to lock the current multiplier. If they never press it, the company gets the value shown when time runs out.
 - A company inside the machine cannot be stolen.
-- No Robux purchases may affect the machine in any way (no rerolls, no boosted odds, no extra runs).
+- No Robux purchases may affect the machine in any way (no rerolls, no boosted odds, no extra runs). Respins are Cash only.
 - Never use the words bet, wager, gamble, crash, jackpot or casino in code, UI or assets.
 
 ## Server authority

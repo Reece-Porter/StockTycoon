@@ -1,15 +1,17 @@
 --!strict
 -- The Valuation Machine at each base (CLAUDE.md, non-negotiable rules).
 --
--- A player brings a company they are carrying to their own machine. It costs
--- nothing, and each company can go through only once, ever (hasBeenValued
--- travels with it, even when stolen). The server generates the whole path
--- (MachinePath) when the run starts and sends its parameters to the client to
--- draw. When the player presses Take the client sends only that; the server
--- works out the multiplier from its own clock. If they never press it, the
--- company gets the value when time runs out. The multiplier never goes below
--- 1.0x and a run never lasts more than 45 seconds. Nothing bought with Robux
--- touches any of this.
+-- A player brings a company they are carrying to their own machine. The
+-- first run costs nothing; a company that has been through before
+-- (hasBeenValued travels with it, even when stolen) can go again for Cash,
+-- priced by its tier (MachinePath.respinCost), and the new multiplier
+-- replaces the old one. The server generates the whole path (MachinePath)
+-- when the run starts and sends its parameters to the client to draw. When
+-- the player presses Take the client sends only that; the server works out
+-- the multiplier from its own clock. If they never press it, the company gets
+-- the value when time runs out. Every run starts at 1.0x, and the multiplier
+-- never goes below 0.5x; a run never lasts more than 45 seconds. Nothing
+-- bought with Robux touches any of this.
 --
 -- The run is saved (Data.Machine), so the company can't be lost; a save that
 -- loads mid-run is settled as if time ran out. While in the machine a company
@@ -167,8 +169,10 @@ local function start(player: Player): string?
 	if carried == nil then
 		return "Bring a company to the machine first."
 	end
-	if carried.hasBeenValued then
-		return "That company has already been through the machine."
+	-- Running it again costs Cash, by its tier.
+	local cost = if carried.hasBeenValued then MachinePath.respinCost(carried.tier) else 0
+	if data.Cash < cost then
+		return `Running it through again costs {Format.cash(cost)}.`
 	end
 	if not isNear(player, pad) then
 		return "Get closer to the machine."
@@ -177,6 +181,10 @@ local function start(player: Player): string?
 	local company = CarryService:TakeCarried(player)
 	if company == nil then
 		return "Bring a company to the machine first."
+	end
+	if cost > 0 and not DataService:SpendCash(player, cost) then
+		CarryService:Carry(player, company)
+		return `Running it through again costs {Format.cash(cost)}.`
 	end
 	local params = MachinePath.generate(function()
 		return random:NextNumber()
@@ -192,7 +200,13 @@ local function start(player: Player): string?
 	}
 	if not DataService:StartMachineRun(player, run) then
 		CarryService:Carry(player, company)
+		if cost > 0 then
+			DataService:AddCash(player, cost)
+		end
 		return "Your machine is already running."
+	end
+	if cost > 0 then
+		AnalyticsService:Spent(player, "Respin", cost, company.tier)
 	end
 
 	showOnPad(player, pad, company)

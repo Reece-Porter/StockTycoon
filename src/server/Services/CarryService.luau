@@ -161,6 +161,7 @@ local function sync(player: Player)
 	end
 	player:SetAttribute("CarryingCompanyId", if company then company.companyId else nil)
 	player:SetAttribute("CarryingValued", if company then company.hasBeenValued else nil)
+	player:SetAttribute("CarryingMultiplier", if company then company.valuationMultiplier else nil)
 	player:SetAttribute("CarryingStolen", if stolenEntry then true else nil)
 	publishStorage(player)
 end

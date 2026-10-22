@@ -54,7 +54,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 8
+local MAP_VERSION = 9
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -109,12 +109,14 @@ local YARD_X = 31
 local MACHINE_Z = -12
 local BELT_X = BASE_DEPTH / 2 - 6
 local BELT_HALF = 16 -- the belt runs from z -16 (its Start) to 16 (its End)
--- The Stock Spinner's cabinet over the start of the belt: its width (across
--- the belt), its back and the side with the door the belt runs out of, and
--- its height.
+-- The yard's planter, and the Stock Spinner's cabinet beside it (between it
+-- and the belt) facing the walkway: the middle of its front, how wide and
+-- deep it is, and how tall.
+local PLANTER_X, PLANTER_Z = 27.5, 13
+local CABINET_X = 34.3
+local CABINET_FRONT = 12.6
 local CABINET_WIDTH = 7.4
-local CABINET_BACK = -20.6
-local CABINET_DOOR = -12
+local CABINET_DEPTH = 4.4
 local CABINET_HEIGHT = 7.6
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
@@ -396,14 +398,15 @@ for index, spot in BASE_SPOTS do
 	spawnGlow.Transparency = 0.88
 	spawnGlow.CastShadow = false
 
-	-- The base's belt: between side rails with a roller at the far end. Its
-	-- start is inside the Stock Spinner (below), and the client opens the
-	-- machine's door when a company comes out and runs chevrons along it.
+	-- The base's belt: between side rails, from a hatch at the planter's
+	-- end (by the Stock Spinner) to a roller at the Valuation Machine's end.
+	-- The client opens the hatch's door when a company comes out and runs
+	-- chevrons along it.
 	local conveyor = model(base, "Conveyor")
 	local belt = place(conveyor, "Belt", Vector3.new(6, 1, 32), at(BELT_X, groundTop + 0.5, 0), BASE.Belt)
 	belt.Color = BASE.Belt
 	belt.Material = Enum.Material.SmoothPlastic
-	local startAt, endAt = at(BELT_X, groundTop + 1.5, -BELT_HALF), at(BELT_X, groundTop + 1.5, BELT_HALF)
+	local startAt, endAt = at(BELT_X, groundTop + 1.5, BELT_HALF), at(BELT_X, groundTop + 1.5, -BELT_HALF)
 	hide(place(conveyor, "Start", Vector3.new(1, 1, 1), startAt, Color3.fromRGB(0, 255, 0)))
 	hide(place(conveyor, "End", Vector3.new(1, 1, 1), endAt, Color3.fromRGB(255, 0, 0)))
 	local beltLook = freshModel(conveyor, "Look")
@@ -420,54 +423,68 @@ for index, spot in BASE_SPOTS do
 		beltLook,
 		"Roller",
 		Vector3.new(6.4, 1.1, 1.1),
-		at(BELT_X, groundTop + 0.55, 16),
+		at(BELT_X, groundTop + 0.55, -BELT_HALF),
 		BASE.Roller,
 		nil,
 		Enum.PartType.Cylinder
 	)
-	-- The Stock Spinner: a cabinet over the start of the belt that the owner
-	-- walks up to from the yard. Its front has a screen (the client draws the
-	-- reels on it), a ledge with a big button over the invisible Console the
-	-- game uses for the Spin prompt, a lever, and gold bulbs; a header with
-	-- its name on top. The companies come out through a door on the side the
-	-- belt runs out of (Conveyor.Hatch.Door, which the client swings open).
+	-- The hatch over the start of the belt, where the companies come out,
+	-- with a door that swings out towards the belt.
+	local hatch = freshModel(conveyor, "Hatch")
+	local hatchBack = BELT_HALF + 1.8
+	decor(hatch, "Back", Vector3.new(7.2, 6.6, 0.4), at(BELT_X, groundTop + 3.3, hatchBack), BASE.Housing)
+	for _, side in { -1, 1 } do
+		local sideAt = at(BELT_X + side * 3.4, groundTop + 3.3, BELT_HALF + 0.6)
+		decor(hatch, "Side", Vector3.new(0.4, 6.6, 2.4), sideAt, BASE.Housing)
+	end
+	decor(hatch, "Roof", Vector3.new(7.2, 0.5, 2.8), at(BELT_X, groundTop + 6.85, BELT_HALF + 0.6), BASE.Housing)
+	local stripeAt = at(BELT_X, groundTop + 6.5, BELT_HALF - 0.75)
+	decor(hatch, "Stripe", Vector3.new(7.3, 0.25, 0.2), stripeAt, accent, Enum.Material.Neon)
+	-- Turned round, so it swings out along the belt.
+	local doorAt = at(BELT_X, groundTop + 3.8, BELT_HALF - 0.7) * CFrame.Angles(0, math.pi, 0)
+	decor(hatch, "Door", Vector3.new(6.2, 5.6, 0.2), doorAt, Theme.shade(accent, 0.15))
+
+	-- The Stock Spinner: a cabinet beside the planter, facing the walkway
+	-- across from the Valuation Machine. Its front has a screen (the client
+	-- draws the reels on it), a ledge with a big button over the invisible
+	-- Console the game uses for the Spin prompt, a lever, and gold bulbs; a
+	-- header with its name on top. Its companies come out of the hatch at the
+	-- start of the belt, just beside it.
 	local spinner = freshModel(base, "Spinner")
-	local cabinetFront = BELT_X - CABINET_WIDTH / 2
-	local cabinetZ = (CABINET_BACK + CABINET_DOOR) / 2
-	local cabinetDepth = CABINET_DOOR - CABINET_BACK
-	-- Turns a part so its Front face looks at the yard, for the screen and
-	-- the header.
-	local toYard = CFrame.Angles(0, math.pi / 2, 0)
+	local cabinetZ = CABINET_FRONT + CABINET_DEPTH / 2
+	local cabinetLeft, cabinetRight = CABINET_X - CABINET_WIDTH / 2, CABINET_X + CABINET_WIDTH / 2
 	decor(
 		spinner,
 		"Body",
-		Vector3.new(CABINET_WIDTH, CABINET_HEIGHT, cabinetDepth),
-		at(BELT_X, groundTop + CABINET_HEIGHT / 2, cabinetZ),
+		Vector3.new(CABINET_WIDTH, CABINET_HEIGHT, CABINET_DEPTH),
+		at(CABINET_X, groundTop + CABINET_HEIGHT / 2, cabinetZ),
 		BASE.Spinner
 	)
 	decor(
 		spinner,
 		"Top",
-		Vector3.new(CABINET_WIDTH + 0.3, 0.5, cabinetDepth + 0.3),
-		at(BELT_X, groundTop + CABINET_HEIGHT + 0.25, cabinetZ),
+		Vector3.new(CABINET_WIDTH + 0.3, 0.5, CABINET_DEPTH + 0.3),
+		at(CABINET_X, groundTop + CABINET_HEIGHT + 0.25, cabinetZ),
 		accent
 	)
 	decor(
 		spinner,
 		"Stripe",
-		Vector3.new(CABINET_WIDTH + 0.1, 0.3, cabinetDepth + 0.1),
-		at(BELT_X, groundTop + 1.2, cabinetZ),
+		Vector3.new(CABINET_WIDTH + 0.1, 0.3, CABINET_DEPTH + 0.1),
+		at(CABINET_X, groundTop + 1.2, cabinetZ),
 		accent,
 		Enum.Material.Neon
 	)
-	local screenAt = at(cabinetFront - 0.12, groundTop + 5.2, cabinetZ) * toYard
-	decor(spinner, "Bezel", Vector3.new(cabinetDepth - 0.6, 3.8, 0.2), screenAt * CFrame.new(0, 0, 0.06), accent)
-	decor(spinner, "Screen", Vector3.new(cabinetDepth - 1.2, 3.2, 0.15), screenAt, BASE.SpinnerScreen)
+	-- Parts in the base's own turn have their Front face towards the
+	-- walkway (-z), for the screen and the header.
+	local screenAt = at(CABINET_X, groundTop + 5.2, CABINET_FRONT - 0.12)
+	decor(spinner, "Bezel", Vector3.new(CABINET_WIDTH - 0.6, 3.8, 0.2), screenAt * CFrame.new(0, 0, 0.06), accent)
+	decor(spinner, "Screen", Vector3.new(CABINET_WIDTH - 1.2, 3.2, 0.15), screenAt, BASE.SpinnerScreen)
 	local spinHeader = decor(
 		spinner,
 		"Header",
-		Vector3.new(cabinetDepth, 1.5, 0.3),
-		at(cabinetFront + 0.4, groundTop + CABINET_HEIGHT + 1.25, cabinetZ) * toYard,
+		Vector3.new(CABINET_WIDTH, 1.5, 0.3),
+		at(CABINET_X, groundTop + CABINET_HEIGHT + 1.25, CABINET_FRONT + 0.4),
 		BASE.Spinner
 	)
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -489,16 +506,16 @@ for index, spot in BASE_SPOTS do
 		text.Parent = gui
 	end
 	-- The ledge with its button, over the Console.
-	local consoleAt = at(cabinetFront - 0.7, groundTop + 3, cabinetZ)
-	local console = place(spinner, "Console", Vector3.new(1.4, 2, 3), consoleAt, BASE.Spinner)
+	local consoleAt = at(CABINET_X, groundTop + 3, CABINET_FRONT - 0.7)
+	local console = place(spinner, "Console", Vector3.new(3, 2, 1.4), consoleAt, BASE.Spinner)
 	console.Transparency = 1
 	console.CanCollide = false
 	console.CanTouch = false
 	console.CanQuery = false
-	decor(spinner, "Ledge", Vector3.new(1.4, 0.4, 5), consoleAt * CFrame.new(0, 0.3, 0), accent)
+	decor(spinner, "Ledge", Vector3.new(5, 0.4, 1.4), consoleAt * CFrame.new(0, 0.3, 0), accent)
 	column(spinner, "Button", 0.35, 1.3, consoleAt * CFrame.new(0, 0.65, 0), Theme.Colours.Danger)
-	-- The lever, at the back corner of the front.
-	local leverAt = at(cabinetFront - 0.3, groundTop + 4.6, CABINET_BACK + 0.6)
+	-- The lever, at the belt end of the front.
+	local leverAt = at(cabinetRight - 1.1, groundTop + 4.6, CABINET_FRONT - 0.3)
 	column(spinner, "Lever", 2.6, 0.3, leverAt, BASE.Roller)
 	decor(
 		spinner,
@@ -514,12 +531,12 @@ for index, spot in BASE_SPOTS do
 	for bulbIndex = 1, 6 do
 		table.insert(
 			bulbSpots,
-			{ y = CABINET_HEIGHT - 0.35, z = CABINET_BACK + 0.5 + (bulbIndex - 1) * (cabinetDepth - 1) / 5 }
+			{ y = CABINET_HEIGHT - 0.35, x = cabinetLeft + 0.5 + (bulbIndex - 1) * (CABINET_WIDTH - 1) / 5 }
 		)
 	end
-	for _, z in { CABINET_BACK + 0.25, CABINET_DOOR - 0.25 } do
+	for _, x in { cabinetLeft + 0.25, cabinetRight - 0.25 } do
 		for _, y in { 2.4, 4.4, 6.4 } do
-			table.insert(bulbSpots, { y = y, z = z })
+			table.insert(bulbSpots, { y = y, x = x })
 		end
 	end
 	for _, bulbSpot in bulbSpots do
@@ -527,7 +544,7 @@ for index, spot in BASE_SPOTS do
 			spinner,
 			"Bulb",
 			Vector3.new(0.5, 0.5, 0.5),
-			at(cabinetFront - 0.1, groundTop + bulbSpot.y, bulbSpot.z),
+			at(bulbSpot.x, groundTop + bulbSpot.y, CABINET_FRONT - 0.1),
 			BASE.Bulb,
 			Enum.Material.Neon,
 			Enum.PartType.Ball
@@ -535,13 +552,8 @@ for index, spot in BASE_SPOTS do
 		bulb.CastShadow = false
 	end
 	if spinner:IsA("Model") then
-		spinner.WorldPivot = at(BELT_X, groundTop, cabinetZ)
+		spinner.WorldPivot = at(CABINET_X, groundTop, cabinetZ)
 	end
-	-- The door the companies come out of, on the side the belt runs out of.
-	local hatch = freshModel(conveyor, "Hatch")
-	local doorAt = at(BELT_X, groundTop + 3.4, CABINET_DOOR + 0.12)
-	decor(hatch, "Frame", Vector3.new(6.8, 5.6, 0.15), doorAt * CFrame.new(0, 0.1, -0.05), accent)
-	decor(hatch, "Door", Vector3.new(6.2, 4.8, 0.2), doorAt, Theme.shade(accent, 0.15))
 
 	-- The Valuation Machine, facing the walkway: a round stage under a glass
 	-- tube where the company stands (on the invisible Pad the game uses),
@@ -627,9 +639,10 @@ for index, spot in BASE_SPOTS do
 		Enum.PartType.Ball
 	)
 
-	-- Across the yard from the machine, a round planter with a little tree.
+	-- Across the yard from the machine, a round planter with a little tree,
+	-- the Stock Spinner beside it.
 	local planter = freshModel(base, "Planter")
-	local planterAt = at(YARD_X, groundTop, 13)
+	local planterAt = at(PLANTER_X, groundTop, PLANTER_Z)
 	column(planter, "Tub", 1.2, 4.6, planterAt * CFrame.new(0, 0.6, 0), BASE.Housing)
 	column(planter, "TubRim", 0.2, 4.9, planterAt * CFrame.new(0, 1.2, 0), accent)
 	column(
