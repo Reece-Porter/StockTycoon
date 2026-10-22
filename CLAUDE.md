@@ -6,7 +6,7 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
 
 ## Core loop
 1. Companies come from two places:
-   a. a Stock Spinner at each player's base, which rolls 3 different companies every 20 seconds onto the base's belt, where only that player can buy them until the next roll replaces them (rarer tiers get more likely with each rebirth), and
+   a. a Stock Spinner machine at each player's base: the player walks up to it and plays it, a slot-style pop-up rolls 3 different companies with the player's Luck (which grows with each rebirth and shows on their base's sign), and those companies come out onto the base's belt, where only that player can buy them, until the machine is played again, and
    b. one shared conveyor in the middle of the map (any player can buy) with better rarity odds and two tiers found nowhere else.
 2. Player buys a company; the character physically carries it back to their base.
 3. At the base, the player either places it straight onto a free plot, or puts it into the Valuation Machine first (once per company).

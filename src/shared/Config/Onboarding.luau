@@ -18,7 +18,7 @@ return {
 
 	-- What each step asks the player to do.
 	Hints = {
-		[Steps.Buy] = "Your Stock Spinner rolls new companies onto your belt. Buy one!",
+		[Steps.Buy] = "Walk up to your Stock Spinner and press Spin, then buy a company it puts on your belt",
 		[Steps.Place] = "Carry it to a free plot on your base and place it",
 		[Steps.Collect] = "Your company makes Cash on the green pad in front of it. Walk over the pad to collect it",
 		[Steps.Machine] = "Put your next company in the Valuation Machine before you place it",

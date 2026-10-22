@@ -42,8 +42,9 @@ local list: { Perk } = {
 		-- Saved as ConveyorLuck from before the Stock Spinner replaced each
 		-- base's own conveyor.
 		name = "Spinner Luck",
-		description = "Rarer tiers turn up more often in your Stock Spinner.",
-		perLevel = 0.1,
+		description = "More Luck: rarer tiers turn up more often in your Stock Spinner.",
+		-- Multiplies the Luck rebirths give (SpinnerMath.luck), so up to x1.5.
+		perLevel = 0.05,
 		maxLevel = 10,
 		baseCost = 1_000,
 		costGrowth = 2,

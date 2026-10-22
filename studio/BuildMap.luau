@@ -11,10 +11,9 @@
 -- works whatever state the map is in and is safe to run again. When the map
 -- needs to change, this file changes; never run old map scripts alongside it.
 --
--- It reads the game's colours from ReplicatedStorage.Shared.Theme, where the
--- Stock Spinner's companies stop from Shared.Config.Spinner (and the parody
--- company names for the billboards from Shared.Config.Companies), so Rojo
--- must be connected to the Test place when you run it.
+-- It reads the game's colours from ReplicatedStorage.Shared.Theme (and the
+-- parody company names for the billboards from Shared.Config.Companies), so
+-- Rojo must be connected to the Test place when you run it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -44,15 +43,6 @@ end
 -- Parody company names for the billboards in the skyline, from
 -- ReplicatedStorage.Shared.Config.Companies (also synced by Rojo).
 local configFolder = sharedFolder and sharedFolder:FindFirstChild("Config")
--- Where along each base's belt the Stock Spinner's companies stop, from
--- Shared.Config.Spinner, for the reels over them.
-local spinnerModule = configFolder and configFolder:FindFirstChild("Spinner")
-if spinnerModule == nil or not spinnerModule:IsA("ModuleScript") then
-	error(
-		"ReplicatedStorage.Shared.Config.Spinner is missing: pull the latest code in GitHub Desktop, make sure Rojo is connected to the Test place, then run this again."
-	)
-end
-local SPINNER_STOPS: { number } = (require(spinnerModule :: ModuleScript) :: any).Stops
 local companiesModule = configFolder and configFolder:FindFirstChild("Companies")
 local companyNames: { string } = {}
 if companiesModule and companiesModule:IsA("ModuleScript") then
@@ -64,7 +54,7 @@ end
 -- Which build of the map this script makes. The game warns admins when the
 -- map in the place is from an older build (Config/Base.MapVersion), so bump
 -- both together whenever this file changes what it builds.
-local MAP_VERSION = 7
+local MAP_VERSION = 8
 
 local DARK = Color3.fromRGB(60, 60, 70)
 local GOLD = Color3.fromRGB(225, 185, 60)
@@ -119,11 +109,13 @@ local YARD_X = 31
 local MACHINE_Z = -12
 local BELT_X = BASE_DEPTH / 2 - 6
 local BELT_HALF = 16 -- the belt runs from z -16 (its Start) to 16 (its End)
--- The Stock Spinner's board over the belt: its bottom and middle heights,
--- and how wide each reel's screen is.
-local SPIN_LOW = 11
-local SPIN_MID = 14
-local REEL_WIDTH = 8.6
+-- The Stock Spinner's cabinet over the start of the belt: its width (across
+-- the belt), its back and the side with the door the belt runs out of, and
+-- its height.
+local CABINET_WIDTH = 7.4
+local CABINET_BACK = -20.6
+local CABINET_DOOR = -12
+local CABINET_HEIGHT = 7.6
 local RISE = 12 -- height between floors
 local RAIL_HEIGHT = 3
 local RUN = 2 * LANDING_Z -- length of every staircase
@@ -404,9 +396,9 @@ for index, spot in BASE_SPOTS do
 	spawnGlow.Transparency = 0.88
 	spawnGlow.CastShadow = false
 
-	-- The personal conveyor: the belt between side rails with a roller at
-	-- the far end, and a hatch over the start whose door the client opens
-	-- when a company comes out. The client also runs chevrons along it.
+	-- The base's belt: between side rails with a roller at the far end. Its
+	-- start is inside the Stock Spinner (below), and the client opens the
+	-- machine's door when a company comes out and runs chevrons along it.
 	local conveyor = model(base, "Conveyor")
 	local belt = place(conveyor, "Belt", Vector3.new(6, 1, 32), at(BELT_X, groundTop + 0.5, 0), BASE.Belt)
 	belt.Color = BASE.Belt
@@ -433,56 +425,52 @@ for index, spot in BASE_SPOTS do
 		nil,
 		Enum.PartType.Cylinder
 	)
-	local hatch = freshModel(conveyor, "Hatch")
-	decor(hatch, "Back", Vector3.new(7.2, 6.6, 0.4), at(BELT_X, groundTop + 3.3, -17.8), BASE.Housing)
-	for _, side in { -1, 1 } do
-		local sideAt = at(BELT_X + side * 3.4, groundTop + 3.3, -16.6)
-		decor(hatch, "Side", Vector3.new(0.4, 6.6, 2.4), sideAt, BASE.Housing)
-	end
-	decor(hatch, "Roof", Vector3.new(7.2, 0.5, 2.8), at(BELT_X, groundTop + 6.85, -16.6), BASE.Housing)
-	local stripeAt = at(BELT_X, groundTop + 6.5, -15.25)
-	decor(hatch, "Stripe", Vector3.new(7.3, 0.25, 0.2), stripeAt, accent, Enum.Material.Neon)
-	decor(hatch, "Door", Vector3.new(6.2, 5.6, 0.2), at(BELT_X, groundTop + 3.8, -15.3), Theme.shade(accent, 0.15))
-
-	-- The Stock Spinner: a board over the belt on posts either side of it,
-	-- framed in the accent colour, with a screen over each place a company
-	-- stops (Reel1 to Reel3, from Config/Spinner), a timer strip under them,
-	-- a header with its name and gold bulbs along the bottom. The client
-	-- draws the reels and the timer and chases the bulbs.
+	-- The Stock Spinner: a cabinet over the start of the belt that the owner
+	-- walks up to from the yard. Its front has a screen (the client draws the
+	-- reels on it), a ledge with a big button over the invisible Console the
+	-- game uses for the Spin prompt, a lever, and gold bulbs; a header with
+	-- its name on top. The companies come out through a door on the side the
+	-- belt runs out of (Conveyor.Hatch.Door, which the client swings open).
 	local spinner = freshModel(base, "Spinner")
-	local stopZ = {}
-	for _, stop in SPINNER_STOPS do
-		table.insert(stopZ, -BELT_HALF + 2 * BELT_HALF * stop)
-	end
-	local boardFrom = math.min(table.unpack(stopZ)) - REEL_WIDTH / 2 - 1.4
-	local boardTo = math.max(table.unpack(stopZ)) + REEL_WIDTH / 2 + 1.4
-	local boardLength = boardTo - boardFrom
-	local boardZ = (boardFrom + boardTo) / 2
-	local boardHeight = 2 * (SPIN_MID - SPIN_LOW)
+	local cabinetFront = BELT_X - CABINET_WIDTH / 2
+	local cabinetZ = (CABINET_BACK + CABINET_DOOR) / 2
+	local cabinetDepth = CABINET_DOOR - CABINET_BACK
+	-- Turns a part so its Front face looks at the yard, for the screen and
+	-- the header.
+	local toYard = CFrame.Angles(0, math.pi / 2, 0)
 	decor(
 		spinner,
-		"Board",
-		Vector3.new(0.8, boardHeight, boardLength),
-		at(BELT_X, groundTop + SPIN_MID, boardZ),
+		"Body",
+		Vector3.new(CABINET_WIDTH, CABINET_HEIGHT, cabinetDepth),
+		at(BELT_X, groundTop + CABINET_HEIGHT / 2, cabinetZ),
 		BASE.Spinner
 	)
-	for _, y in { SPIN_LOW, 2 * SPIN_MID - SPIN_LOW } do
-		decor(spinner, "Trim", Vector3.new(1, 0.35, boardLength + 0.2), at(BELT_X, groundTop + y, boardZ), accent)
-	end
-	for reel, z in stopZ do
-		local reelAt = at(BELT_X, groundTop + SPIN_MID + 0.6, z)
-		decor(spinner, "Reel" .. reel, Vector3.new(1, 3.6, REEL_WIDTH), reelAt, BASE.SpinnerScreen)
-	end
-	local timerAt = at(BELT_X, groundTop + SPIN_LOW + 0.9, boardZ)
-	decor(spinner, "Timer", Vector3.new(1, 1, 14), timerAt, BASE.SpinnerScreen)
+	decor(
+		spinner,
+		"Top",
+		Vector3.new(CABINET_WIDTH + 0.3, 0.5, cabinetDepth + 0.3),
+		at(BELT_X, groundTop + CABINET_HEIGHT + 0.25, cabinetZ),
+		accent
+	)
+	decor(
+		spinner,
+		"Stripe",
+		Vector3.new(CABINET_WIDTH + 0.1, 0.3, cabinetDepth + 0.1),
+		at(BELT_X, groundTop + 1.2, cabinetZ),
+		accent,
+		Enum.Material.Neon
+	)
+	local screenAt = at(cabinetFront - 0.12, groundTop + 5.2, cabinetZ) * toYard
+	decor(spinner, "Bezel", Vector3.new(cabinetDepth - 0.6, 3.8, 0.2), screenAt * CFrame.new(0, 0, 0.06), accent)
+	decor(spinner, "Screen", Vector3.new(cabinetDepth - 1.2, 3.2, 0.15), screenAt, BASE.SpinnerScreen)
 	local spinHeader = decor(
 		spinner,
 		"Header",
-		Vector3.new(0.8, 1.8, 15),
-		at(BELT_X, groundTop + 2 * SPIN_MID - SPIN_LOW + 1.1, boardZ),
+		Vector3.new(cabinetDepth, 1.5, 0.3),
+		at(cabinetFront + 0.4, groundTop + CABINET_HEIGHT + 1.25, cabinetZ) * toYard,
 		BASE.Spinner
 	)
-	for _, face in { Enum.NormalId.Right, Enum.NormalId.Left } do
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local gui = Instance.new("SurfaceGui")
 		gui.Name = "Name"
 		gui.Face = face
@@ -500,22 +488,46 @@ for index, spot in BASE_SPOTS do
 		text.Text = "STOCK SPINNER"
 		text.Parent = gui
 	end
-	-- Posts either side of the belt at each end, with a bar across under the
-	-- board.
-	for _, z in { boardFrom + 0.6, boardTo - 0.6 } do
-		for _, side in { -1, 1 } do
-			column(spinner, "Post", SPIN_LOW, 0.9, at(BELT_X + side * 3.9, groundTop + SPIN_LOW / 2, z), BASE.Spinner)
-		end
-		decor(spinner, "Crossbar", Vector3.new(8.7, 0.6, 0.9), at(BELT_X, groundTop + SPIN_LOW - 0.3, z), accent)
+	-- The ledge with its button, over the Console.
+	local consoleAt = at(cabinetFront - 0.7, groundTop + 3, cabinetZ)
+	local console = place(spinner, "Console", Vector3.new(1.4, 2, 3), consoleAt, BASE.Spinner)
+	console.Transparency = 1
+	console.CanCollide = false
+	console.CanTouch = false
+	console.CanQuery = false
+	decor(spinner, "Ledge", Vector3.new(1.4, 0.4, 5), consoleAt * CFrame.new(0, 0.3, 0), accent)
+	column(spinner, "Button", 0.35, 1.3, consoleAt * CFrame.new(0, 0.65, 0), Theme.Colours.Danger)
+	-- The lever, at the back corner of the front.
+	local leverAt = at(cabinetFront - 0.3, groundTop + 4.6, CABINET_BACK + 0.6)
+	column(spinner, "Lever", 2.6, 0.3, leverAt, BASE.Roller)
+	decor(
+		spinner,
+		"LeverKnob",
+		Vector3.new(0.9, 0.9, 0.9),
+		leverAt * CFrame.new(0, 1.4, 0),
+		Theme.Colours.Danger,
+		nil,
+		Enum.PartType.Ball
+	)
+	-- Gold bulbs along the top of the front and down its edges.
+	local bulbSpots = {}
+	for bulbIndex = 1, 6 do
+		table.insert(
+			bulbSpots,
+			{ y = CABINET_HEIGHT - 0.35, z = CABINET_BACK + 0.5 + (bulbIndex - 1) * (cabinetDepth - 1) / 5 }
+		)
 	end
-	local bulbs = 12
-	for bulbIndex = 1, bulbs do
-		local z = boardFrom + 1.2 + (bulbIndex - 1) * (boardLength - 2.4) / (bulbs - 1)
+	for _, z in { CABINET_BACK + 0.25, CABINET_DOOR - 0.25 } do
+		for _, y in { 2.4, 4.4, 6.4 } do
+			table.insert(bulbSpots, { y = y, z = z })
+		end
+	end
+	for _, bulbSpot in bulbSpots do
 		local bulb = decor(
 			spinner,
 			"Bulb",
-			Vector3.new(0.55, 0.55, 0.55),
-			at(BELT_X, groundTop + SPIN_LOW - 0.1, z),
+			Vector3.new(0.5, 0.5, 0.5),
+			at(cabinetFront - 0.1, groundTop + bulbSpot.y, bulbSpot.z),
 			BASE.Bulb,
 			Enum.Material.Neon,
 			Enum.PartType.Ball
@@ -523,8 +535,13 @@ for index, spot in BASE_SPOTS do
 		bulb.CastShadow = false
 	end
 	if spinner:IsA("Model") then
-		spinner.WorldPivot = at(BELT_X, groundTop + SPIN_MID, boardZ)
+		spinner.WorldPivot = at(BELT_X, groundTop, cabinetZ)
 	end
+	-- The door the companies come out of, on the side the belt runs out of.
+	local hatch = freshModel(conveyor, "Hatch")
+	local doorAt = at(BELT_X, groundTop + 3.4, CABINET_DOOR + 0.12)
+	decor(hatch, "Frame", Vector3.new(6.8, 5.6, 0.15), doorAt * CFrame.new(0, 0.1, -0.05), accent)
+	decor(hatch, "Door", Vector3.new(6.2, 4.8, 0.2), doorAt, Theme.shade(accent, 0.15))
 
 	-- The Valuation Machine, facing the walkway: a round stage under a glass
 	-- tube where the company stands (on the invisible Pad the game uses),

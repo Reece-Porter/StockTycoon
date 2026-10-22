@@ -29,12 +29,12 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `/givecash <amount> [player]`       | Adds Cash to you, or to another player (e.g. `/givecash 1000 Player2`)                                  |
 | `/setcash <amount>`                 | Sets Cash to an exact amount                                                                            |
-| `/spawn <tier> [shared] [variant]`  | Rolls your Stock Spinner with a company of that tier first, or puts one on the shared conveyor (e.g. `/spawn bluechip galaxy`, `/spawn monopoly shared`) |
-| `/roll`                             | Rolls your Stock Spinner now instead of waiting for the next roll                                       |
+| `/spawn <tier> [shared] [variant]`  | Plays your Stock Spinner (from anywhere, no wait) with a company of that tier first, or puts one on the shared conveyor (e.g. `/spawn bluechip galaxy`, `/spawn monopoly shared`) |
+| `/roll`                             | Plays your Stock Spinner now, from anywhere and without waiting for it to be ready                      |
 | `/takeover [start [minutes] \| stop]` | Starts a Hostile Takeover now (5 minutes, or as many as you say), stops one, or (on its own) says when the next one is |
 | `/testvariants [rolls]`             | Simulates variant rolls with your Variant Chance upgrade and compares them with Config                  |
 | `/setupgrade <upgrade> <level> [player]` | Sets an upgrade station level for free (e.g. `/setupgrade walkspeed 5`)                            |
-| `/testodds [shared] [rolls]`        | Simulates your Stock Spinner's rolls (with your rebirths and Spinner Luck), or the shared conveyor's, and compares the odds with Config |
+| `/testodds [shared] [rolls]`        | Simulates your Stock Spinner's rolls at your Luck (rebirths and Spinner Luck), or the shared conveyor's, and compares the odds with Config |
 | `/racetest`                         | Every player tries to buy the same shared-conveyor company in the same instant; shows who got it        |
 | `/protect [player] [seconds]`       | Protects a player from stealing as if they were new (default 300 s; `0` removes it)                     |
 | `/giveweapon <weapon> [player]`     | Gives and equips a weapon for free (e.g. `/giveweapon gavel`, `/giveweapon goldencalculator Player2`)   |

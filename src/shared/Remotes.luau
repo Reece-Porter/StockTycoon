@@ -131,4 +131,14 @@ return {
 	-- Client to server: (destination: string) teleport to "Home", "Upgrades"
 	-- or "Weapons".
 	Travel = event("Travel"),
+
+	-- Client to server: () play your base's Stock Spinner. The server checks
+	-- you're at it and it's ready, and rolls the companies itself.
+	PlaySpinner = event("PlaySpinner"),
+
+	-- Server to client: (results: string, rolledAt: number, landsAt: number,
+	-- luck: number) what your spin rolled, for the pop-up: each company's id
+	-- (with ":" and its variant's id for a variant), comma separated, and
+	-- when (server time) the reels started and when they stop.
+	SpinnerRolled = event("SpinnerRolled"),
 }
