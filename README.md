@@ -77,8 +77,10 @@ The map and the models the game copies are made by one Studio script, [`studio/B
 1. Stop the game if it is playing (changes made while playing are thrown away).
 2. Make sure Rojo is connected to the Test place: the map reads the game's colours from `ReplicatedStorage.Shared.Theme` and the parody company names for the billboards from `ReplicatedStorage.Shared.Config.Companies`, which Rojo syncs. Without Theme, the script stops with a message saying so.
 3. Clear the Command Bar completely (Cmd+A or Ctrl+A, then Delete).
-4. Paste the whole of `studio/BuildMap.luau` and press Run. The Output says `Map built`.
+4. Paste the whole of `studio/BuildMap.luau` and press Run, without typing anything else into the Command Bar. The Output says `Map built`.
 5. Save the place.
+
+If the Output shows a red error instead of `Map built`, the map may be left half-built. Read the error: if it says the Theme is out of date, pull the latest code in GitHub Desktop and check Rojo is connected. Then clear the Command Bar, paste the script again and run it. A run that finishes rebuilds the whole map, whatever state it was left in.
 
 When the map needs to change, this file changes, so run it again after pulling new code. If you forget, the Output says "The map is out of date" when you press Play, and admins see the same notice on screen. Never paste older map scripts alongside it.
 
