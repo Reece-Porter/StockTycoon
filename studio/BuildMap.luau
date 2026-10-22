@@ -118,6 +118,23 @@ local BELT_LENGTH = 2 * (PLAY_HALF_Z + TUNNEL)
 -- station at the other, this far from the middle.
 local STATION_Z = PLAY_HALF_Z - 16
 
+-- Building the whole map takes a while, and Studio stops a script that runs
+-- too long without a break ("Script timeout"), undoing what it did. So this
+-- takes a one-frame break every so often, and says in the Output how far it
+-- has got.
+local lastBreak = os.clock()
+local function breathe()
+	if task and os.clock() - lastBreak > 0.1 then
+		task.wait()
+		lastBreak = os.clock()
+	end
+end
+local function progress(message: string)
+	print(`BuildMap: {message}`)
+	breathe()
+end
+progress("building the map, this takes a little while...")
+
 -- Takes something out of the map. It's parented to nothing rather than
 -- destroyed, so if a run stops with an error part way, Studio can undo the
 -- whole run and the map goes back to how it was.
@@ -133,6 +150,7 @@ local function newPart(
 	colour: Color3,
 	transparency: number?
 ): Part
+	breathe()
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Anchored = true
@@ -880,6 +898,8 @@ for index, spot in BASE_SPOTS do
 	end
 end
 
+progress("bases built")
+
 -- 3. The middle conveyor down the street, resting on the ground: a red
 -- carpet between gold rails, with roller ends along the outside of the rails
 -- and a row of small lights on each (the client chases the lights and runs
@@ -1113,6 +1133,8 @@ for _, item in Workspace:GetDescendants() do
 		end
 	end
 end
+
+progress("street built")
 
 -- 5. The weapon and pet shops side by side at one end of the street and the
 -- upgrade station at the other, each facing back along the street. Each is a
@@ -1411,6 +1433,8 @@ for _, spot in boardSpots do
 	piece("Plinth", Vector3.new(11, 0.4, 2.2), 0, 0.2, 0.3, STREET.Metal)
 end
 
+progress("shops and leaderboards built")
+
 -- 7. Hills all round the edge of the map, with invisible walls along the
 -- edge so nobody can leave. The band of land the hills stand on is cleared
 -- first, so running this again never piles more terrain on. The hills are
@@ -1555,6 +1579,7 @@ if terrain then
 		local radius = random:NextNumber(smallest, largest)
 		local reach = away + random:NextNumber(-4, 8)
 		local centre = Vector3.new(x, groundY - radius * 0.35, z) + outward * (radius + reach)
+		breathe()
 		terrain:FillBall(centre, radius, Enum.Material.Grass)
 		table.insert(hillBalls, { centre = centre, radius = radius, rock = false })
 		if random:NextNumber() < 0.4 then
@@ -1582,6 +1607,8 @@ if terrain then
 		terrain:FillBlock(cframe, Vector3.new(16, 12, to - from), Enum.Material.Air)
 	end
 end
+
+progress("hills built")
 
 -- 7b. The world round the bases (visual pass Phase 8, colours in
 -- Theme.Scenery), only for looks and out of everyone's way: patches of
@@ -1960,6 +1987,8 @@ for _, base in bases:GetChildren() do
 		remove(quote)
 	end
 end
+
+progress("scenery and city built")
 
 -- 8. Models the game copies, if they're missing: the Default company and the
 -- Default pet (for anything without its own; the game builds the real ones
