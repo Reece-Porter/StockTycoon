@@ -11,7 +11,7 @@ Do not change gameplay logic, balancing numbers, RemoteEvents, or DataStore keys
 - **Phase 0 audit:** report back with a short audit (how things are built now, what you will reuse, what you will replace) and a plan for Phase 1. Then stop and wait for my approval.
 - **Check in before structural decisions:** for example moving folders, changing how models are stored or cloned, enabling StreamingEnabled, adding a framework or library, or replacing a whole system. Ask first.
 - **One phase at a time:** finish a phase, summarise what changed and what to look at in Studio, update ASSETS_NEEDED.md, then stop for review.
-- **Build in code where possible:** shared builder functions and a central Theme module, not hand-placed one-offs, so the style stays consistent across 30 companies, 12 pets and 8 bases.
+- **Build in code where possible:** shared builder functions and a central Theme module, not hand-placed one-offs, so the style stays consistent across 48 companies, 12 pets and 8 bases.
 
 
 ## Hard rules (apply to everything)
@@ -72,7 +72,7 @@ Rebuild every existing screen with the Phase 1 kit. Keep the same functions and 
 - **Right side:** Store button in gold with a slow shine sweep, and Codes below it.
 - **Teleport buttons (Home, Upgrades, Weapons):** compact row near the top, out of thumb zones.
 - **Windows:** Storage, Upgrades, Weapons, Pets, Pet Shop, Rewards, Index, Rebirth, Store and Codes all use the same Window template. Grids of Cards, clear primary action button per card, locked items greyed with a padlock, owned items ticked.
-- **Index:** a collection grid of all 30 companies grouped by tier, with silhouettes for undiscovered ones and variant badges for those found.
+- **Index:** a collection grid of all 48 companies grouped by tier, with silhouettes for undiscovered ones and variant badges for those found.
 - **Valuation Machine screen:** a smooth line chart that draws in, green when rising and red when falling, a very large multiplier with a slight pulse, and one huge Take button. No visible countdown. None of the banned words.
 - **Tutorial:** a friendly banner card at the top with a step number, and a bouncing 3D arrow or beam guiding the player to the target.
 - **Consistency check:** every screen uses Theme values only. Nothing dark-grey-with-white-text left over from the old UI.
@@ -83,36 +83,54 @@ Rebuild every existing screen with the Phase 1 kit. Keep the same functions and 
 Replace the shared Default box. Each company gets its own model, roughly 3 to 5 studs, built by a shared builder so the structure is consistent:
 
 - **Structure:** a plinth or base in the tier colour, the main pun object on top, and a small floating logo badge (built from UI shapes and text on a SurfaceGui or BillboardGui, original design only) plus a nameplate.
-- **Tier grandeur:** Startup plinths are simple and small; each tier up gets a bigger plinth, more trim, gold edging from Blue Chip up, a gentle glow ring from Conglomerate up, and a slow idle spin or bob with a subtle aura on Monopoly.
+- **Tier grandeur:** Startup plinths are simple and small; each tier up gets a bigger plinth, more trim, gold edging from Blue Chip up, a slow idle spin and bob from Mega Cap up, a gentle glow ring from Conglomerate up, and a subtle aura on Monopoly.
 - **Concepts (starting points; keep the pun, never echo the real brand):**
   - Snackchat: a chatty sandwich with a speech bubble
   - Kittygram: a cat sitting on a kitchen scale reading grams
   - Duolinguini: a steaming bowl of linguine with a tiny flag on the fork
+  - Reddish: a chatty radish with a little antenna
   - Pinterust: an oversized rusty drawing pin
   - Ubber: a squishy rubber car
   - Netflicks: a popcorn bucket with a film strip flicking out of it
   - Spotifly: a fly wearing big headphones on a spinning record
   - Airbnbee: a bee with a tiny house on its back
   - Discard: a playing card mid-toss into a bin
+  - Doordish: a front door with a covered dinner dish waiting on the mat
   - Zoomba: a speedy vacuum puck with racing stripes
   - SpaceY: a chunky rocket with Y-shaped fins
   - Stripey: a stripy piggy bank
   - TikTock: a dancing alarm clock
+  - Slackers: a sloth lazing in a hammock
   - Robinhoodie: a hoodie wearing a feathered archer cap
   - Canvaas: a painter's canvas on an easel with paint splats
+  - Mojango: a mango holding a blocky pixel pickaxe
+  - Epic Gnomes: a garden gnome playing with a game controller
+  - Bitedance: a bitten cookie dancing in a shower of crumbs
+  - Snowfake: a snowman in a fake-moustache disguise
+  - PayPail: a bucket brimming with coins
+  - eBray: a braying donkey with a SOLD! tag
   - Pear: a glossy cartoon pear with one leaf, no bite
   - Macrohard: a giant hard hat
   - Amazin': a cardboard parcel bursting open with a ta-da sparkle
+  - Starbux: a takeaway cup with a big gold star
   - Goggle: a giant pair of swimming goggles
   - Choca-Cola: a chocolate drink bottle in brown and cream with a melting drip
+  - Sunny: a smiling sun wearing headphones
+  - Leggo: a toy brick walking on little legs
+  - McDonuts: a stack of iced donuts with a cherry on top
+  - Teslug: a slug shaped like a sleek car, plugged into a charging cable
+  - Nintendough: a handheld console made of dough, with a rolling pin
+  - YouTuba: a shiny brass tuba blowing music notes
   - Samsong: a smartphone singing with music notes
   - Disnee: a spotlit theatre stage with curtains
   - Nestled: a set of nesting dolls
+  - Hitachoo: a tissue box mid-sneeze
   - Unileverage: a giant lever lifting a stack of soap bars
   - Berkshire Hatchaway: an egg hatching out of a top hat
   - Alphabet Soup: a bowl of letter soup
   - Meh-ta: a headset with a bored "meh" face
   - Megamart: an overflowing oversized shopping trolley
+  - Mastercart: a gold go-kart with a credit card for a spoiler
   - Tencentury: a clock tower built from stacked coins
   - Everything Inc.: a small globe with tiny objects orbiting it
 - **Data-driven:** each company's model, colours and logo badge are defined in config next to its existing data, and built by the shared builder, so adding a company later means adding a config entry.

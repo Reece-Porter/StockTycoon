@@ -5,7 +5,7 @@
 -- of the camera:
 --   - their particles play (Monopoly auras and variants); further away they
 --     stop;
---   - Monopoly models (the Idle attribute) slowly spin and bob their Object,
+--   - Mega Cap and up (the Idle attribute) slowly spin and bob their Object,
 --     the pun object and badge above the plinth;
 --   - Rainbow variants turn their accent pieces (the Accent attribute,
 --     VariantLayer) smoothly round the colour wheel;
@@ -59,8 +59,8 @@ type Tracked = {
 	model: Model,
 	emitters: { ParticleEmitter },
 	near: boolean,
-	-- Monopoly models only: the Object's parts and where each sits from the
-	-- model's pivot when still.
+	-- Idle models only (Mega Cap and up): the Object's parts and where each
+	-- sits from the model's pivot when still.
 	parts: { BasePart }?,
 	rest: { CFrame }?,
 	-- So models side by side don't move in step.
@@ -265,7 +265,7 @@ function CompanyFxController.check(cameraPosition: Vector3)
 	end
 end
 
--- Spins and bobs the near, standing Monopoly models, and moves the variants,
+-- Spins and bobs the near, standing idle models, and moves the variants,
 -- for this moment.
 function CompanyFxController.step(now: number)
 	local spinSpeed = math.rad(CompanyLooks.IdleSpinSpeed)

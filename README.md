@@ -31,6 +31,7 @@ Type these in chat. They only work for user IDs in `src/shared/Config/Admins.lua
 | `/setcash <amount>`                 | Sets Cash to an exact amount                                                                            |
 | `/givegold <amount> [player]`       | Adds Gold to you, or to another player (e.g. `/givegold 100`)                                           |
 | `/setgold <amount>`                 | Sets your Gold to an exact amount                                                                       |
+| `/givecompany <company> [variant]` | Puts a company in your storage (e.g. `/givecompany kittygram`, `/givecompany epicgnomes galaxy`); type the name with no spaces. Handy for testing what each rebirth needs |
 | `/spawn <tier> [shared] [variant]`  | Plays your Stock Spinner (from anywhere, no wait) with a company of that tier first, or puts one on the shared conveyor (e.g. `/spawn bluechip galaxy`, `/spawn monopoly shared`) |
 | `/roll`                             | Plays your Stock Spinner now, from anywhere and without waiting for it to be ready                      |
 | `/takeover [start [minutes] \| stop]` | Starts a Hostile Takeover now (5 minutes, or as many as you say), stops one, or (on its own) says when the next one is |

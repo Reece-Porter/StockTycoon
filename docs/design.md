@@ -4,7 +4,7 @@ Decisions marked "Decided" come from Reece and should not be changed without ask
 
 ## Decided
 - Stealing is in, Steal a Brainrot style.
-- Rebirth is in. It only takes a player's Cash: their companies, plots and floors, pets, upgrades and Gold all stay (changed by Reece, October 2026; it used to take companies and base upgrades too). Each rebirth needs a company of a tier that gets a little rarer every few rebirths (a Startup for the first), and opens more plots on floors 3 and 4, which only rebirths open.
+- Rebirth is in. It only takes a player's Cash: their companies, plots and floors, pets, upgrades and Gold all stay (changed by Reece, October 2026; it used to take companies and base upgrades too). Each rebirth needs one or two particular companies, a little rarer every rebirth or two (Kittygram for the first), and opens more plots on floors 3 and 4, which only rebirths open. (Changed by Reece, October 2026; it used to need any company of a tier or better.)
 - Gold is a second currency that rebirth never takes. It buys the upgrade station's upgrades, and comes from Index challenges and the battle arena (more Gold the more rebirths a player has).
 - Each base has a Stock Spinner instead of its own conveyor: a machine the owner walks up to and plays. A pop-up spins three reels, slot-machine style, which stop on 3 different companies rolled with the owner's Luck; those companies come out onto the base's belt and stay there, for only the owner to buy, until the machine is played again. The shared conveyor in the middle of the map stays, with better rarity odds and two tiers that only appear there.
 - Each player has a Luck that makes the spinner's rarer tiers more likely. It grows with every rebirth (and a little with the Spinner Luck upgrade), so rebirthing is the way up to better companies, and it shows next to the owner's name on their base's sign.
@@ -17,27 +17,38 @@ Decisions marked "Decided" come from Reece and should not be changed without ask
 - Playtime rewards at 5, 10, 15, 30, 60, 90 and 120 minutes, plus a daily login bonus.
 
 ## Tiers (starting assumption)
-Price, base income per second, and where it spawns.
+Eight tiers (`Config/Tiers.luau`). Price, base income per second, and where it spawns:
 - **Startup**: 50 Cash, 2/s. Spinner and shared.
-- **Scale-up**: 500 Cash, 15/s. Spinner and shared.
-- **Unicorn**: 5,000 Cash, 120/s. Spinner and shared.
-- **Blue Chip**: 50,000 Cash, 900/s. Spinner and shared.
-- **Conglomerate**: 500,000 Cash, 7,000/s. Shared only.
-- **Monopoly**: 5,000,000 Cash, 50,000/s. Shared only.
+- **Scale-up**: 300 Cash, 10/s. Spinner and shared.
+- **Unicorn**: 2,000 Cash, 55/s. Spinner and shared.
+- **Decacorn**: 12,000 Cash, 280/s. Spinner and shared.
+- **Blue Chip**: 75,000 Cash, 1,450/s. Spinner and shared.
+- **Mega Cap**: 450,000 Cash, 7,200/s. Spinner and shared.
+- **Conglomerate**: 3,000,000 Cash, 40,000/s. Shared only.
+- **Monopoly**: 20,000,000 Cash, 220,000/s. Shared only.
 
-Each tier has several parody companies (aim for 4 to 6 per tier at launch). Companies within a tier can vary their price and income by up to plus or minus 20%.
+Each tier costs 6 to 7.5 times the one before and pays about 5 times as much, so each tier up takes a little longer to pay for itself: 25 seconds of its own income for a Startup, 52 for a Blue Chip, 91 for a Monopoly. (Decacorn and Mega Cap were added in October 2026, when every tier went to 6 companies. Save version 16 gave every company saved before then its new price and income, keeping its tier, variant and Valuation Machine multiplier.)
+
+Six parody companies per tier, 48 in all (`Config/Companies.luau`), cheapest first. Each varies its tier's price and income by its own scales, from 0.55x to 1.75x, so the dearest in a tier costs about 2.7 times the cheapest and pays about 3.2 times as much: the dearer ones pay a little more for what they cost, so there's always a better one in the same tier to save for. Price (income per second):
+- **Startup**: Snackchat 30 (1.1/s), Kittygram 40 (1.5/s), Duolinguini 50 (2/s), Reddish 57 (2.3/s), Pinterust 68 (2.8/s), Ubber 80 (3.5/s).
+- **Scale-up**: Netflicks 180 (5.6/s), Spotifly 240 (7.7/s), Airbnbee 300 (10/s), Discard 360 (12.4/s), Doordish 420 (14.8/s), Zoomba 480 (17.5/s).
+- **Unicorn**: SpaceY 1,200 (30.3/s), Stripey 1,600 (41.8/s), TikTock 2,000 (53.9/s), Slackers 2,300 (64.4/s), Robinhoodie 2,700 (78.1/s), Canvaas 3,200 (96.2/s).
+- **Decacorn**: Mojango 7,200 (156.8/s), Epic Gnomes 9,600 (215.6/s), Bitedance 12,000 (280/s), Snowfake 14,400 (347.2/s), PayPail 16,800 (414.4/s), eBray 19,200 (490/s).
+- **Blue Chip**: Pear 45,000 (797.5/s), Macrohard 60,000 (1,102/s), Amazin' 75,000 (1,421/s), Starbux 86,250 (1,696.5/s), Goggle 101,250 (2,059/s), Choca-Cola 120,000 (2,537.5/s).
+- **Mega Cap**: Sunny 270,000 (4,032/s), Leggo 360,000 (5,544/s), McDonuts 450,000 (7,200/s), Teslug 540,000 (8,928/s), Nintendough 630,000 (10,656/s), YouTuba 720,000 (12,600/s).
+- **Conglomerate**: Samsong 1,800,000 (22,000/s), Disnee 2,400,000 (30,400/s), Nestled 3,000,000 (39,200/s), Hitachoo 3,450,000 (46,800/s), Unileverage 4,050,000 (56,800/s), Berkshire Hatchaway 4,800,000 (70,000/s).
+- **Monopoly**: Alphabet Soup 12,000,000 (123,200/s), Meh-ta 16,000,000 (169,400/s), Megamart 20,000,000 (220,000/s), Mastercart 24,000,000 (272,800/s), Tencentury 28,000,000 (325,600/s), Everything Inc. 32,000,000 (385,000/s).
 
 ## Spawn weights (starting assumption)
-- **Stock Spinner**: Startup 70, Scale-up 22, Unicorn 7, Blue Chip 1.
-- **Shared conveyor**: Startup 55, Scale-up 28, Unicorn 12, Blue Chip 4, Conglomerate 0.9, Monopoly 0.1.
-- Spinner odds depend on the player's **Luck** (`SpinnerMath.luck`): 1 + 0.25 x rebirths (counted up to 20, `Config/Rebirth.luau`), times the Spinner Luck upgrade (up to x1.5). Each tier after Startup weighs Luck to the power of its place after Startup, so the rarer the tier, the more it gains: at Luck x2, Scale-up x2, Unicorn x4, Blue Chip x8. From rebirths alone, as odds:
-  - 0 rebirths: Startup 70%, Scale-up 22%, Unicorn 7%, Blue Chip 1%
-  - 1: 63.4%, 24.9%, 9.9%, 1.8%
-  - 2: 57.3%, 27.0%, 12.9%, 2.8%
-  - 3: 51.7%, 28.5%, 15.8%, 4.0%
-  - 5: 42.1%, 29.8%, 21.3%, 6.8%
-  - 10: 25.4%, 27.9%, 31.1%, 15.6%
-  - 20 or more: 10.4%, 19.7%, 37.6%, 32.2%
+- **Stock Spinner**: Startup 60, Scale-up 25, Unicorn 10, Decacorn 3.5, Blue Chip 1.2, Mega Cap 0.3.
+- **Shared conveyor**: Startup 48, Scale-up 26, Unicorn 14, Decacorn 7, Blue Chip 3, Mega Cap 1.3, Conglomerate 0.6, Monopoly 0.1.
+- Spinner odds depend on the player's **Luck** (`SpinnerMath.luck`): 1 + 0.25 x rebirths (counted up to 20, `Config/Rebirth.luau`), times the Spinner Luck upgrade (up to x1.5). Each tier after Startup weighs Luck to the power of its place after Startup, so the rarer the tier, the more it gains: at Luck x2, Scale-up x2, Unicorn x4, Decacorn x8, Blue Chip x16, Mega Cap x32. From rebirths alone, as odds (Startup, Scale-up, Unicorn, Decacorn, Blue Chip, Mega Cap):
+  - 0 rebirths: 60%, 25%, 10%, 3.5%, 1.2%, 0.3%
+  - 1: 51.0%, 26.6%, 13.3%, 5.8%, 2.5%, 0.8%
+  - 3: 35.4%, 25.8%, 18.1%, 11.1%, 6.6%, 2.9%
+  - 5: 23.5%, 22.1%, 19.9%, 15.6%, 12.1%, 6.8%
+  - 10: 7.9%, 11.5%, 16.2%, 19.8%, 23.8%, 20.8%
+  - 20 or more: 1.2%, 2.9%, 6.9%, 14.5%, 29.8%, 44.7%
 - The shared conveyor's odds are the same for everyone.
 
 ## Stock Spinner (starting assumption)
@@ -174,19 +185,32 @@ Boost rules
   - **15**: 30 Gold, 300 seconds of income (minimum 2,500 Cash) and a 2x boost for 10 minutes
   - **20**: 50 Gold and 2 free pet spins
   - **25**: 75 Gold, 600 seconds of income (minimum 10,000 Cash) and a 2x boost for 20 minutes
-  - **30 (all of them)**: 150 Gold, 3 free pet spins and a 2x boost for 30 minutes
+  - **30**: 120 Gold, 3 free pet spins and a 2x boost for 30 minutes
+  - **36**: 180 Gold and 900 seconds of income (minimum 50,000 Cash)
+  - **42**: 250 Gold, 4 free pet spins and a 2x boost for 30 minutes
+  - **48 (all of them)**: 400 Gold, 5 free pet spins and a 2x boost for 60 minutes
 - Challenges for Gold (`Config/Index.Challenges`), each claimed once, with its progress shown:
-  - Collect every company of a tier: Startup 15, Scale-up 25, Unicorn 50, Blue Chip 100, Conglomerate 200, Monopoly 400 Gold.
+  - Collect every company of a tier (all 6): Startup 15, Scale-up 25, Unicorn 40, Decacorn 60, Blue Chip 100, Mega Cap 160, Conglomerate 250, Monopoly 400 Gold.
   - Find different variants: 1 for 10 Gold, 3 for 30, all 6 for 100.
 - Kept through rebirth.
 
 ## Rebirth (starting assumption)
-- Requirement: Cash (1,000,000 for the first, doubling each time: 512M for the tenth) and owning a company of the tier that rebirth needs, or better, placed or in storage (it isn't used up). Not while carrying a company or with a Valuation Machine run going.
-- The tier rises gently (`Config/Rebirth.RequiredTiers`): Startup for rebirths 1 and 2, Scale-up for 3 and 4, Unicorn for 5 to 7, Blue Chip for 8 to 15, then Conglomerate (from the shared conveyor). So the first 15 only need a tier any Stock Spinner can roll, which the Luck from earlier rebirths makes more likely.
+- Requirement: Cash (1,000,000 for the first, x2.5 each time: about 3.8 billion for the tenth) and owning the particular company or companies that rebirth needs, placed or in storage, any variant (they aren't used up). Not while carrying a company or with a Valuation Machine run going.
+- The companies (`Config/Rebirth.RequiredCompanies`) get a little rarer every rebirth or two, and the rarest one asked for never drops back. The first 14 only need tiers any Stock Spinner can roll, which the Luck from earlier rebirths makes more likely; Conglomerates (shared conveyor only) come in at 15 and Monopolies at 19:
+  - 1: Kittygram. 2: Snackchat and Ubber (Startups).
+  - 3: Spotifly. 4: Netflicks and Zoomba (Scale-ups).
+  - 5: TikTock. 6: SpaceY and Canvaas (Unicorns).
+  - 7: Mojango. 8: Epic Gnomes and Bitedance (Decacorns).
+  - 9: Pear. 10: Goggle and Starbux (Blue Chips).
+  - 11: Sunny. 12: Leggo and McDonuts. 13: Teslug and PayPail. 14: Nintendough and Choca-Cola (a Mega Cap each).
+  - 15: Samsong. 16: Disnee and YouTuba. 17: Nestled and Snowfake. 18: Hitachoo and Macrohard (a Conglomerate each).
+  - 19: Alphabet Soup. 20: Meh-ta and Unileverage. 21: Megamart and eBray. 22: Mastercart and Berkshire Hatchaway. 23: Tencentury and Amazin'. 24: Everything Inc. (a Monopoly each).
+  - After 24, rebirths need only Cash.
+- The Rebirth window lists each company it needs with its tier, ticked once the player owns it.
 - Takes: Cash, including the Cash waiting on cash pads. Nothing else.
 - Keeps: every company (placed and in storage), every plot and floor, pets in their slots, weapons, Gold, upgrade station levels, rewards progress (streak, banked boost, free spins), the Index, game passes, cosmetics and the rebirth count.
 - Reward: income multiplier = 1 + 0.5 x rebirth count, more Stock Spinner Luck (see "Spawn weights"), and 2 more plots on floors 3 and 4 (see "Base, plots and floors"). The Rebirth window shows the Luck and odds now and after the next rebirth (with the player's Spinner Luck upgrade), the plots it opens, what it needs and what it takes and keeps.
-- Cash needed doubles each rebirth (it was x3 while rebirth also took the base).
+- Cash needed goes up x2.5 each rebirth (it was x3 while rebirth also took the base, then x2). With the base kept, steady play earns rebirth 10 in about an hour in all, rebirth 12 in about 4, and each one after that takes noticeably longer (more so without Conglomerates): that's where the long game is. `CashRequiredGrowth` is the one number to tune.
 
 ## Gold (starting assumption)
 - A second currency, in whole amounts, saved and kept through rebirth (save version 15). Shown in a small pill with a gold coin beside the boost chip, above the Cash pill.
@@ -301,7 +325,7 @@ Boost rules
 - All-time, across every server, top 10 each. Cash per second is counted without any reward boost. Values are saved every 60 seconds and when a player leaves.
 
 ## Admin and debug tools (starting assumption)
-- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), add test bots to the next battle (`/battle bots [count]`) and skip ahead in one (`/battle skip`), give or set Gold (`/givegold`, `/setgold`), grant pets and weapons, skip playtime, reset own data.
+- Server-checked admin commands for testing: give Cash, set rebirths, spawn a company of any tier (`/spawn <tier>` plays your Stock Spinner, from anywhere and with no wait, with that tier first; `/spawn <tier> shared` puts one on the shared conveyor), play your spinner now (`/roll`), start or stop a Hostile Takeover (`/takeover start [minutes]`, `/takeover stop`, `/takeover` for when the next one is), add test bots to the next battle (`/battle bots [count]`) and skip ahead in one (`/battle skip`), give or set Gold (`/givegold`, `/setgold`), put any company in your storage (`/givecompany <company> [variant]`, e.g. `/givecompany epicgnomes galaxy`, for testing rebirth needs), grant pets and weapons, skip playtime, reset own data.
 - Debug panel (admins only) showing live economy values, active boosts and the current machine path.
 - A photo booth for store and marketing screenshots (visual pass Phase 10; `docs/ART_BRIEFS.md`): `Workspace.Map.PhotoBooth`, built by BuildMap far out past the city. Admins pose companies, pets and a copy of their base there with `/booth`, `/pose`, `/backdrop` and `/boothcam` (`Lib/PhotoBooth`, `PhotoBoothController`). Posed things are still copies in its Posed folder that nothing in the game looks at.
 - Build alongside slice 2 and extend with each slice, so every feature can be tested without grinding.
@@ -339,12 +363,12 @@ Boost rules
 
 ## Company models
 Every company model has the same structure, built by one shared builder (`src/server/Lib/CompanyBuilder.luau`) from config:
-- A round plinth in the tier's colour, grander each tier up: Startup plain and smallest; Scale-up adds a light trim ring; Unicorn adds a base step; Blue Chip swaps the trim for gold edging; Conglomerate adds a gentle Neon glow ring with the model's one light; Monopoly is the biggest, with a few slow sparkles, and its object slowly spins and bobs.
+- A round plinth in the tier's colour, a little bigger and taller each tier up: Startup plain and smallest; Scale-up adds a light trim ring; Unicorn adds a base step; Decacorn is the same, bigger; Blue Chip swaps the trim for gold edging; Mega Cap's object slowly spins and bobs (and every tier's after it); Conglomerate adds a gentle Neon glow ring with the model's one light; Monopoly is the biggest, with a few slow sparkles.
 - The pun object on top, made of simple shapes (blocks, balls, cylinders, wedges and stretched balls), each company's own design, colours and parts in `Config/CompanyLooks`.
 - A floating logo badge above the object: the company's letters in a ringed circle in its own colours, always facing the camera. Original designs only.
 - A nameplate on the plinth's front with the company's name.
 
-Budget for phones: at most 30 parts per model; everything anchored with no collisions, touches or raycast hits; small, see-through and Neon pieces cast no shadow; at most one light, and only on Conglomerate and Monopoly; text kept low resolution and hidden beyond 40 studs, the badge beyond 60. The sparkles and Monopoly motion run on each player's device and stop beyond 60 studs from the camera. Adding a company means an entry in `Config/Companies` and one in `Config/CompanyLooks` (without a look it gets a plain box on its plinth).
+Budget for phones: at most 30 parts per model; everything anchored with no collisions, touches or raycast hits; small, see-through and Neon pieces cast no shadow; at most one light, and only on Conglomerate and Monopoly; text kept low resolution and hidden beyond 40 studs, the badge beyond 60. The sparkles and the spinning and bobbing run on each player's device and stop beyond 60 studs from the camera. Adding a company means an entry in `Config/Companies` and one in `Config/CompanyLooks` (without a look it gets a plain box on its plinth).
 
 ## Pet and weapon models
 Built when the server starts, the same way as company models, by `src/server/Lib/PetBuilder.luau` and `WeaponBuilder.luau` from `src/shared/Config/PetLooks.luau` and `WeaponLooks.luau` (simple shapes from `src/shared/Pieces.luau`).
@@ -395,6 +419,8 @@ Then the Stock Spinner in place of each base's conveyor, Luck, and Hostile Takeo
 
 Then the Stock Spinner beside the planter, the Valuation Machine's 0.5x floor and Cash respins, and the battle arena (map version 10). Check: the spinner works from beside the planter; a respin costs half its tier's company price, is refused without the Cash, and can come out below 1.0x but never below 0.5x; a gate in the street takes you to the arena and nowhere else does; at the arena, two players (or one with `/battle bots 3`) play 5 rounds picking one of 3 each round, the board shows picks, places and values after every round, Keep and Machine both work, places are by value, the Cash rewards match Config, practice gives nothing, and nobody can be hurt there.
 
-Then rebirth keeping the base, floors 3 and 4 from rebirths, a rising tier for each rebirth, and Gold (save version 15). Check: a rebirth takes only Cash (and the cash pads' Cash) and keeps every company, plot, floor, pet slot, upgrade level and the Gold; it needs a Startup at first and a Scale-up for the third (`/setrebirths 2`); with floor 2 full, each rebirth opens 2 plots on floor 3 then 4, and with floor 2 not full they wait and open the moment it fills; the upgrade station charges Gold and not Cash; Index challenges and prizes give Gold once; the arena gives Gold by place, more with more rebirths.
+Then rebirth keeping the base, floors 3 and 4 from rebirths, a rising tier for each rebirth, and Gold (save version 15). Check: a rebirth takes only Cash (and the cash pads' Cash) and keeps every company, plot, floor, pet slot, upgrade level and the Gold; it needs a Startup at first and a Scale-up for the third (`/setrebirths 2`; since replaced by particular companies, see the next check); with floor 2 full, each rebirth opens 2 plots on floor 3 then 4, and with floor 2 not full they wait and open the moment it fills; the upgrade station charges Gold and not Cash; Index challenges and prizes give Gold once; the arena gives Gold by place, more with more rebirths.
+
+Then Decacorn and Mega Cap, 6 companies in every tier, wider prices, and particular companies for each rebirth (save version 16). Check: companies you had before now show the new income on their plot billboards, with their variant and multiplier kept; the Index shows 48 companies; `/spawn decacorn` and `/spawn megacap` bring out the new tiers on your spinner with their own models, and a Mega Cap spins and bobs on its plinth; the Rebirth window lists Kittygram for the first rebirth (and Snackchat and Ubber after `/setrebirths 1`), with a cross until you own it (`/givecompany kittygram`) and a tick after; a rebirth is refused, naming the company, without it; another company of the same tier doesn't count.
 
 Slices 1 to 9 are a playable core (buy, carry, place, earn, upgrade, machine, steal). Consider publishing that to a small audience for feedback before building the rest.

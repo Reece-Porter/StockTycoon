@@ -56,31 +56,49 @@ Each company's model has a floating badge (stand-in: the company's letters in a 
 | Snackchat | Tomato #E8473B | A sandwich with a speech bubble |
 | Kittygram | Cream #FFF1D6 | A cat face on a kitchen scale dial |
 | Duolinguini | Navy #3D5A80 | A fork twirling linguine |
+| Reddish | Radish pink #D63A6E | A radish with a little antenna |
 | Pinterust | Rust #B4532A | A rusty drawing pin |
 | Ubber | Pink #FF7EB6 | A squishy round car |
 | Netflicks | Popcorn #FFF3C4 | A popcorn kernel with a film strip |
 | Spotifly | Pink #FF5FB0 | A fly wearing headphones |
 | Airbnbee | Bee yellow #FFD23F | A bee with a tiny house |
 | Discard | Teal #2A9D8F | A playing card dropping into a bin |
+| Doordish | Door teal #2FA4A0 | A front door with a covered dinner dish |
 | Zoomba | Red #E63946 | A vacuum puck with speed lines |
 | SpaceY | Red #E63946 | A rocket with three fins in a Y |
 | Stripey | Teal #2EC4B6 | A striped piggy bank |
 | TikTock | Orange #FF8C1A | An alarm clock with dancing legs |
+| Slackers | Hammock coral #FF8C69 | A sloth lazing in a hammock |
 | Robinhoodie | Brown #8B5A2B | A hood with a feathered cap |
 | Canvaas | Gold #FFC83D | An easel with paint splats |
+| Mojango | Mango #FFB830 | A mango with a pixel pickaxe |
+| Epic Gnomes | Gnome red #E63946 | A garden gnome holding a game controller |
+| Bitedance | Cookie #D9A066 | A bitten cookie dancing in its crumbs |
+| Snowfake | Snow #E8F0FF | A snowman in a fake-moustache disguise |
+| PayPail | Red #E63946 | A bucket full of coins |
+| eBray | Donkey grey #9E9AA8 | A braying donkey with a SOLD! tag |
 | Pear | Pear green #9BCB3C | A whole pear with a leaf, no bite |
 | Macrohard | Gold #FFC83D | A hard hat with a lamp |
 | Amazin' | Cardboard #C69C6D | An open box with a sparkle |
+| Starbux | Sleeve brown #A9774F | A coffee cup with a gold star |
 | Goggle | Purple #7B4AE2 | Swimming goggles |
 | Choca-Cola | Cream #F3E5C8 | A chocolate drip |
+| Sunny | Sun #FFB020 | A smiling sun wearing headphones |
+| Leggo | Teal #2FBFA8 | A toy brick with legs |
+| McDonuts | Icing pink #FF8FC8 | A stack of donuts with a cherry on top |
+| Teslug | Slug green #8BD450 | A slug shaped like a sleek car, with a charging cable |
+| Nintendough | Dough #F2D8A7 | A handheld console made of dough, with a rolling pin |
+| YouTuba | Brass #E0B84A | A tuba playing music notes |
 | Samsong | Dark #2B2D42 | A phone singing a music note |
 | Disnee | Curtain red #C0263A | Theatre curtains |
 | Nestled | Red #D7263D | Three nesting dolls |
+| Hitachoo | Sky blue #8EC5FF | A sneezing tissue box |
 | Unileverage | Mint #B5EAD7 | A lever lifting a soap bar |
 | Berkshire Hatchaway | Ink #1B1B2F | An egg hatching from a top hat |
 | Alphabet Soup | Orange #F28C28 | A bowl with letters |
 | Meh-ta | Light grey #E8ECF2 | A headset with a bored face |
 | Megamart | White #FFFFFF | An overflowing trolley |
+| Mastercart | Gold #FFC83D | A go-kart with a card for a spoiler |
 | Tencentury | Purple #7B4AE2 | A coin-stack clock tower |
 | Everything Inc. | Gold #FFC83D | A globe with a ring |
 

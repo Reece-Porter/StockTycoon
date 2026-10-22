@@ -17,11 +17,13 @@ return {
 		StudsPerSecond = 2.4,
 		-- Out of 100.
 		Weights = {
-			{ tier = "Startup", weight = 55 },
-			{ tier = "ScaleUp", weight = 28 },
-			{ tier = "Unicorn", weight = 12 },
-			{ tier = "BlueChip", weight = 4 },
-			{ tier = "Conglomerate", weight = 0.9 },
+			{ tier = "Startup", weight = 48 },
+			{ tier = "ScaleUp", weight = 26 },
+			{ tier = "Unicorn", weight = 14 },
+			{ tier = "Decacorn", weight = 7 },
+			{ tier = "BlueChip", weight = 3 },
+			{ tier = "MegaCap", weight = 1.3 },
+			{ tier = "Conglomerate", weight = 0.6 },
 			{ tier = "Monopoly", weight = 0.1 },
 		} :: { WeightEntry },
 		-- Spawns of these tiers are announced to the whole server.

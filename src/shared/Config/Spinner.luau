@@ -37,9 +37,11 @@ return {
 	-- first, so the rarer a tier, the more Luck helps it. Conglomerate and
 	-- Monopoly are only ever on the shared conveyor.
 	Weights = {
-		{ tier = "Startup", weight = 70 },
-		{ tier = "ScaleUp", weight = 22 },
-		{ tier = "Unicorn", weight = 7 },
-		{ tier = "BlueChip", weight = 1 },
+		{ tier = "Startup", weight = 60 },
+		{ tier = "ScaleUp", weight = 25 },
+		{ tier = "Unicorn", weight = 10 },
+		{ tier = "Decacorn", weight = 3.5 },
+		{ tier = "BlueChip", weight = 1.2 },
+		{ tier = "MegaCap", weight = 0.3 },
 	} :: { WeightEntry },
 }

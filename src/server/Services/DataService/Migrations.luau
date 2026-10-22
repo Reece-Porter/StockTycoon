@@ -4,6 +4,25 @@
 -- a save needs, in order, on a copy, and only keeps the result if they all
 -- succeed.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CompanyStats = require(ReplicatedStorage.Shared.CompanyStats)
+local Companies = require(ReplicatedStorage.Shared.Config.Companies)
+
+-- Gives a saved company its current price and base income from config, if
+-- it's a company that still exists. Its tier, variant and Valuation Machine
+-- multiplier are left alone.
+local function reprice(company: any)
+	if type(company) ~= "table" or type(company.companyId) ~= "string" then
+		return
+	end
+	if Companies.byId[company.companyId] == nil then
+		return
+	end
+	company.baseIncome = CompanyStats.income(company.companyId)
+	company.purchasePrice = CompanyStats.price(company.companyId)
+end
+
 return {
 	-- Version 2 adds Storage: companies bought but not placed yet.
 	[1] = function(data)
@@ -121,6 +140,27 @@ return {
 		data.Gold = 0
 		if type(data.Index) == "table" then
 			data.Index.Challenges = {}
+		end
+	end,
+
+	-- Version 16 re-prices saved companies. Tiers got new prices and incomes,
+	-- and every company its own wider spread (Decacorn and Mega Cap came in
+	-- between), so a company bought before pays what the same company pays
+	-- now. Nothing in the shape of the save changes.
+	[15] = function(data)
+		if type(data.Storage) == "table" then
+			for _, company in data.Storage do
+				reprice(company)
+			end
+		end
+		if type(data.Placed) == "table" then
+			for _, company in data.Placed do
+				reprice(company)
+			end
+		end
+		reprice(data.Carrying)
+		if type(data.Machine) == "table" then
+			reprice(data.Machine.company)
 		end
 	end,
 } :: { [number]: (data: { [string]: any }) -> () }

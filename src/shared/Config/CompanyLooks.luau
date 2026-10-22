@@ -190,6 +190,30 @@ looks.Ubber = {
 	},
 }
 
+-- A radish with cartoon eyes and a little antenna on top.
+local RADISH = hex("#D63A6E")
+local RADISH_ROOT = hex("#FFF1E8")
+local RADISH_LEAF = hex("#5DBB63")
+looks.Reddish = {
+	badge = { text = "Rd", colour = RADISH, ink = WHITE },
+	pieces = {
+		ellipsoid({ 0.32, 0.45, 0.32 }, { 0, 0.22, 0 }, RADISH_ROOT), -- root tip
+		ellipsoid({ 0.95, 0.75, 0.95 }, { 0, 0.5, 0 }, RADISH),
+		ball(1.7, { 0, 1.2, 0 }, RADISH),
+		ellipsoid({ 0.32, 0.5, 0.08 }, { -0.42, 1.45, -0.72 }, WHITE, { turn = { 0, -25, 0 }, transparency = 0.4 }),
+		ball(0.42, { -0.3, 1.3, -0.72 }, WHITE),
+		ball(0.42, { 0.3, 1.3, -0.72 }, WHITE),
+		ball(0.2, { -0.3, 1.3, -0.92 }, INK),
+		ball(0.2, { 0.3, 1.3, -0.92 }, INK),
+		block({ 0.4, 0.07, 0.05 }, { 0, 0.92, -0.8 }, INK), -- smile
+		ellipsoid({ 0.35, 0.9, 0.12 }, { -0.3, 2.35, 0 }, RADISH_LEAF, { turn = { 0, 0, 25 } }), -- leaves
+		ellipsoid({ 0.35, 1.0, 0.12 }, { 0.05, 2.45, 0.05 }, RADISH_LEAF, { turn = { 0, 40, -5 } }),
+		ellipsoid({ 0.35, 0.85, 0.12 }, { 0.35, 2.3, 0 }, RADISH_LEAF, { turn = { 0, 0, -28 } }),
+		rod(0.75, 0.07, { 0.42, 2.3, -0.3 }, INK, { turn = { 0, 0, 70 } }), -- antenna
+		ball(0.26, { 0.55, 2.68, -0.3 }, RADISH),
+	},
+}
+
 ---------------------------------------------------------------------------
 -- Scale-up
 
@@ -306,6 +330,32 @@ looks.Zoomba = {
 		ball(0.45, { 0.45, 0.3, 1.4 }, DUST, { transparency = 0.25 }), -- dust
 		ball(0.35, { -0.25, 0.25, 1.5 }, DUST, { transparency = 0.3 }),
 		ball(0.28, { 0.15, 0.4, 1.62 }, DUST, { transparency = 0.35 }),
+	},
+}
+
+-- A front door with a covered dish waiting on the doormat.
+local DOOR = hex("#2FA4A0")
+local DOOR_PANEL = hex("#24807C")
+local DOOR_FRAME = hex("#F4F1E8")
+looks.Doordish = {
+	badge = { text = "Dd", colour = DOOR, ink = WHITE },
+	pieces = {
+		block({ 1.8, 2.6, 0.25 }, { 0, 1.3, 0.45 }, DOOR),
+		block({ 2.15, 0.2, 0.4 }, { 0, 2.7, 0.45 }, DOOR_FRAME), -- frame
+		block({ 0.18, 2.7, 0.4 }, { -1.0, 1.35, 0.45 }, DOOR_FRAME),
+		block({ 0.18, 2.7, 0.4 }, { 1.0, 1.35, 0.45 }, DOOR_FRAME),
+		block({ 1.2, 0.8, 0.05 }, { 0, 1.85, 0.31 }, DOOR_PANEL), -- panels
+		block({ 1.2, 0.8, 0.05 }, { 0, 0.8, 0.31 }, DOOR_PANEL),
+		ball(0.22, { 0.62, 1.3, 0.28 }, GOLD), -- knob
+		block({ 0.42, 0.26, 0.04 }, { 0, 2.38, 0.3 }, WHITE, {
+			text = { text = "12", face = "Front", colour = INK },
+		}),
+		block({ 1.9, 0.06, 0.95 }, { 0, 0.03, -0.45 }, hex("#B07A4A")), -- doormat
+		can(0.06, 1.1, { 0, 0.09, -0.5 }, WHITE), -- plate
+		ellipsoid({ 0.9, 0.8, 0.9 }, { 0, 0.12, -0.5 }, SILVER, { material = METAL }), -- the cover
+		ball(0.18, { 0, 0.58, -0.5 }, SILVER, { material = METAL }),
+		ball(0.32, { -0.25, 0.95, -0.55 }, STEAM, { transparency = 0.45 }), -- steam
+		ball(0.24, { -0.1, 1.25, -0.6 }, STEAM, { transparency = 0.55 }),
 	},
 }
 
@@ -429,6 +479,198 @@ looks.Canvaas = {
 	},
 }
 
+-- A sloth fast asleep in a hammock.
+local HAMMOCK = hex("#FF8C69")
+local HAMMOCK_STRIPE = hex("#FFF1D6")
+local SLOTH = hex("#8B6B4A")
+local SLOTH_FACE = hex("#E8D8B8")
+local POST = hex("#9C6B3F")
+looks.Slackers = {
+	badge = { text = "Sl", colour = HAMMOCK, ink = WHITE },
+	pieces = {
+		block({ 0.2, 2.2, 0.2 }, { -1.45, 1.1, 0 }, POST), -- posts
+		block({ 0.2, 2.2, 0.2 }, { 1.45, 1.1, 0 }, POST),
+		rod(0.62, 0.06, { -1.2, 1.7, 0 }, HAMMOCK_STRIPE, { turn = { 0, 0, -32 } }), -- ropes
+		rod(0.62, 0.06, { 1.2, 1.7, 0 }, HAMMOCK_STRIPE, { turn = { 0, 0, 32 } }),
+		ellipsoid({ 2.4, 0.5, 1.0 }, { 0, 1.2, 0 }, HAMMOCK),
+		ellipsoid({ 2.0, 0.14, 1.04 }, { 0, 1.12, 0 }, HAMMOCK_STRIPE),
+		ellipsoid({ 1.35, 0.55, 0.78 }, { 0.15, 1.52, 0 }, SLOTH), -- body
+		ball(0.78, { -0.72, 1.7, -0.08 }, SLOTH), -- head
+		ellipsoid({ 0.58, 0.5, 0.2 }, { -0.76, 1.68, -0.38 }, SLOTH_FACE),
+		ellipsoid({ 0.2, 0.12, 0.06 }, { -0.9, 1.74, -0.48 }, DARK, { turn = { 0, 0, 20 } }), -- sleepy eyes
+		ellipsoid({ 0.2, 0.12, 0.06 }, { -0.62, 1.74, -0.48 }, DARK, { turn = { 0, 0, -20 } }),
+		block({ 0.18, 0.04, 0.04 }, { -0.76, 1.56, -0.5 }, INK), -- smile
+		ellipsoid({ 0.2, 0.62, 0.2 }, { 0.35, 1.1, -0.42 }, SLOTH, { turn = { 0, 0, 8 } }), -- an arm hanging out
+		block({ 0.55, 0.4, 0.05 }, { -0.35, 2.5, -0.2 }, WHITE, {
+			turn = { 0, 0, 8 },
+			text = { text = "Zzz", face = "Front", colour = DARK },
+		}),
+	},
+}
+
+---------------------------------------------------------------------------
+-- Decacorn
+
+-- A mango with a blocky face and a pixel pickaxe.
+local MANGO = hex("#FFB830")
+local MANGO_BLUSH = hex("#FF8A3D")
+local PICK = hex("#4FD1C5")
+local PICK_HANDLE = hex("#8A5A36")
+looks.Mojango = {
+	badge = { text = "Mj", colour = MANGO, ink = INK },
+	pieces = {
+		ellipsoid({ 1.6, 2.0, 1.4 }, { -0.1, 1.0, 0 }, MANGO, { turn = { 0, 0, -10 } }),
+		ellipsoid({ 0.8, 0.95, 0.5 }, { 0.3, 1.35, -0.48 }, MANGO_BLUSH, { turn = { 0, 0, -10 } }),
+		rod(0.35, 0.12, { -0.25, 2.05, 0 }, PICK_HANDLE, { turn = { 0, 0, 80 } }), -- stem
+		ellipsoid({ 0.6, 0.08, 0.3 }, { 0.05, 2.15, 0 }, hex("#4CAF50"), { turn = { 0, 0, 20 } }), -- leaf
+		block({ 0.2, 0.2, 0.05 }, { -0.42, 1.2, -0.7 }, INK), -- blocky face
+		block({ 0.2, 0.2, 0.05 }, { 0.12, 1.2, -0.72 }, INK),
+		block({ 0.45, 0.1, 0.05 }, { -0.15, 0.85, -0.7 }, INK),
+		rod(1.8, 0.14, { 0.95, 1.2, -0.45 }, PICK_HANDLE, { turn = { 0, 0, 62 } }), -- pickaxe
+		block({ 1.1, 0.22, 0.22 }, { 1.38, 2.0, -0.45 }, PICK, { turn = { 0, 0, -28 } }),
+		block({ 0.22, 0.22, 0.22 }, { 0.92, 1.95, -0.45 }, PICK),
+		block({ 0.22, 0.22, 0.22 }, { 1.82, 1.72, -0.45 }, PICK),
+	},
+}
+
+-- A garden gnome playing on a game controller.
+local GNOME_HAT = hex("#E63946")
+local GNOME_COAT = hex("#3D7BFF")
+local SKIN = hex("#F1C27D")
+looks.EpicGnomes = {
+	badge = { text = "Eg", colour = GNOME_HAT, ink = WHITE },
+	pieces = {
+		can(1.0, 1.1, { 0, 0.5, 0 }, GNOME_COAT), -- body
+		can(0.15, 1.14, { 0, 0.75, 0 }, INK), -- belt
+		block({ 0.26, 0.18, 0.05 }, { 0, 0.75, -0.58 }, GOLD),
+		ball(0.85, { 0, 1.38, 0 }, SKIN), -- head
+		ellipsoid({ 0.9, 0.85, 0.5 }, { 0, 1.08, -0.3 }, WHITE), -- beard
+		ball(0.28, { 0, 1.4, -0.43 }, hex("#F4A582")), -- nose
+		ball(0.12, { -0.18, 1.55, -0.36 }, INK), -- eyes
+		ball(0.12, { 0.18, 1.55, -0.36 }, INK),
+		ellipsoid({ 0.95, 1.5, 0.95 }, { 0, 2.25, 0.05 }, GNOME_HAT, { turn = { -12, 0, 0 } }), -- hat
+		block({ 0.9, 0.18, 0.42 }, { 0, 0.95, -0.78 }, DARK), -- controller
+		ellipsoid({ 0.32, 0.22, 0.45 }, { -0.45, 0.9, -0.74 }, DARK),
+		ellipsoid({ 0.32, 0.22, 0.45 }, { 0.45, 0.9, -0.74 }, DARK),
+		ball(0.12, { 0.22, 1.06, -0.86 }, hex("#FF4D5E")), -- buttons
+		ball(0.12, { 0.36, 1.06, -0.76 }, hex("#3CCB5A")),
+		block({ 0.2, 0.05, 0.06 }, { -0.28, 1.06, -0.82 }, SILVER), -- d-pad
+		block({ 0.06, 0.05, 0.2 }, { -0.28, 1.06, -0.82 }, SILVER),
+		ball(0.26, { -0.5, 0.98, -0.62 }, SKIN), -- hands
+		ball(0.26, { 0.5, 0.98, -0.62 }, SKIN),
+	},
+}
+
+-- A dancing cookie with a bite out of it.
+local COOKIE = hex("#D9A066")
+local COOKIE_EDGE = hex("#C4874E")
+local CHIP = hex("#5C3B24")
+local DANCE_SHOE = hex("#FF5FB0")
+looks.Bitedance = {
+	badge = { text = "Bd", colour = COOKIE, ink = CHIP },
+	pieces = {
+		disc(0.3, 1.8, { -0.1, 1.55, 0 }, COOKIE), -- two rounds make it lumpy, bitten at the top right
+		disc(0.3, 1.25, { 0.3, 1.1, 0.02 }, COOKIE),
+		disc(0.32, 0.5, { 0.62, 2.05, 0 }, COOKIE_EDGE), -- the bitten edge
+		ball(0.14, { 0.95, 2.4, -0.1 }, COOKIE), -- crumbs
+		ball(0.1, { 1.1, 2.2, -0.05 }, COOKIE),
+		ball(0.18, { -0.55, 1.85, -0.17 }, CHIP), -- chips
+		ball(0.15, { 0.35, 0.9, -0.18 }, CHIP),
+		ball(0.16, { -0.6, 1.15, -0.17 }, CHIP),
+		ball(0.32, { -0.3, 1.7, -0.18 }, WHITE), -- eyes
+		ball(0.32, { 0.12, 1.7, -0.18 }, WHITE),
+		ball(0.15, { -0.3, 1.7, -0.32 }, INK),
+		ball(0.15, { 0.12, 1.7, -0.32 }, INK),
+		ellipsoid({ 0.45, 0.2, 0.08 }, { -0.1, 1.35, -0.18 }, CHIP), -- smile
+		rod(0.8, 0.12, { -0.35, 0.42, 0 }, INK, { turn = { 0, 0, 70 } }), -- legs
+		rod(0.8, 0.12, { 0.4, 0.42, 0 }, INK, { turn = { 0, 0, 115 } }),
+		ellipsoid({ 0.36, 0.18, 0.45 }, { -0.5, 0.09, -0.1 }, DANCE_SHOE),
+		ellipsoid({ 0.36, 0.18, 0.45 }, { 0.58, 0.09, -0.1 }, DANCE_SHOE),
+		rod(0.8, 0.1, { -1.2, 1.75, 0 }, INK, { turn = { 0, 0, -40 } }), -- arms up
+		rod(0.8, 0.1, { 1.1, 1.95, 0 }, INK, { turn = { 0, 0, 45 } }),
+		ball(0.26, { 1.3, 2.65, -0.15 }, hex("#7B4AE2")), -- a music note
+		block({ 0.06, 0.5, 0.06 }, { 1.42, 2.88, -0.15 }, hex("#7B4AE2")),
+	},
+}
+
+-- A snowman in a fake glasses-and-moustache disguise.
+local SNOW = hex("#F7FBFF")
+local SCARF = hex("#FF8C42")
+local DISGUISE = hex("#2B2D42")
+looks.Snowfake = {
+	badge = { text = "Sw", colour = hex("#E8F0FF"), ink = DISGUISE },
+	pieces = {
+		ball(1.5, { 0, 0.72, 0 }, SNOW),
+		ball(1.1, { 0, 1.62, 0 }, SNOW),
+		ball(0.85, { 0, 2.27, 0 }, SNOW),
+		can(0.2, 0.92, { 0, 1.98, 0 }, SCARF), -- scarf
+		block({ 0.22, 0.6, 0.08 }, { 0.3, 1.7, -0.5 }, SCARF, { turn = { 0, 0, -10 } }),
+		ball(0.14, { 0, 1.72, -0.54 }, INK), -- buttons
+		ball(0.14, { 0, 1.45, -0.52 }, INK),
+		disc(0.06, 0.3, { -0.17, 2.36, -0.41 }, DISGUISE), -- the disguise
+		disc(0.06, 0.3, { 0.17, 2.36, -0.41 }, DISGUISE),
+		block({ 0.12, 0.05, 0.05 }, { 0, 2.38, -0.43 }, DISGUISE),
+		ball(0.24, { 0, 2.24, -0.45 }, hex("#FF9BB3")), -- fake nose
+		ellipsoid({ 0.52, 0.13, 0.13 }, { 0, 2.1, -0.42 }, hex("#5C3B24")), -- fake moustache
+		can(0.08, 0.95, { 0, 2.66, 0 }, DISGUISE), -- hat
+		can(0.45, 0.62, { 0, 2.9, 0 }, DISGUISE),
+		rod(0.9, 0.08, { -0.95, 1.8, 0 }, hex("#6B4226"), { turn = { 0, 0, -25 } }), -- twig arms
+		rod(0.9, 0.08, { 0.95, 1.8, 0 }, hex("#6B4226"), { turn = { 0, 0, 25 } }),
+	},
+}
+
+-- A bucket full to the brim with coins.
+local PAIL = hex("#E63946")
+local PAIL_RIM = hex("#C92A3A")
+local PAIL_COIN = hex("#E0A93B")
+looks.PayPail = {
+	badge = { text = "PP", colour = PAIL, ink = WHITE },
+	pieces = {
+		can(1.4, 1.5, { 0, 0.7, 0 }, PAIL),
+		can(0.12, 1.62, { 0, 1.38, 0 }, PAIL_RIM),
+		block({ 0.6, 0.42, 0.04 }, { 0, 0.72, -0.76 }, CREAM, {
+			text = { text = "$", face = "Front", colour = PAIL },
+		}),
+		ellipsoid({ 1.35, 0.55, 1.35 }, { 0, 1.45, 0 }, GOLD), -- coins
+		disc(0.08, 0.45, { 0.3, 1.78, -0.25 }, GOLD, { turn = { 35, 20, 0 } }),
+		disc(0.08, 0.45, { -0.35, 1.72, 0.1 }, PAIL_COIN, { turn = { -30, 0, 20 } }),
+		rod(0.72, 0.08, { -0.8, 1.75, 0 }, SILVER, { turn = { 0, 0, 80 } }), -- handle
+		rod(0.72, 0.08, { 0.8, 1.75, 0 }, SILVER, { turn = { 0, 0, 100 } }),
+		rod(1.5, 0.08, { 0, 2.1, 0 }, SILVER),
+		can(0.08, 0.5, { -1.1, 0.04, -0.8 }, GOLD), -- spilled coins
+		can(0.08, 0.45, { 1.0, 0.04, -0.95 }, PAIL_COIN),
+		disc(0.08, 0.5, { 1.15, 0.25, -0.45 }, GOLD, { turn = { 0, 30, 0 } }),
+	},
+}
+
+-- A donkey braying with a "SOLD!" tag.
+local DONKEY = hex("#9E9AA8")
+local DONKEY_DARK = hex("#6E6A78")
+local MUZZLE = hex("#EDE3D3")
+looks.eBray = {
+	badge = { text = "eB", colour = DONKEY, ink = WHITE },
+	pieces = {
+		can(0.7, 0.25, { -0.3, 0.35, -0.45 }, DONKEY_DARK), -- legs
+		can(0.7, 0.25, { 0.3, 0.35, -0.45 }, DONKEY_DARK),
+		can(0.7, 0.25, { -0.3, 0.35, 0.55 }, DONKEY_DARK),
+		can(0.7, 0.25, { 0.3, 0.35, 0.55 }, DONKEY_DARK),
+		ellipsoid({ 1.0, 0.95, 1.7 }, { 0, 1.05, 0.05 }, DONKEY), -- body
+		ellipsoid({ 0.65, 0.75, 0.9 }, { 0, 1.75, -0.78 }, DONKEY, { turn = { -30, 0, 0 } }), -- head, up to bray
+		ellipsoid({ 0.55, 0.45, 0.5 }, { 0, 1.98, -1.15 }, MUZZLE),
+		ellipsoid({ 0.36, 0.13, 0.2 }, { 0, 1.88, -1.38 }, INK), -- open mouth
+		ball(0.14, { -0.2, 2.12, -0.88 }, INK), -- eyes
+		ball(0.14, { 0.2, 2.12, -0.88 }, INK),
+		ellipsoid({ 0.18, 0.62, 0.12 }, { -0.2, 2.42, -0.6 }, DONKEY, { turn = { -10, 0, 15 } }), -- ears
+		ellipsoid({ 0.18, 0.62, 0.12 }, { 0.2, 2.42, -0.6 }, DONKEY, { turn = { -10, 0, -15 } }),
+		block({ 0.12, 0.3, 0.7 }, { 0, 1.8, -0.22 }, DARK), -- mane
+		block({ 0.08, 0.5, 0.08 }, { 0, 1.15, 0.95 }, DARK, { turn = { 30, 0, 0 } }), -- tail
+		block({ 0.85, 0.4, 0.05 }, { 0.85, 2.55, -0.6 }, WHITE, {
+			turn = { 0, 0, -10 },
+			text = { text = "SOLD!", face = "Front", colour = hex("#7B4AE2") },
+		}),
+	},
+}
+
 ---------------------------------------------------------------------------
 -- Blue Chip
 
@@ -527,6 +769,189 @@ looks.ChocaCola = {
 		ellipsoid({ 0.32, 0.7, 0.14 }, { 0.25, 1.3, -0.58 }, CHOC_DARK), -- drips
 		ball(0.26, { 0.25, 0.95, -0.6 }, CHOC_DARK),
 		ellipsoid({ 0.24, 0.45, 0.12 }, { -0.3, 1.45, -0.55 }, CHOC_DARK),
+	},
+}
+
+-- A takeaway coffee cup with a shining gold star on the lid.
+local CUP = hex("#F7F3EC")
+local SLEEVE = hex("#A9774F")
+local LID = hex("#5C3B24")
+looks.Starbux = {
+	badge = { text = "Sb", colour = SLEEVE, ink = CREAM },
+	pieces = {
+		can(1.8, 1.2, { 0, 0.9, 0 }, CUP),
+		can(0.7, 1.25, { 0, 0.95, 0 }, SLEEVE),
+		block({ 0.5, 0.42, 0.05 }, { 0, 0.95, -0.64 }, CREAM, {
+			text = { text = "$", face = "Front", colour = LID },
+		}),
+		can(0.2, 1.32, { 0, 1.9, 0 }, LID),
+		can(0.14, 1.0, { 0, 2.07, 0 }, LID),
+		ball(0.32, { 0, 2.65, 0 }, GOLD, { material = METAL }), -- the star
+		block({ 0.16, 1.1, 0.12 }, { 0, 2.65, 0 }, GOLD, { material = METAL }),
+		block({ 1.1, 0.16, 0.12 }, { 0, 2.65, 0 }, GOLD, { material = METAL }),
+		block({ 0.12, 0.7, 0.12 }, { 0, 2.65, 0 }, GOLD, { material = METAL, turn = { 0, 0, 45 } }),
+		block({ 0.7, 0.12, 0.12 }, { 0, 2.65, 0 }, GOLD, { material = METAL, turn = { 0, 0, 45 } }),
+		ball(0.3, { -0.45, 2.45, 0.1 }, STEAM, { transparency = 0.45 }), -- steam
+		ball(0.22, { -0.55, 2.8, 0.15 }, STEAM, { transparency = 0.55 }),
+	},
+}
+
+---------------------------------------------------------------------------
+-- Mega Cap
+
+-- A smiling sun wearing big headphones.
+local SUN = hex("#FFB020")
+local SUN_RAY = hex("#FFD36B")
+local PHONES = hex("#2B2D42")
+local CUSHION = hex("#5B6178")
+looks.Sunny = {
+	badge = { text = "Sn", colour = SUN, ink = INK },
+	pieces = {
+		ball(1.9, { 0, 1.55, 0 }, SUN),
+		block({ 0.24, 0.55, 0.24 }, { 0, 2.82, 0 }, SUN_RAY), -- rays
+		block({ 0.24, 0.55, 0.24 }, { -0.95, 2.48, 0 }, SUN_RAY, { turn = { 0, 0, 45 } }),
+		block({ 0.24, 0.55, 0.24 }, { 0.95, 2.48, 0 }, SUN_RAY, { turn = { 0, 0, -45 } }),
+		block({ 0.24, 0.55, 0.24 }, { -0.95, 0.62, 0 }, SUN_RAY, { turn = { 0, 0, -45 } }),
+		block({ 0.24, 0.55, 0.24 }, { 0.95, 0.62, 0 }, SUN_RAY, { turn = { 0, 0, 45 } }),
+		block({ 0.24, 0.55, 0.24 }, { 0, 0.28, -0.6 }, SUN_RAY, { turn = { 60, 0, 0 } }),
+		ball(0.22, { -0.35, 1.7, -0.86 }, INK), -- eyes
+		ball(0.22, { 0.35, 1.7, -0.86 }, INK),
+		ellipsoid({ 0.65, 0.22, 0.12 }, { 0, 1.25, -0.88 }, INK), -- smile
+		rod(0.42, 0.78, { -1.0, 1.55, 0 }, PHONES), -- headphones
+		rod(0.42, 0.78, { 1.0, 1.55, 0 }, PHONES),
+		rod(0.12, 0.62, { -0.82, 1.55, 0 }, CUSHION),
+		rod(0.12, 0.62, { 0.82, 1.55, 0 }, CUSHION),
+		rod(1.0, 0.14, { 0, 2.55, 0 }, PHONES),
+		rod(0.72, 0.14, { -0.82, 2.2, 0 }, PHONES, { turn = { 0, 0, -60 } }),
+		rod(0.72, 0.14, { 0.82, 2.2, 0 }, PHONES, { turn = { 0, 0, 60 } }),
+	},
+}
+
+-- A toy building brick running on its own two legs.
+local BRICK = hex("#2FBFA8")
+local SHOE = hex("#FF8C42")
+looks.Leggo = {
+	badge = { text = "Lg", colour = BRICK, ink = WHITE },
+	pieces = {
+		block({ 2.0, 1.1, 1.0 }, { 0, 1.4, 0 }, BRICK),
+		can(0.25, 0.4, { -0.5, 2.07, -0.25 }, BRICK), -- studs
+		can(0.25, 0.4, { 0.5, 2.07, -0.25 }, BRICK),
+		can(0.25, 0.4, { -0.5, 2.07, 0.25 }, BRICK),
+		can(0.25, 0.4, { 0.5, 2.07, 0.25 }, BRICK),
+		ball(0.34, { -0.4, 1.5, -0.52 }, WHITE), -- eyes
+		ball(0.34, { 0.4, 1.5, -0.52 }, WHITE),
+		ball(0.16, { -0.4, 1.5, -0.68 }, INK),
+		ball(0.16, { 0.4, 1.5, -0.68 }, INK),
+		block({ 0.5, 0.07, 0.05 }, { 0, 1.18, -0.52 }, INK), -- smile
+		block({ 0.26, 0.85, 0.26 }, { -0.45, 0.48, 0.1 }, DARK, { turn = { 22, 0, 0 } }), -- legs mid-stride
+		block({ 0.26, 0.85, 0.26 }, { 0.45, 0.48, -0.05 }, DARK, { turn = { -22, 0, 0 } }),
+		block({ 0.36, 0.2, 0.55 }, { -0.45, 0.1, 0.3 }, SHOE),
+		block({ 0.36, 0.2, 0.55 }, { 0.45, 0.1, -0.28 }, SHOE),
+		rod(0.7, 0.13, { -1.25, 1.45, 0 }, DARK, { turn = { 0, 0, 30 } }), -- arms
+		rod(0.7, 0.13, { 1.25, 1.45, 0 }, DARK, { turn = { 0, 0, -30 } }),
+	},
+}
+
+-- A stack of three iced donuts with sprinkles and a cherry on top.
+local DOUGH = hex("#E3B27A")
+local ICING_PINK = hex("#FF8FC8")
+local ICING_CHOC = hex("#6F3B1E")
+local ICING_MINT = hex("#7FE0C2")
+local HOLE = hex("#7A4A2A")
+looks.McDonuts = {
+	badge = { text = "Md", colour = ICING_PINK, ink = DARK },
+	pieces = {
+		can(0.5, 1.9, { 0, 0.25, 0 }, DOUGH), -- bottom donut
+		can(0.12, 1.92, { 0, 0.5, 0 }, ICING_CHOC),
+		can(0.5, 1.75, { 0.08, 0.85, 0.05 }, DOUGH), -- middle
+		can(0.12, 1.77, { 0.08, 1.1, 0.05 }, ICING_MINT),
+		can(0.5, 1.6, { -0.05, 1.45, -0.03 }, DOUGH), -- top
+		can(0.12, 1.62, { -0.05, 1.7, -0.03 }, ICING_PINK),
+		can(0.04, 0.5, { -0.05, 1.77, -0.03 }, HOLE), -- the hole
+		block({ 0.2, 0.05, 0.05 }, { -0.5, 1.78, -0.35 }, hex("#3D8BFF"), { turn = { 0, 30, 0 } }), -- sprinkles
+		block({ 0.2, 0.05, 0.05 }, { 0.45, 1.78, -0.3 }, hex("#FFE66D"), { turn = { 0, -40, 0 } }),
+		block({ 0.2, 0.05, 0.05 }, { 0.3, 1.78, 0.4 }, WHITE, { turn = { 0, 70, 0 } }),
+		block({ 0.2, 0.05, 0.05 }, { -0.4, 1.78, 0.35 }, hex("#3CCB5A"), { turn = { 0, -10, 0 } }),
+		ball(0.42, { -0.05, 2.0, -0.03 }, hex("#C2185B")), -- cherry
+		rod(0.4, 0.05, { 0.05, 2.32, -0.03 }, hex("#4CAF50"), { turn = { 0, 0, 70 } }),
+	},
+}
+
+-- A sleek slug with a windscreen and wheels, plugged in to charge.
+local SLUG = hex("#8BD450")
+local SLUG_GLASS = hex("#3A4A66")
+local CABLE = hex("#3A3D4D")
+local BOLT = hex("#FFE66D")
+looks.Teslug = {
+	badge = { text = "Ts", colour = SLUG, ink = INK },
+	pieces = {
+		ellipsoid({ 1.3, 0.8, 2.8 }, { 0, 0.55, 0.1 }, SLUG, { reflectance = 0.1 }),
+		ball(0.95, { 0, 0.85, -0.95 }, SLUG, { reflectance = 0.1 }),
+		ellipsoid({ 0.95, 0.5, 0.9 }, { 0, 1.08, -0.3 }, SLUG_GLASS, { reflectance = 0.3 }), -- windscreen
+		rod(0.6, 0.08, { -0.22, 1.5, -1.15 }, SLUG, { turn = { 0, 0, 70 } }), -- eye stalks
+		rod(0.6, 0.08, { 0.22, 1.5, -1.15 }, SLUG, { turn = { 0, 0, 110 } }),
+		ball(0.24, { -0.32, 1.8, -1.15 }, WHITE),
+		ball(0.24, { 0.32, 1.8, -1.15 }, WHITE),
+		ball(0.11, { -0.32, 1.82, -1.27 }, INK),
+		ball(0.11, { 0.32, 1.82, -1.27 }, INK),
+		rod(0.2, 0.42, { -0.62, 0.21, -0.75 }, TYRE), -- wheels
+		rod(0.2, 0.42, { 0.62, 0.21, -0.75 }, TYRE),
+		rod(0.2, 0.42, { -0.62, 0.21, 0.85 }, TYRE),
+		rod(0.2, 0.42, { 0.62, 0.21, 0.85 }, TYRE),
+		block({ 0.1, 0.42, 0.05 }, { -0.66, 0.7, 0.2 }, BOLT, { material = NEON, turn = { 0, 90, 25 } }), -- bolt
+		block({ 0.1, 0.42, 0.05 }, { -0.66, 0.5, 0.35 }, BOLT, { material = NEON, turn = { 0, 90, -25 } }),
+		rod(0.95, 0.1, { 0.4, 0.06, 1.45 }, CABLE, { turn = { 0, 20, 0 } }), -- the charging cable
+		block({ 0.32, 0.2, 0.22 }, { 0.95, 0.1, 1.28 }, CABLE),
+	},
+}
+
+-- A ball of bread dough kneaded into a handheld game, with a rolling pin.
+local BREAD_DOUGH = hex("#F2D8A7")
+local BOARD = hex("#D9B07A")
+local PIN = hex("#B07A4A")
+looks.Nintendough = {
+	badge = { text = "Nd", colour = BREAD_DOUGH, ink = INK },
+	pieces = {
+		block({ 2.6, 0.15, 1.8 }, { 0, 0.075, 0 }, BOARD), -- board
+		ellipsoid({ 1.2, 0.05, 0.8 }, { 0.6, 0.17, 0.45 }, WHITE, { transparency = 0.2 }), -- flour
+		ellipsoid({ 2.1, 1.25, 0.72 }, { 0, 1.0, 0.1 }, BREAD_DOUGH),
+		block({ 0.9, 0.62, 0.05 }, { 0, 1.05, -0.24 }, DARK, {
+			text = { text = ":)", face = "Front", colour = hex("#9BF6A3") },
+		}),
+		block({ 0.3, 0.09, 0.05 }, { -0.72, 1.0, -0.2 }, INK), -- d-pad
+		block({ 0.09, 0.3, 0.05 }, { -0.72, 1.0, -0.2 }, INK),
+		ball(0.15, { 0.66, 1.08, -0.2 }, hex("#3D8BFF")), -- buttons
+		ball(0.15, { 0.82, 0.94, -0.18 }, hex("#3CCB5A")),
+		rod(1.6, 0.3, { 0.4, 0.32, -0.62 }, PIN, { turn = { 0, 20, 0 } }), -- rolling pin
+		rod(0.35, 0.13, { 1.3, 0.32, -0.95 }, hex("#8A5A36"), { turn = { 0, 20, 0 } }),
+		rod(0.35, 0.13, { -0.5, 0.32, -0.3 }, hex("#8A5A36"), { turn = { 0, 20, 0 } }),
+	},
+}
+
+-- A shiny brass tuba playing music notes.
+local BRASS = hex("#E0B84A")
+local BRASS_DARK = hex("#B88A2A")
+local TUBA_NOTE = hex("#7B4AE2")
+looks.YouTuba = {
+	badge = { text = "Yt", colour = BRASS, ink = hex("#5C3B10") },
+	pieces = {
+		ellipsoid({ 1.1, 0.65, 0.95 }, { 0, 0.42, 0 }, BRASS, { material = METAL, reflectance = 0.15 }), -- the bow
+		can(1.7, 0.9, { 0, 1.3, 0 }, BRASS, { material = METAL, reflectance = 0.15 }),
+		can(0.35, 1.25, { 0.12, 2.2, 0 }, BRASS, { material = METAL, reflectance = 0.15 }), -- bell
+		can(0.25, 1.75, { 0.15, 2.45, 0 }, BRASS, { material = METAL, reflectance = 0.15 }),
+		can(0.05, 1.45, { 0.15, 2.58, 0 }, hex("#5C3B10")),
+		can(0.55, 0.16, { -0.2, 1.55, -0.48 }, SILVER, { material = METAL }), -- valves
+		can(0.55, 0.16, { 0, 1.55, -0.5 }, SILVER, { material = METAL }),
+		can(0.55, 0.16, { 0.2, 1.55, -0.48 }, SILVER, { material = METAL }),
+		ball(0.2, { -0.2, 1.88, -0.48 }, BRASS_DARK),
+		ball(0.2, { 0, 1.88, -0.5 }, BRASS_DARK),
+		ball(0.2, { 0.2, 1.88, -0.48 }, BRASS_DARK),
+		rod(1.0, 0.14, { -0.75, 1.05, -0.2 }, BRASS, { material = METAL, turn = { 0, 0, -30 } }), -- mouthpiece
+		ball(0.22, { -1.2, 1.3, -0.2 }, SILVER, { material = METAL }),
+		ball(0.26, { 1.25, 2.75, -0.2 }, TUBA_NOTE), -- notes
+		block({ 0.06, 0.5, 0.06 }, { 1.37, 2.98, -0.2 }, TUBA_NOTE),
+		ball(0.22, { -0.85, 2.45, -0.1 }, TUBA_NOTE),
+		block({ 0.06, 0.42, 0.06 }, { -0.75, 2.65, -0.1 }, TUBA_NOTE),
 	},
 }
 
@@ -639,6 +1064,26 @@ looks.BerkshireHatchaway = {
 		ball(0.09, { 0.11, 2.6, -0.27 }, INK),
 		ball(0.14, { 0, 2.5, -0.31 }, hex("#FF8C1A")),
 		ellipsoid({ 0.95, 0.55, 0.95 }, { 0.22, 2.95, 0.05 }, EGG, { turn = { 0, 0, -22 } }), -- shell cap
+	},
+}
+
+-- A tissue box mid-sneeze, a tissue flying off.
+local TISSUE_BOX = hex("#8EC5FF")
+looks.Hitachoo = {
+	badge = { text = "Hc", colour = TISSUE_BOX, ink = INK },
+	pieces = {
+		block({ 2.0, 1.25, 1.4 }, { 0, 0.62, 0 }, TISSUE_BOX),
+		block({ 2.02, 0.25, 1.42 }, { 0, 0.92, 0 }, WHITE), -- stripe
+		block({ 1.0, 0.04, 0.3 }, { 0, 1.26, 0 }, INK), -- the slot
+		ellipsoid({ 0.8, 1.0, 0.12 }, { -0.05, 1.72, 0 }, WHITE, { turn = { 0, 0, 15 } }), -- tissues
+		ellipsoid({ 0.6, 0.8, 0.1 }, { 0.15, 1.65, 0.05 }, WHITE, { turn = { 0, 0, -20 } }),
+		block({ 0.26, 0.05, 0.04 }, { -0.4, 0.62, -0.72 }, INK, { turn = { 0, 0, 20 } }), -- screwed-up eyes
+		block({ 0.26, 0.05, 0.04 }, { 0.4, 0.62, -0.72 }, INK, { turn = { 0, 0, -20 } }),
+		ellipsoid({ 0.36, 0.3, 0.05 }, { 0, 0.35, -0.71 }, INK), -- mouth
+		ball(0.55, { 0, 0.5, -1.25 }, STEAM, { transparency = 0.35 }), -- the sneeze
+		ball(0.42, { -0.38, 0.68, -1.5 }, STEAM, { transparency = 0.4 }),
+		ball(0.36, { 0.38, 0.42, -1.55 }, STEAM, { transparency = 0.45 }),
+		ellipsoid({ 0.5, 0.6, 0.06 }, { 1.15, 2.3, -0.3 }, WHITE, { turn = { 20, 0, 35 } }), -- one flying away
 	},
 }
 
@@ -766,9 +1211,39 @@ looks.EverythingInc = {
 	},
 }
 
+-- A golden go-kart with a credit card for a spoiler.
+local KART_SEAT = hex("#3A2A5E")
+local CARD = hex("#5B3FB8")
+looks.Mastercart = {
+	badge = { text = "Mk", colour = GOLD, ink = INK },
+	pieces = {
+		block({ 1.5, 0.32, 2.4 }, { 0, 0.5, 0 }, GOLD, { material = METAL, reflectance = 0.1 }), -- chassis
+		wedge({ 1.4, 0.4, 0.75 }, { 0, 0.86, -0.95 }, GOLD, { material = METAL, reflectance = 0.1 }), -- nose
+		rod(0.4, 0.75, { -0.95, 0.38, -0.8 }, TYRE), -- wheels
+		rod(0.4, 0.75, { 0.95, 0.38, -0.8 }, TYRE),
+		rod(0.4, 0.75, { -0.95, 0.38, 0.8 }, TYRE),
+		rod(0.4, 0.75, { 0.95, 0.38, 0.8 }, TYRE),
+		rod(0.42, 0.32, { -0.95, 0.38, -0.8 }, SILVER),
+		rod(0.42, 0.32, { 0.95, 0.38, -0.8 }, SILVER),
+		rod(0.42, 0.32, { -0.95, 0.38, 0.8 }, SILVER),
+		rod(0.42, 0.32, { 0.95, 0.38, 0.8 }, SILVER),
+		block({ 0.9, 0.2, 0.8 }, { 0, 0.76, 0.25 }, KART_SEAT), -- seat
+		block({ 0.9, 0.75, 0.2 }, { 0, 1.1, 0.62 }, KART_SEAT, { turn = { -15, 0, 0 } }),
+		block({ 0.08, 0.45, 0.08 }, { 0, 0.95, -0.32 }, STEEL, { turn = { -30, 0, 0 } }), -- steering
+		disc(0.08, 0.5, { 0, 1.15, -0.42 }, INK, { turn = { -30, 0, 0 } }),
+		block({ 0.1, 0.65, 0.1 }, { -0.6, 1.0, 1.1 }, STEEL), -- spoiler supports
+		block({ 0.1, 0.65, 0.1 }, { 0.6, 1.0, 1.1 }, STEEL),
+		block({ 1.75, 1.05, 0.06 }, { 0, 1.75, 1.15 }, CARD), -- the card
+		block({ 0.32, 0.24, 0.03 }, { -0.45, 1.85, 1.11 }, GOLD), -- its chip
+		block({ 1.5, 0.08, 0.03 }, { 0, 1.5, 1.11 }, SILVER),
+	},
+}
+
 ---------------------------------------------------------------------------
 
--- Plinths by tier: bigger and grander each tier up.
+-- Plinths by tier: bigger and grander each tier up. Mega Cap and up slowly
+-- spin and bob; Conglomerate and Monopoly also glow (each with the model's
+-- one light), and Monopoly sparkles.
 local plinths: { [string]: Plinth } = {
 	Startup = {
 		diameter = 3.2,
@@ -781,8 +1256,8 @@ local plinths: { [string]: Plinth } = {
 		idle = false,
 	},
 	ScaleUp = {
-		diameter = 3.4,
-		height = 0.6,
+		diameter = 3.35,
+		height = 0.58,
 		trim = true,
 		step = false,
 		gold = false,
@@ -791,8 +1266,18 @@ local plinths: { [string]: Plinth } = {
 		idle = false,
 	},
 	Unicorn = {
-		diameter = 3.6,
-		height = 0.75,
+		diameter = 3.5,
+		height = 0.66,
+		trim = true,
+		step = true,
+		gold = false,
+		glow = false,
+		aura = false,
+		idle = false,
+	},
+	Decacorn = {
+		diameter = 3.65,
+		height = 0.74,
 		trim = true,
 		step = true,
 		gold = false,
@@ -802,7 +1287,7 @@ local plinths: { [string]: Plinth } = {
 	},
 	BlueChip = {
 		diameter = 3.8,
-		height = 0.85,
+		height = 0.82,
 		trim = false,
 		step = true,
 		gold = true,
@@ -810,15 +1295,25 @@ local plinths: { [string]: Plinth } = {
 		aura = false,
 		idle = false,
 	},
+	MegaCap = {
+		diameter = 3.95,
+		height = 0.9,
+		trim = false,
+		step = true,
+		gold = true,
+		glow = false,
+		aura = false,
+		idle = true,
+	},
 	Conglomerate = {
-		diameter = 4.0,
-		height = 0.95,
+		diameter = 4.08,
+		height = 0.97,
 		trim = false,
 		step = true,
 		gold = true,
 		glow = true,
 		aura = false,
-		idle = false,
+		idle = true,
 	},
 	Monopoly = {
 		diameter = 4.2,
@@ -869,8 +1364,8 @@ return {
 	AuraRate = 5,
 	AuraLifetime = { 1.2, 1.8 },
 
-	-- Monopoly idle motion (client): degrees per second, bob height in studs
-	-- and seconds per bob.
+	-- Idle motion (client, Mega Cap and up): degrees per second, bob height in
+	-- studs and seconds per bob.
 	IdleSpinSpeed = 20,
 	IdleBobHeight = 0.12,
 	IdleBobSeconds = 3,

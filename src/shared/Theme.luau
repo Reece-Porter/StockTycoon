@@ -54,7 +54,9 @@ Theme.Tiers = {
 	Startup = hex("#7ED957"),
 	ScaleUp = hex("#3D8BFF"),
 	Unicorn = hex("#A66CFF"),
+	Decacorn = hex("#FF6FD0"),
 	BlueChip = hex("#2FD3E0"),
+	MegaCap = hex("#FF8A3D"),
 	Conglomerate = hex("#FFC83D"),
 	Monopoly = hex("#FF4D5E"),
 } :: { [string]: Color3 }

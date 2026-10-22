@@ -1,27 +1,30 @@
 --!strict
 -- Rebirth (docs/design.md, "Rebirth"). A player with enough Cash
--- (RebirthMath.cashRequired, x2 each time) who owns a company of the tier
--- their next rebirth needs (RebirthMath.requiredTier: a Startup at first, a
--- little rarer every few rebirths) gives up their Cash for a permanent income
+-- (RebirthMath.cashRequired, x2.5 each time) who owns the one or two
+-- particular companies their next rebirth needs (RebirthMath.requiredCompanies:
+-- a Startup at first, a little rarer every rebirth or two) gives up their
+-- Cash for a permanent income
 -- multiplier (RebirthMath.incomeMultiplier), more Stock Spinner Luck
 -- (RebirthMath.luck) and Config/Base.PlotsPerRebirth more plots on the floors
 -- above the ones bought with Cash (UpgradeMath.open). Everything else is
--- kept (DataService:Rebirth), and the company isn't used up. The client only
+-- kept (DataService:Rebirth), and the companies aren't used up. The client only
 -- asks; every requirement is checked here, and the save is written straight
 -- away.
 --
--- Players get Rebirths, RebirthCost, RebirthTier (the tier id the next one
--- needs) and RebirthHasTier attributes for the rebirth screen, and a Rebirths
--- column in the player list.
+-- Players get Rebirths, RebirthCost, RebirthNeeds (JSON: the company ids the
+-- next one needs), RebirthHave (JSON: the ones of those they own) and
+-- RebirthReady (whether they own them all) attributes for the rebirth
+-- screen, and a Rebirths column in the player list.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Format = require(ReplicatedStorage.Shared.Format)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
-local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeMath = require(ReplicatedStorage.Shared.UpgradeMath)
 local AnalyticsService = require(script.Parent.AnalyticsService)
@@ -39,8 +42,8 @@ local function notify(player: Player, message: string)
 	end
 end
 
--- Every company the player owns that counts for the tier requirement: placed
--- or in storage.
+-- Every company the player owns that counts for the requirement: placed or
+-- in storage.
 local function ownedCompanies(data: DataService.Data): { Types.CompanyInstance }
 	local companies = table.clone(data.Storage)
 	for _, company in data.Placed do
@@ -56,8 +59,16 @@ local function publish(player: Player)
 	end
 	player:SetAttribute("Rebirths", data.Rebirths)
 	player:SetAttribute("RebirthCost", RebirthMath.cashRequired(data.Rebirths))
-	player:SetAttribute("RebirthTier", RebirthMath.requiredTier(data.Rebirths))
-	player:SetAttribute("RebirthHasTier", RebirthMath.hasRequiredTier(ownedCompanies(data), data.Rebirths))
+	local ready, found = RebirthMath.hasRequired(ownedCompanies(data), data.Rebirths)
+	local have = {}
+	for _, companyId in RebirthMath.requiredCompanies(data.Rebirths) do
+		if found[companyId] then
+			table.insert(have, companyId)
+		end
+	end
+	player:SetAttribute("RebirthNeeds", HttpService:JSONEncode(RebirthMath.requiredCompanies(data.Rebirths)))
+	player:SetAttribute("RebirthHave", HttpService:JSONEncode(have))
+	player:SetAttribute("RebirthReady", ready)
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
@@ -104,9 +115,16 @@ local function rebirth(player: Player): string
 	if data.Cash < required then
 		return `You need {Format.cash(required)} to rebirth.`
 	end
-	if not RebirthMath.hasRequiredTier(ownedCompanies(data), data.Rebirths) then
-		local tier = Tiers.byId[RebirthMath.requiredTier(data.Rebirths)]
-		return `You need a {tier.name} company or better, placed or in storage.`
+	local ready, found = RebirthMath.hasRequired(ownedCompanies(data), data.Rebirths)
+	if not ready then
+		local missing = {}
+		for _, companyId in RebirthMath.requiredCompanies(data.Rebirths) do
+			if not found[companyId] then
+				local company = Companies.byId[companyId]
+				table.insert(missing, if company then company.name else companyId)
+			end
+		end
+		return `This rebirth needs {table.concat(missing, " and ")}, placed or in storage.`
 	end
 	if CarryService:IsCarrying(player) then
 		return "Put down what you're carrying first."

@@ -17,8 +17,9 @@
 --
 -- Everything is anchored and can't be walked into, touched or hit by a
 -- raycast; small, see-through and Neon pieces cast no shadow. Monopoly
--- models also get a few sparkles (Aura) and an Idle attribute, and
--- CompanyFxController spins and bobs their Object on the client.
+-- models also get a few sparkles (Aura). Mega Cap and up get an Idle
+-- attribute, and CompanyFxController spins and bobs their Object on the
+-- client.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
