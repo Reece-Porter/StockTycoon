@@ -100,7 +100,13 @@ Everything is built and tested in the **Test** place. Going live means publishin
 
 ### Once, before the first launch
 
-1. **Live must be its own experience.** On the [Creator Dashboard](https://create.roblox.com/dashboard/creations), Test and Live should be two separate experiences. Places in the same experience share saves and leaderboards, so test Cash and admin-given companies would turn up in Live. If they're two places in one experience, don't publish yet: the game's save and leaderboard names need splitting by place first.
+1. **Make the Live experience.** Live must be its own experience, separate from Test: places in the same experience share saves and leaderboards, so test Cash and admin-given companies would turn up in Live. To make it:
+   1. Open the **Test** place in Studio and press **Disconnect** in the Rojo plugin.
+   2. File > **Publish to Roblox As...**, and choose to create a **new experience** (not the Test experience, and not "add as a new place").
+   3. Give it the game's real name and a description, and press **Create**. It starts Private.
+   4. Studio now has the new Live place open. Close it, and open the Test place again for the next round of work.
+
+   It then shows on the [Creator Dashboard](https://create.roblox.com/dashboard/creations) as its own experience beside Test. That first publish is also the first launch; from then on, each update overwrites it (below).
 2. **Max Players 8.** In the Live experience's settings, set the place's server size (Max Players) to 8, one player per base. If it's set higher, a ninth player is sent back with a "this server is full" message.
 3. **The maturity questionnaire.** Roblox needs it answered before the game is shown to players ([content maturity](https://create.roblox.com/docs/production/promotion/content-maturity)). What's in the game: cartoon fighting with knockback and stun (no blood, no realistic weapons); taking other players' companies during a Hostile Takeover; text chat; pet spins with random results, paid with in-game Cash only (never Robux); and, once set up, Robux game passes and Cash packs.
 4. **Name, description, icon and thumbnails.** The photo booth (`/booth`, see `docs/ART_BRIEFS.md`) is for taking the pictures.
