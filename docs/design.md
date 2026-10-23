@@ -275,7 +275,7 @@ Boost rules
   - Cash packs give 15 minutes, 1 hour or 4 hours of the player's income (without reward boosts), at least $5K, $25K or $100K, so they stay worth buying as income grows.
   - Lock Base Now locks the player's base from wherever they are for the usual 60 seconds, or adds 60 seconds to a lock already on. Base locks are otherwise free and renewable at the lock button, so this sells convenience, not protection players can't get.
   - Developer products are given exactly once per purchase: the purchase id is saved with what it gave before Roblox is told it's done (save version 12 keeps the last 100).
-  - Prices are set on the Creator Dashboard, not in code. Each pass and product needs its id in `Config/Monetisation.luau`; until then it shows as not on sale.
+  - Prices are set on the Creator Dashboard, not in code. Each pass and product needs its id in `Config/Monetisation.luau`; until then it isn't shown in the Store, and while nothing has an id there's no Store button at all.
 
 ## Onboarding (starting assumption)
 - New player spawns at their base with enough Cash for one Startup.
@@ -286,7 +286,7 @@ Boost rules
 - Each step finishes when the save, the base or the player's position shows it's done, however they did it, and the step is saved. The machine step also finishes after 3 companies are placed without trying it, and the shared conveyor step finishes on its own after 90 seconds. Players can skip the guide. Players who joined before the guide existed don't see it.
 
 ## Server and leaderboards (starting assumption)
-- 8 players per server, one base each. Set Max Players to 8 in the place's settings.
+- 8 players per server, one base each. Set Max Players to 8 in the place's settings. If a server ever lets in more players than it has free bases, the extra player is sent back with a message saying the server is full (a map with no bases at all lets everyone in, so an admin can see what's missing). Going live: README, "Going live".
 - The map (`studio/BuildMap.luau`): four bases on each side of an 80-stud street with the shared conveyor down the middle, all facing it, 44 studs apart so stealing takes a real trip. Base1 to Base4 are the middle four and fill first. The weapon and pet shops stand side by side at one end of the street and the upgrade station at the other, all facing back along it, and the leaderboards stand in the gaps beside the middle bases, facing the street. Grassy hills run all round the edge, with invisible walls so nobody can leave, and the shared conveyor runs from a tunnel in the hills at one end to a tunnel at the other.
 - BuildMap stamps the map with its build (the `MapVersion` attribute on `Workspace.Map`). When it doesn't match `Config/Base.MapVersion`, the server warns in the Output and admins get a notice and a debug panel row saying to run BuildMap again. Bump both together whenever BuildMap changes what it builds.
 - Each base (42 wide, 96 deep) runs back from the street: a front yard with the Stock Spinner and its belt, the Valuation Machine and the spawn, then a hall where a walkway runs down the middle of every floor with five plots either side facing it (they unlock in pairs from the front), a lock button in the middle of the walkway, pet slots at the back, and stairs zigzagging up behind the hall. Glass walls run down both sides and across the back from the ground to the top floor, so the way in is from the front, and nobody can steal through the glass (the server checks).
