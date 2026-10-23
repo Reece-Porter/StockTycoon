@@ -7,6 +7,7 @@
 -- "Debug_<name>" attributes that the panel lists. Other services can add rows
 -- with AdminService:SetDebugValue.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -14,6 +15,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Admins = require(ReplicatedStorage.Shared.Config.Admins)
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local CompanyStats = require(ReplicatedStorage.Shared.CompanyStats)
 local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local ConveyorConfig = require(ReplicatedStorage.Shared.Config.Conveyor)
 local SpinnerConfig = require(ReplicatedStorage.Shared.Config.Spinner)
@@ -22,6 +24,7 @@ local Perks = require(ReplicatedStorage.Shared.Config.Perks)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local SpawnRoll = require(ReplicatedStorage.Shared.SpawnRoll)
 local Tiers = require(ReplicatedStorage.Shared.Config.Tiers)
+local Types = require(ReplicatedStorage.Shared.Types)
 local VariantMath = require(ReplicatedStorage.Shared.VariantMath)
 local Variants = require(ReplicatedStorage.Shared.Config.Variants)
 local Pets = require(ReplicatedStorage.Shared.Config.Pets)
@@ -83,6 +86,23 @@ local function findTier(text: string?): Tiers.Tier?
 	for _, tier in Tiers.list do
 		if string.lower(tier.id) == wanted then
 			return tier
+		end
+	end
+	return nil
+end
+
+-- Matches "kittygram", "Epic Gnomes", "choca-cola" and so on to a company.
+local function findCompany(text: string?): Companies.Company?
+	if text == nil then
+		return nil
+	end
+	local function simple(name: string): string
+		return string.lower((string.gsub(name, "[%s%-'%.]", "")))
+	end
+	local wanted = simple(text)
+	for _, company in Companies.list do
+		if simple(company.id) == wanted or simple(company.name) == wanted then
+			return company
 		end
 	end
 	return nil
@@ -315,6 +335,36 @@ local commands: { Command } = {
 				return "Couldn't spawn it. Check the console for a missing model or conveyor."
 			end
 			return `Spawned a {what} on the shared conveyor.`
+		end,
+	},
+	{
+		alias = "/givecompany",
+		usage = "/givecompany <company> [variant]",
+		run = function(player, args)
+			local company = findCompany(args[1])
+			if company == nil then
+				return "Usage: /givecompany <company> [variant], e.g. /givecompany kittygram or /givecompany epicgnomes galaxy"
+			end
+			local variant = if args[2] then findVariant(args[2]) else nil
+			if args[2] and variant == nil then
+				return `Usage: /givecompany <company> [variant], where variant is one of: {variantNames()}`
+			end
+			local given: Types.CompanyInstance = {
+				instanceId = HttpService:GenerateGUID(false),
+				companyId = company.id,
+				tier = company.tier,
+				baseIncome = CompanyStats.income(company.id),
+				purchasePrice = CompanyStats.price(company.id),
+				valuationMultiplier = 1,
+				hasBeenValued = false,
+				ownerUserId = player.UserId,
+				variant = if variant then variant.id else nil,
+			}
+			if not DataService:AddToStorage(player, given, true) then
+				return NOT_LOADED_MESSAGE
+			end
+			local what = if variant then `{variant.name} {company.name}` else company.name
+			return `Put a {what} in your storage.`
 		end,
 	},
 	{
@@ -876,11 +926,15 @@ local function onDataChanged(player: Player)
 	AdminService:SetDebugValue(player, "Upgrades", table.concat(levels, ", "))
 	local multiplier = RebirthMath.incomeMultiplier(data.Rebirths)
 	local nextCost = RebirthMath.cashRequired(data.Rebirths)
-	local nextTier = Tiers.byId[RebirthMath.requiredTier(data.Rebirths)].name
+	local needed = {}
+	for _, companyId in RebirthMath.requiredCompanies(data.Rebirths) do
+		table.insert(needed, Companies.byId[companyId].name)
+	end
+	local neededText = if #needed > 0 then ` and {table.concat(needed, " and ")}` else ""
 	AdminService:SetDebugValue(
 		player,
 		"Rebirths",
-		`{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash and a {nextTier})`
+		`{data.Rebirths} (income x{multiplier}, next needs {nextCost} Cash{neededText})`
 	)
 	AdminService:SetDebugValue(player, "Gold", data.Gold)
 	AdminService:SetDebugValue(player, "FloorPets", PetService:DescribeFloors(player))

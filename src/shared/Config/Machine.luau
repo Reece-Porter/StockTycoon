@@ -33,7 +33,7 @@ return {
 
 	-- The first run of a company is free. Running it again (a respin) costs
 	-- this share of its tier's price (Config/Tiers), Cash only: $25 for a
-	-- Startup, $25K for a Blue Chip, $2.5M for a Monopoly. The new
+	-- Startup, $37.5K for a Blue Chip, $10M for a Monopoly. The new
 	-- multiplier replaces the old one, higher or lower.
 	RespinPriceShare = 0.5,
 

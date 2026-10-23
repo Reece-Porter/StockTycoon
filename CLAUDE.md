@@ -13,7 +13,7 @@ Full game design, numbers and build order: `docs/design.md`. Read it before star
 4. Placed companies generate Cash per second. Cash buys more companies and plots.
 5. Cash also buys base upgrades (more plots on floors 1 and 2, and floor 2 itself), weapons and pet spins. Gold, earned from Index challenges and the battle arena, buys the upgrade station's upgrades.
 6. During a Hostile Takeover (5 minutes at the start of every hour), other players can enter a base, pick up a placed company and carry it to their own base. Owners defend with a timed base lock and by tagging thieves. Outside a takeover, bases can't be stolen from.
-7. Rebirth takes only the player's Cash, for a permanent income multiplier, more Stock Spinner Luck and 2 more plots on floors 3 and 4 (which only rebirths open). Each rebirth needs a company of a tier that rises gently (a Startup for the first). Companies, plots, floors, pets, upgrades and Gold are kept. (Changed by Reece, October 2026; it used to reset companies and base upgrades too.)
+7. Rebirth takes only the player's Cash, for a permanent income multiplier, more Stock Spinner Luck and 2 more plots on floors 3 and 4 (which only rebirths open). Each rebirth needs one or two particular companies, a little rarer every rebirth or two (Kittygram for the first). Companies, plots, floors, pets, upgrades and Gold are kept. (Changed by Reece, October 2026; it used to reset companies and base upgrades too.)
 8. Playtime milestones and a daily login streak give Cash, temporary income boosts and free pet spins.
 
 ## Companies

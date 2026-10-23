@@ -2,16 +2,18 @@
 -- The Rebirth menu button (with a dot once the player can rebirth) and its
 -- window: the income multiplier, and the Stock Spinner Luck (with the
 -- player's Spinner Luck upgrade) and odds, now and after, the plots it opens,
--- what the next rebirth needs (ticked once the player has it: Cash and a
--- company of the tier for that rebirth), what it takes and keeps, and a big
--- Rebirth button that takes two taps. The server sends Rebirths, RebirthCost,
--- RebirthTier and RebirthHasTier and checks everything again.
+-- what the next rebirth needs (each ticked once the player has it: Cash and
+-- the one or two particular companies for that rebirth), what it takes and
+-- keeps, and a big Rebirth button that takes two taps. The server sends
+-- Rebirths, RebirthCost, RebirthNeeds, RebirthHave and RebirthReady and
+-- checks everything again.
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BaseConfig = require(ReplicatedStorage.Shared.Config.Base)
+local Companies = require(ReplicatedStorage.Shared.Config.Companies)
 local Format = require(ReplicatedStorage.Shared.Format)
 local PerkMath = require(ReplicatedStorage.Shared.PerkMath)
 local RebirthMath = require(ReplicatedStorage.Shared.RebirthMath)
@@ -32,12 +34,24 @@ local CONFIRM_SECONDS = 3
 local NEED_HEIGHT = 40
 local ODDS_HEIGHT = 24
 local GO_HEIGHT = 64
+-- The most companies a rebirth needs (Config/Rebirth.RequiredCompanies).
+local MAX_COMPANY_NEEDS = 2
 
 local player = Players.LocalPlayer
 
 type Need = { frame: Frame, label: TextLabel, tick: Frame, cross: Frame }
 
 local RebirthController = {}
+
+-- A JSON list attribute from the server, or an empty list.
+local function readList(name: string): { any }
+	local json = player:GetAttribute(name)
+	if typeof(json) ~= "string" then
+		return {}
+	end
+	local ok, decoded = pcall(HttpService.JSONDecode, HttpService, json)
+	return if ok and typeof(decoded) == "table" then decoded else {}
+end
 
 -- The player's Spinner Luck upgrade level (kept through rebirth).
 local function luckLevel(): number
@@ -74,6 +88,7 @@ local function need(parent: Instance, order: number): Need
 	frame.Parent = parent
 	local function mark(name: Icons.IconName, colour: Color3): Frame
 		local circle = Instance.new("Frame")
+		circle.Name = name
 		circle.AnchorPoint = Vector2.new(0, 0.5)
 		circle.Position = UDim2.fromScale(0, 0.5)
 		circle.Size = UDim2.fromOffset(30, 30)
@@ -153,7 +168,13 @@ function RebirthController:Start()
 	plotsLabel.Size = UDim2.new(1, 0, 0, 44)
 	Scroll.heading(list, "You need", after + 2)
 	local cashNeed = need(list, after + 3)
-	local tierNeed = need(list, after + 4)
+	local companyNeeds: { Need } = {}
+	for index = 1, MAX_COMPANY_NEEDS do
+		local row = need(list, after + 3 + index)
+		row.frame.Name = `Company{index}`
+		table.insert(companyNeeds, row)
+	end
+	after += MAX_COMPANY_NEEDS - 1
 	Scroll.heading(list, "Takes", after + 5)
 	local resets = Make.label(list, {
 		text = "Your Cash, and the Cash on your cash pads",
@@ -200,17 +221,15 @@ function RebirthController:Start()
 
 	local function isReady(): boolean
 		local cost = numberAttribute("RebirthCost")
-		return cash ~= nil and cost > 0 and cash.Value >= cost and player:GetAttribute("RebirthHasTier") == true
+		return cash ~= nil and cost > 0 and cash.Value >= cost and player:GetAttribute("RebirthReady") == true
 	end
 
 	local function render()
 		local rebirths = numberAttribute("Rebirths")
 		local cost = numberAttribute("RebirthCost")
 		local have = if cash then cash.Value else 0
-		local hasTier = player:GetAttribute("RebirthHasTier") == true
-		local neededId = player:GetAttribute("RebirthTier")
-		local tier = Tiers.byId[if typeof(neededId) == "string" then neededId else RebirthMath.requiredTier(rebirths)]
-			or Tiers.list[1]
+		local needs = readList("RebirthNeeds")
+		local owned = readList("RebirthHave")
 		local ready = isReady()
 
 		window.setTitle(`Rebirth ({rebirths} so far)`)
@@ -238,9 +257,18 @@ function RebirthController:Start()
 		cashNeed.label.Text = `{Format.cash(cost)} Cash (you have {Format.cash(have)})`
 		cashNeed.tick.Visible = have >= cost
 		cashNeed.cross.Visible = have < cost
-		tierNeed.label.Text = `A {tier.name} company or better, placed or in storage`
-		tierNeed.tick.Visible = hasTier
-		tierNeed.cross.Visible = not hasTier
+		for index, row in companyNeeds do
+			local companyId = needs[index]
+			local company = if typeof(companyId) == "string" then Companies.byId[companyId] else nil
+			row.frame.Visible = company ~= nil
+			if company then
+				local tier = Tiers.byId[company.tier]
+				local hasIt = table.find(owned, company.id) ~= nil
+				row.label.Text = `{company.name} ({if tier then tier.name else company.tier}), placed or in storage`
+				row.tick.Visible = hasIt
+				row.cross.Visible = not hasIt
+			end
+		end
 
 		menuButton.setDot(ready)
 		go.setEnabled(ready)
@@ -270,7 +298,9 @@ function RebirthController:Start()
 		render()
 	end)
 
-	for _, name in { "Rebirths", "RebirthCost", "RebirthTier", "RebirthHasTier", "PerkLevels", "NextUpgradeCost" } do
+	for _, name in
+		{ "Rebirths", "RebirthCost", "RebirthNeeds", "RebirthHave", "RebirthReady", "PerkLevels", "NextUpgradeCost" }
+	do
 		player:GetAttributeChangedSignal(name):Connect(render)
 	end
 	render()

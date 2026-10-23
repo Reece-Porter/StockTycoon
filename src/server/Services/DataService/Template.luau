@@ -76,7 +76,7 @@ export type Data = {
 }
 
 local Template: Data = {
-	DataVersion = 15,
+	DataVersion = 16,
 	Cash = Economy.StartingCash,
 	Gold = 0,
 	Storage = {},

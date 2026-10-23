@@ -3,7 +3,6 @@
 -- screen and tests share them.
 
 local RebirthConfig = require(script.Parent.Config.Rebirth)
-local Tiers = require(script.Parent.Config.Tiers)
 local Types = require(script.Parent.Types)
 
 local RebirthMath = {}
@@ -17,38 +16,29 @@ function RebirthMath.incomeMultiplier(rebirths: number): number
 	return 1 + RebirthConfig.IncomePerRebirth * rebirths
 end
 
-local function tierRank(tierId: string): number
-	for index, tier in Tiers.list do
-		if tier.id == tierId then
-			return index
-		end
-	end
-	return 0
+-- The companies (ids) the next rebirth, after this many, needs: one or two,
+-- or none past the end of Config/Rebirth.RequiredCompanies.
+function RebirthMath.requiredCompanies(rebirths: number): { string }
+	return RebirthConfig.RequiredCompanies[rebirths + 1] or {}
 end
 
--- The tier a player who has rebirthed this many times needs for their next
--- rebirth (Config/Rebirth.RequiredTiers).
-function RebirthMath.requiredTier(rebirths: number): Tiers.TierId
-	local number = rebirths + 1
-	local tier = RebirthConfig.RequiredTiers[1].tier
-	for _, step in RebirthConfig.RequiredTiers do
-		if number >= step.from then
-			tier = step.tier
-		end
-	end
-	return tier :: Tiers.TierId
-end
-
--- Whether any of these companies is of the tier the next rebirth (after this
--- many) needs, or better.
-function RebirthMath.hasRequiredTier(companies: { Types.CompanyInstance }, rebirths: number): boolean
-	local needed = tierRank(RebirthMath.requiredTier(rebirths))
+-- Whether these companies include every one the next rebirth (after this
+-- many) needs, any variant, and which of them are there.
+function RebirthMath.hasRequired(
+	companies: { Types.CompanyInstance },
+	rebirths: number
+): (boolean, { [string]: boolean })
+	local owned: { [string]: boolean } = {}
 	for _, company in companies do
-		if tierRank(company.tier) >= needed then
-			return true
-		end
+		owned[company.companyId] = true
 	end
-	return false
+	local found: { [string]: boolean } = {}
+	local all = true
+	for _, companyId in RebirthMath.requiredCompanies(rebirths) do
+		found[companyId] = owned[companyId] == true
+		all = all and found[companyId]
+	end
+	return all, found
 end
 
 -- The Luck rebirths give the Stock Spinner (SpinnerMath): 1, then
