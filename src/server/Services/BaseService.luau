@@ -357,6 +357,14 @@ local function assign(player: Player)
 		end
 	end
 	warn(`[BaseService] No free base for {player.Name}.`)
+	-- Every base is taken: the server lets in more players than there are
+	-- bases (Max Players should match the number of bases, see
+	-- docs/design.md). Without a base there's nothing to play, so they're
+	-- sent back to find another server. A map without bases is left alone,
+	-- so an admin can still join and see what's missing.
+	if #bases > 0 then
+		player:Kick("This server is full: every base is taken. Please join another server.")
+	end
 end
 
 local function free(player: Player)

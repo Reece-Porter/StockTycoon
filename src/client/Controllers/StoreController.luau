@@ -3,7 +3,8 @@
 -- the game passes, ticked once owned, and the developer products, each with
 -- its Robux price from Roblox (Config/Monetisation). Buying opens Roblox's own
 -- purchase prompt; the server decides what the player gets
--- (MonetisationService). Anything without an id yet shows as not on sale.
+-- (MonetisationService). Only what has an id (set up on the Creator
+-- Dashboard) is shown; with nothing on sale yet there's no Store button.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -78,6 +79,22 @@ local function cashHint(grant: RewardsConfig.Grant?): string
 end
 
 function StoreController:Start()
+	local passes: { Monetisation.Pass } = {}
+	for _, pass in Monetisation.Passes do
+		if pass.id ~= 0 then
+			table.insert(passes, pass)
+		end
+	end
+	local products: { Monetisation.Product } = {}
+	for _, product in Monetisation.Products do
+		if product.id ~= 0 then
+			table.insert(products, product)
+		end
+	end
+	if #passes == 0 and #products == 0 then
+		return
+	end
+
 	local window = Menu.window({ title = "Store", colour = Theme.Menu.Store })
 	local list = Scroll.list(window.Body)
 
@@ -113,9 +130,6 @@ function StoreController:Start()
 		button.Instance.Parent = row.Action
 		local isPass = passName ~= nil
 		button.Activated:Connect(function()
-			if id == 0 then
-				return
-			end
 			if isPass then
 				if player:GetAttribute(`Pass{passName}`) ~= true then
 					MarketplaceService:PromptGamePassPurchase(player, id)
@@ -135,13 +149,24 @@ function StoreController:Start()
 		})
 	end
 
-	Scroll.heading(list, "Game passes", nextOrder())
-	for _, pass in Monetisation.Passes do
-		add(pass.id, pass.title, pass.description, "Gem", pass.name, nil)
+	if #passes > 0 then
+		Scroll.heading(list, "Game passes", nextOrder())
+		for _, pass in passes do
+			add(pass.id, pass.title, pass.description, "Gem", pass.name, nil)
+		end
 	end
-	Scroll.heading(list, "Extras", nextOrder())
-	for _, product in Monetisation.Products do
-		add(product.id, product.title, product.description, if product.grant then "Cash" else "Padlock", nil, product)
+	if #products > 0 then
+		Scroll.heading(list, "Extras", nextOrder())
+		for _, product in products do
+			add(
+				product.id,
+				product.title,
+				product.description,
+				if product.grant then "Cash" else "Padlock",
+				nil,
+				product
+			)
+		end
 	end
 	local note = Make.label(list, {
 		text = "Nothing here changes the Valuation Machine. Pet spins are only ever bought with Cash.",
@@ -159,9 +184,6 @@ function StoreController:Start()
 			local owned = entry.passName ~= nil and player:GetAttribute(`Pass{entry.passName}`) == true
 			if owned then
 				entry.button.setText("Owned")
-				entry.button.setEnabled(false)
-			elseif entry.id == 0 then
-				entry.button.setText("Not on sale")
 				entry.button.setEnabled(false)
 			else
 				local price = priceOf(entry.id, entry.isPass)

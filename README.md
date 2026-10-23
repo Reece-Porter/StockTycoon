@@ -72,7 +72,7 @@ Players type codes into the **Codes** window (the Codes button on the right of t
 
 ## Setting up the store
 
-The Store button sells three game passes and four developer products (`src/shared/Config/Monetisation.luau`). Until each has an id it shows as "Not on sale". To put them on sale:
+The Store button sells three game passes and four developer products (`src/shared/Config/Monetisation.luau`). Until one has an id it isn't shown, and while none have ids there's no Store button at all, so the game can go live without them. To put them on sale:
 
 1. On the [Creator Dashboard](https://create.roblox.com/dashboard/creations), open the game, then **Monetization > Passes**. Create 2x Income, VIP and Extra Pet Slot, give each a picture and a price, and put them on sale.
 2. In **Monetization > Developer Products**, create Cash Pack, Big Cash Pack, Huge Cash Pack and Lock Base Now with their prices.
@@ -93,6 +93,34 @@ The map and the models the game copies are made by one Studio script, [`studio/B
 If the Output shows a red error instead of `Map built`, the map may be left half-built. Read the error: if it says the Theme is out of date, pull the latest code in GitHub Desktop and check Rojo is connected. Then clear the Command Bar, paste the script again and run it. A run that finishes rebuilds the whole map, whatever state it was left in.
 
 When the map needs to change, this file changes, so run it again after pulling new code. If you forget, the Output says "The map is out of date" when you press Play, and admins see the same notice on screen. Never paste older map scripts alongside it.
+
+## Going live
+
+Everything is built and tested in the **Test** place. Going live means publishing the finished Test place over the **Live** place from Studio's File menu. Rojo never connects to Live, and that stays true: nothing here points Rojo at it.
+
+### Once, before the first launch
+
+1. **Live must be its own experience.** On the [Creator Dashboard](https://create.roblox.com/dashboard/creations), Test and Live should be two separate experiences. Places in the same experience share saves and leaderboards, so test Cash and admin-given companies would turn up in Live. If they're two places in one experience, don't publish yet: the game's save and leaderboard names need splitting by place first.
+2. **Max Players 8.** In the Live experience's settings, set the place's server size (Max Players) to 8, one player per base. If it's set higher, a ninth player is sent back with a "this server is full" message.
+3. **The maturity questionnaire.** Roblox needs it answered before the game is shown to players ([content maturity](https://create.roblox.com/docs/production/promotion/content-maturity)). What's in the game: cartoon fighting with knockback and stun (no blood, no realistic weapons); taking other players' companies during a Hostile Takeover; text chat; pet spins with random results, paid with in-game Cash only (never Robux); and, once set up, Robux game passes and Cash packs.
+4. **Name, description, icon and thumbnails.** The photo booth (`/booth`, see `docs/ART_BRIEFS.md`) is for taking the pictures.
+5. **The store (optional).** Make the passes and products in the **Live** experience (see "Setting up the store") and put their ids in config before publishing. Without them the game has no Store button.
+
+### Each time you publish
+
+1. In GitHub Desktop: switch to `main`, press Fetch origin, then Pull.
+2. Open the **Test** place in Studio and connect Rojo. Wait for it to finish syncing.
+3. If the map changed (or the Output says "The map is out of date" when you press Play), run BuildMap (see "Building the map").
+4. Test with two players: the Test tab, Clients and Servers, 2 players, Start. Play a little in each window and check the Output has no red errors. Stop.
+5. Save the Test place (File > Save to Roblox).
+6. Press **Disconnect** in the Rojo plugin.
+7. File > **Publish to Roblox As...**, pick the **Live** experience, pick its place, and press **Overwrite** ([publishing places](https://create.roblox.com/docs/production/publishing/publish-experiences-and-places)).
+8. Studio now has the Live place open. Close it without changing anything, and open the Test place again for the next round of work.
+9. If players are already in the game, restart the Live experience's servers from the Creator Dashboard so everyone gets the new version.
+
+The first time, the Live experience starts Private: only you can join. Play it there once (saving works in Live without any Studio setting), then make it Public in the experience's settings when you're ready.
+
+In Live, saves are real players' progress. Admin commands work there too for the user ids in `Config/Admins.luau`, and they change real saves (`/resetdata` included), so use them with care.
 
 ## Where code syncs
 

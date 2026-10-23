@@ -4,8 +4,9 @@
 --
 -- Each one is made on the Creator Dashboard (the experience's Monetization
 -- section: Passes, and Developer Products), where its Robux price is set.
--- Put its id here; anything with an id of 0 shows in the store as not on sale
--- yet and can't be bought.
+-- Put its id here; anything with an id of 0 isn't on sale yet: it isn't shown
+-- in the Store and can't be bought (with nothing on sale there's no Store
+-- button at all).
 --
 -- Nothing here may touch the Valuation Machine, sell pet spins, or sell
 -- weapons, damage or guard boosts.
